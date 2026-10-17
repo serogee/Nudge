@@ -40,6 +40,11 @@ try {
             $previousReleaseCode = $oldCode
         }
     }
+    $notesSource = Join-Path $repoRoot "docs/release-notes-$name.md"
+    $changelog = Get-Content -LiteralPath 'CHANGELOG.md' -Raw -Encoding UTF8
+    if (!(Test-Path -LiteralPath $notesSource) -or $changelog -notmatch ('(?m)^## ' + [regex]::Escape($name) + '(?=[ \t\r\n])')) {
+        throw 'Generate the changelog first: run scripts/Generate-Changelog.ps1 -Write, review the notes, and commit them with the new version.'
+    }
     if (!(Test-Path -LiteralPath '.local/signing/keystore.properties')) { throw 'Run scripts/Initialize-Signing.ps1 or restore your original .local/signing directory first.' }
     $sdkRoot = $env:ANDROID_HOME
     if (!$sdkRoot) { $sdkRoot = $env:ANDROID_SDK_ROOT }
@@ -50,6 +55,7 @@ try {
     if (!$sdkRoot) { throw 'Set ANDROID_HOME or sdk.dir in local.properties.' }
     $apksigner = Join-Path $sdkRoot 'build-tools/36.0.0/apksigner.bat'
     if (!(Test-Path -LiteralPath $apksigner)) { throw 'Install Android build-tools 36.0.0 for signature verification.' }
+    & (Join-Path $PSScriptRoot 'Test-Changelog.ps1')
     & .\gradlew.bat :app:testDebugUnitTest :app:lint :app:assembleRelease --console=plain
     if ($LASTEXITCODE -ne 0) { throw 'Release checks or build failed; nothing was distributed.' }
     $apk = Join-Path $repoRoot 'app/build/outputs/apk/release/app-release.apk'
@@ -83,12 +89,15 @@ try {
     Copy-Item -LiteralPath $apk -Destination $destination
     $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
     "$hash  Nudge-$name.apk" | Set-Content -LiteralPath "$destination.sha256" -Encoding ASCII
+    $notesName = "Nudge-$name-notes.md"
+    Copy-Item -LiteralPath $notesSource -Destination (Join-Path $releaseDirectory $notesName)
     [ordered]@{
         name = 'Nudge'; versionName = $name; versionCode = $code; applicationId = 'com.modukey.app'
         commit = $commit; sha256 = $hash; signingCertificateSha256 = $certificateDigest; builtAtUtc = [DateTime]::UtcNow.ToString('o')
         compileSdk = 36; targetSdk = 36; minSdk = 31
-        automatedValidation = 'Unit tests, lint and signed release build passed.'
+        automatedValidation = 'Changelog integration checks, unit tests, lint and signed release build passed.'
         updateIdentity = $updateIdentity
+        releaseNotes = $notesName
         deviceCompatibility = 'See docs/compatibility.md; automated checks do not confirm Redmi behavior.'
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $releaseDirectory "Nudge-$name.json") -Encoding UTF8
     if ($CreateTag -and !$tagAlreadyExists) {
@@ -97,4 +106,5 @@ try {
     }
     Write-Output "Verified APK: $destination"
     Write-Output "SHA-256: $hash"
+    Write-Output "Release notes: $(Join-Path $releaseDirectory $notesName)"
 } finally { Pop-Location }

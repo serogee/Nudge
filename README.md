@@ -47,9 +47,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateT
 
 The signing initializer refuses to replace an existing key. Its randomly generated passwords are stored only in the ignored `.local/signing/keystore.properties`; do not commit or share that directory. Back up the key **and** properties file securely. Losing this key prevents normal updates to existing installations.
 
-The release script requires a clean Git working tree and an existing signing key. It runs tests and lint, builds the minified signed release, verifies its signature and identity, and compares its signer with the archived prior release when available. It writes `releases/Nudge-<version>.apk`, a SHA-256 file and public build metadata including the commit, SDKs, signer and verification status. `-CreateTag` adds an annotated local release tag after success; it never pushes anything. Version values live in `version.properties`.
+The release script requires a clean Git working tree, an existing signing key and reviewed notes for the version. It runs changelog integration checks, app tests and lint, builds the minified signed release, verifies its signature and identity, and compares its signer with the archived prior release when available. It writes `releases/Nudge-<version>.apk`, a SHA-256 file, `Nudge-<version>-notes.md` and public build metadata including the commit, SDKs, signer and verification status. The notes are copied from the committed, reviewed file so release preparation does not add its own commit to the notes. `-CreateTag` adds an annotated local release tag after success; it never pushes anything. Version values live in `version.properties`.
 
-For each new distributed version: change `versionName` (for example `0.1.1`) and increase `versionCode`, update `CHANGELOG.md`, run checks, commit, and run the release script. Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
+For each new distributed version, commit the completed features/fixes, then increase `versionName` and `versionCode` in `version.properties`. Generate the changelog from the commits since the previous reachable release tag:
+
+```powershell
+# Preview without changing files. After 0.1.1, for example:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.1.2
+# After changing version.properties, update that version's changelog and notes:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Write
+# Review the generated files, add device observations, and commit the version and notes.
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateTag
+```
+
+The generator uses the first line of each full commit message, including messages with body bullets immediately after the title. `feat` becomes Added, `fix` Fixed, `perf` Performance, and build/docs/test/chore commits Maintenance. Other changes go under Changed; `!` or a `BREAKING CHANGE:` footer identifies breaking changes. Scoped and older unscoped titles both work. Each entry includes its commit hash. Scopes and message rules are defined in [.plans/scopes.md](.plans/scopes.md) and [AGENTS.md](AGENTS.md).
+
+`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.1.1` can select an explicit baseline; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
+
+Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
 The repository uses Git on `main` with the existing GitHub remote. Releases and uploads remain manual; the release script does not push, publish to a store or install an updater.
 
