@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Round the shared app icon background, including the launch screen, and use that shape directly inside the app.
 - Make handle visible immediately shows or hides the handle in both previews. Its appearance controls are grey and disabled while it is off, with saved values retained.
 - Round customization highlights into half-squircles (e021154; included in the unpublished local 0.1.2 build).
 
