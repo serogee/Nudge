@@ -11,6 +11,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -19,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.modukey.app.core.*
+import com.modukey.app.platform.EdgeHighlightShape
 import kotlin.math.max
 import kotlin.math.min
 
@@ -39,6 +42,9 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
         else Insets(top = 28 * density, bottom = 24 * density)
     val placement = settings.placement(landscape)
     val bounds = TriggerGeometry.bounds(screenW, screenH, density, insets, settings, landscape)
+    val highlightPath = remember(bounds.width, bounds.height, placement.edge) {
+        EdgeHighlightShape.path(bounds.width, bounds.height, placement.edge).asComposePath()
+    }
     val currentPosition by rememberUpdatedState(onPosition)
     val currentSettings by rememberUpdatedState(settings)
     val finish by rememberUpdatedState(onFinished)
@@ -88,7 +94,11 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
         drawRoundRect(Color(0xFFD6DDCA), location(screenW * 0.14f, screenH * 0.28f), Size(screenW * 0.72f * scale, screenH * 0.13f * scale), CornerRadius(12f))
         drawRoundRect(Color(0xFFCBD6BD), location(screenW * 0.14f, screenH * 0.46f), Size(screenW * 0.46f * scale, 5 * density * scale), CornerRadius(5f))
         drawRoundRect(Color(0xFFD6DDCA), location(screenW * 0.14f, screenH * 0.51f), Size(screenW * 0.65f * scale, 4 * density * scale), CornerRadius(5f))
-        drawRect(Color(0x554E7E21), location(bounds.x, bounds.y), Size(bounds.width * scale, bounds.height * scale))
+        withTransform({
+            val position = location(bounds.x, bounds.y)
+            translate(position.x, position.y)
+            scale(scale, scale, pivot = Offset.Zero)
+        }) { drawPath(highlightPath, Color(0x554E7E21)) }
         run {
             val indicator = TriggerGeometry.indicator(bounds.width, bounds.height, density, settings, placement.edge)
             val radius = min(settings.cornerRadiusDp * density, min(indicator.width, indicator.height) / 2) * scale

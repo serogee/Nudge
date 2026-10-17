@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import android.view.MotionEvent
@@ -18,6 +19,7 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val indicatorRect = RectF()
+    private val highlightPath = Path()
     private var indicatorRadius = 0f
 
     constructor(context: Context) : this(context, {})
@@ -30,11 +32,13 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
     }
 
     fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean) {
+        val edgeChanged = this.edge != edge
         val gestureChanged = this.edge != edge || this.editing != editing ||
             this.settings.activation != settings.activation || this.settings.swipeDistanceDp != settings.swipeDistanceDp ||
             this.settings.swipeTimeoutMs != settings.swipeTimeoutMs
         this.settings = settings
         this.edge = edge
+        if (edgeChanged) updateHighlight()
         this.editing = editing
         if (gestureChanged) gesture = recognizer()
         isClickable = !editing
@@ -49,7 +53,9 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
         settings.swipeTimeoutMs, ViewConfiguration.get(context).scaledTouchSlop.toFloat(),
     )
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { updateExclusion(); updateIndicator() }
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { updateExclusion(); updateIndicator(); updateHighlight() }
+
+    private fun updateHighlight() { EdgeHighlightShape.path(width.toFloat(), height.toFloat(), edge, highlightPath) }
 
     private fun updateIndicator() {
         val bounds = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), resources.displayMetrics.density, settings, edge)
@@ -65,7 +71,7 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
         super.onDraw(canvas)
         if (editing) {
             paint.color = 0x554E7E21
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            canvas.drawPath(highlightPath, paint)
         }
         if (!settings.indicatorVisible && !editing) return
         paint.color = settings.indicatorColor.toInt()
