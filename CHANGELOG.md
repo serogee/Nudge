@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 - 2026-10-17
+
+### Added
+
+- make indicator thickness a percentage (634e444)
+
 ## 0.1.2 - 2026-10-17
 
 ### Fixed
