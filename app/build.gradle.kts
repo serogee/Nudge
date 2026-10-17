@@ -62,4 +62,5 @@ dependencies {
     testImplementation(libs.datastore.core.okio)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.compose.ui.test)
 }
