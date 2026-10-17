@@ -26,7 +26,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Composable
-fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -> Unit, onPosition: (Float) -> Unit) {
+fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -> Unit, others: List<TriggerSettings> = emptyList(), onPosition: (Float) -> Unit) {
     val context = LocalContext.current
     val config = androidx.compose.ui.platform.LocalConfiguration.current
     val metrics = remember(config) { context.getSystemService(WindowManager::class.java).currentWindowMetrics }
@@ -53,7 +53,7 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
     Canvas(
         Modifier.fillMaxWidth().height(if (landscape) 175.dp else 280.dp)
             .onSizeChanged { gestureSize = Size(it.width.toFloat(), it.height.toFloat()) }
-            .semantics { contentDescription = "Phone preview. Drag the highlighted trigger to reposition it; the position slider provides the same control." }
+            .semantics { contentDescription = context.getString(com.modukey.app.R.string.handle_preview_description) }
             .pointerInput(landscape, placement.edge, screenW, screenH, insets) {
                 var grabOffset = 0f
                 var dragging = false
@@ -94,6 +94,10 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
         drawRoundRect(Color(0xFFD6DDCA), location(screenW * 0.14f, screenH * 0.28f), Size(screenW * 0.72f * scale, screenH * 0.13f * scale), CornerRadius(12f))
         drawRoundRect(Color(0xFFCBD6BD), location(screenW * 0.14f, screenH * 0.46f), Size(screenW * 0.46f * scale, 5 * density * scale), CornerRadius(5f))
         drawRoundRect(Color(0xFFD6DDCA), location(screenW * 0.14f, screenH * 0.51f), Size(screenW * 0.65f * scale, 4 * density * scale), CornerRadius(5f))
+        others.forEach { other ->
+            val b = TriggerGeometry.bounds(screenW, screenH, density, insets, other, landscape)
+            drawRoundRect(Color(0x66C24646), location(b.x, b.y), Size(b.width * scale, b.height * scale), CornerRadius(3f))
+        }
         withTransform({
             val position = location(bounds.x, bounds.y)
             translate(position.x, position.y)
