@@ -13,6 +13,7 @@
 
 ### Maintenance
 
+- Recommend Background autostart during HyperOS setup, document menu variations, and reserve battery setting changes for disconnections. Exact Redmi requirements remain pending device testing.
 - Move the local compatibility checklist to plans/compatibility.md and exclude it from Git.
 
 ## 0.1.2 - 2026-10-17 (local build only; not published)

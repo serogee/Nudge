@@ -176,7 +176,7 @@ private fun HomeScreen(s: TriggerSettings, vm: NudgeViewModel, accessibility: Bo
     Panel("Made for your phone") {
         Text("HyperOS 1 • Redmi Note 12", fontWeight = FontWeight.SemiBold)
         Text("Confirm compatibility on your installed build with the device checks. Native popup styling and timeout are controlled by HyperOS.")
-        Text("Set up background autostart and battery behavior in Behavior & help if the shortcut stops responding.", style = MaterialTheme.typography.bodySmall)
+        Text("Background autostart is recommended for Nudge on HyperOS. Enable it during setup; see Behavior & help for the steps. Whether your exact build requires it still needs testing.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -252,8 +252,8 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
         OutlinedButton(onClick = { openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text("Accessibility settings") }
         HelpStep("2", "If accessibility is restricted", "Open Nudge's App info → ⋮ → Allow restricted settings, then return to Accessibility. This option depends on your Android build and how the APK was installed.")
         OutlinedButton(onClick = { openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) }) { Text("Nudge app info") }
-        HelpStep("3", "Background autostart", "Settings → Apps → Permissions → Background autostart → enable Nudge. On some builds, use the Security app's Permissions page.")
-        HelpStep("4", "Battery behavior", "App info → Battery saver → No restrictions. For background app locking, try Security → Settings → Boost speed → Lock apps → Nudge, or lock Nudge in Recents where available. Menus vary by build.")
+        HelpStep("3", "Background autostart (recommended)", "Enable Nudge in Settings → Apps → Permissions → Background autostart. Some builds use Settings → Apps → Background autostart, call it Autostart, or list it in Security → Permissions. This can be needed for reliable background operation on HyperOS; your exact build still needs testing. Set it manually: Nudge does not verify this setting.")
+        HelpStep("4", "If HyperOS still stops Nudge", "Try App info → Battery saver → No restrictions. For background app locking, try Security → Settings → Boost speed → Lock apps → Nudge, or lock Nudge in Recents where available. Leave battery settings unchanged if the shortcut stays connected, and check battery usage after any change. Menus vary by build.")
         HelpStep("5", "If it stops or says malfunctioning", "Reopen Nudge and check Connection on Home. Enabled but disconnected means the permission remains enabled but Android lost the service connection. Copy diagnostics below before switching Nudge off and on in Accessibility. Recent process-exit records can help distinguish a crash from system cleanup. Force-stop or revoked permissions require recovery by you.")
         Text("Extra overlay permission, root and ADB are not required by this implementation. Menu labels can vary by region. A missing native popup is a failed compatibility test, not a successful activation.", style = MaterialTheme.typography.bodySmall)
     }
