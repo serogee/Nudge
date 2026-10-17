@@ -68,7 +68,11 @@ try {
     $certificateDigest = ($certificateLine -split ': ', 2)[1].Trim().ToLowerInvariant()
     $updateIdentity = 'No archived prior APK available for signer comparison; perform the device upgrade check.'
     if ($previousReleaseName) {
-        $previousApk = Join-Path $repoRoot "releases/Nudge-$previousReleaseName.apk"
+        $previousApk = Join-Path $repoRoot "releases/$previousReleaseName/Nudge-$previousReleaseName.apk"
+        if (!(Test-Path -LiteralPath $previousApk)) {
+            # Retain signer checks for copies that still use the older flat layout.
+            $previousApk = Join-Path $repoRoot "releases/Nudge-$previousReleaseName.apk"
+        }
         if (Test-Path -LiteralPath $previousApk) {
             $previousCertificate = @(& $apksigner verify --print-certs $previousApk)
             if ($LASTEXITCODE -ne 0) { throw 'Archived prior APK failed signature verification.' }
@@ -83,7 +87,7 @@ try {
     if ($metadata.applicationId -ne 'com.modukey.app' -or $metadata.elements[0].versionCode -ne $code -or $metadata.elements[0].versionName -ne $name) {
         throw 'APK metadata does not match the release identity/version.'
     }
-    $releaseDirectory = Join-Path $repoRoot 'releases'
+    $releaseDirectory = Join-Path $repoRoot "releases/$name"
     New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
     $destination = Join-Path $releaseDirectory "Nudge-$name.apk"
     Copy-Item -LiteralPath $apk -Destination $destination

@@ -65,7 +65,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateT
 
 The signing initializer refuses to replace an existing key. Its randomly generated passwords are stored only in the ignored `.local/signing/keystore.properties`; do not commit or share that directory. Back up the key **and** properties file securely. Losing this key prevents normal updates to existing installations.
 
-The release script requires a clean Git working tree, an existing signing key and reviewed notes for the version. It runs changelog integration checks, app tests and lint, builds the minified signed release, verifies its signature and identity, and compares its signer with the archived prior release when available. It writes `releases/Nudge-<version>.apk`, a SHA-256 file, `Nudge-<version>-notes.md` and public build metadata including the commit, SDKs, signer and verification status. The notes are copied from the committed, reviewed file so release preparation does not add its own commit to the notes. `-CreateTag` adds an annotated local release tag after success; it never pushes anything. Version values live in `version.properties`.
+The release script requires a clean Git working tree, an existing signing key and reviewed notes for the version. It runs changelog integration checks, app tests and lint, builds the minified signed release, verifies its signature and identity, and compares its signer with the archived prior release when available. `-CreateTag` adds an annotated local release tag after success; it never pushes anything. Version values live in `version.properties`.
+
+Each version has its own folder under `releases/`. For example:
+
+```text
+releases/0.1.2/
+  Nudge-0.1.2.apk
+  Nudge-0.1.2.apk.sha256
+  Nudge-0.1.2-notes.md
+  Nudge-0.1.2.json
+```
+
+Build metadata records the commit, SDKs, signer, and verification status. Exported notes are copied from the committed, reviewed `docs/release-notes-<version>.md`. Changelog generation with `-Artifact` uses the same version folder. Prior-APK signer checks prefer the version folder and also accept the older flat layout. Archived builds remain under `releases/archive/`. All release artifacts remain ignored by Git; upload the files inside the version folder when publishing on GitHub.
 
 For each new distributed version, commit the completed features/fixes, then increase `versionName` and `versionCode` in `version.properties`. Generate the changelog from the commits since the previous reachable release tag:
 

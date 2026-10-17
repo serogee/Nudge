@@ -109,7 +109,7 @@ if ($Write) {
     Write-Output "Updated CHANGELOG.md and docs/release-notes-$Version.md. Review and commit them before building the release."
 }
 if ($Artifact) {
-    $directory = Join-Path $repoRoot 'releases'
+    $directory = Join-Path $repoRoot "releases/$Version"
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
     [IO.File]::WriteAllText((Join-Path $directory "Nudge-$Version-notes.md"), $notes, $utf8)
 }

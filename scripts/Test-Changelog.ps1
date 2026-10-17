@@ -77,7 +77,12 @@ try {
     $future = (& $generator -RepositoryRoot $fixture -Version 0.2.0) -join "`n"
     Check ($future.Contains('exclude work after the released tag') -and !$future.Contains('add a new gesture')) 'exclude unreachable tags even when their versions are lower'
     & $generator -RepositoryRoot $fixture -Artifact | Out-Null
-    Check ([IO.File]::ReadAllText((Join-Path $fixture 'releases/Nudge-0.1.2-notes.md')) -eq $notes) 'artifact matches generated notes'
+    $artifactPath = Join-Path $fixture 'releases/0.1.2/Nudge-0.1.2-notes.md'
+    Check ([IO.File]::ReadAllText($artifactPath) -eq $notes) 'artifact matches generated notes in its version folder'
+    Check (!(Test-Path -LiteralPath (Join-Path $fixture 'releases/Nudge-0.1.2-notes.md'))) 'keep artifacts out of the releases root'
+    & $generator -RepositoryRoot $fixture -Version 0.1.1 -Artifact | Out-Null
+    Check ([IO.File]::ReadAllText((Join-Path $fixture 'releases/0.1.1/Nudge-0.1.1-notes.md')) -eq ($preview.TrimEnd() + "`n")) 'export another version to its own folder'
+    Check ([IO.File]::ReadAllText($artifactPath) -eq $notes) 'another version does not replace existing artifacts'
     $rejected = $false
     try { & $generator -RepositoryRoot $fixture -Version 0.2.0 -FromTag v0.1.9 | Out-Null } catch { $rejected = $true }
     Check $rejected 'reject an invalid or unrelated baseline'

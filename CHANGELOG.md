@@ -23,6 +23,10 @@
 - Redmi Note 12 / HyperOS native-popup coexistence, touch delivery, authentication, Recents recovery, battery measurements, and signed upgrade checks remain pending physical-device testing.
 - No release version, signing identity, published notes, or release tags changed.
 
+### Maintenance
+
+- Store each version's release files in `releases/<version>/`. Retain prior-APK signer checks for version folders and the older flat layout.
+
 ## 0.1.2 - 2026-10-17
 
 ### Added
