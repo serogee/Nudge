@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Nudge</string>
+    <string name="service_name">Nudge edge shortcut</string>
+    <string name="service_description">Adds your chosen edge touch area to open the phone’s volume popup. The area can be invisible and receives touches within its bounds. Window changes are used only to hide the trigger in excluded apps. Nudge does not read screen content.</string>
+</resources>
