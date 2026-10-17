@@ -3,9 +3,6 @@ package com.modukey.app
 import android.app.Application
 import android.media.AudioManager
 import androidx.datastore.preferences.preferencesDataStore
-import com.modukey.app.data.DataStoreSettingsRepository
-import com.modukey.app.data.SettingsController
-import com.modukey.app.core.CustomizationSession
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessFractionMigration
 import com.modukey.app.core.EditorSession
@@ -24,8 +21,6 @@ private val Application.preferences by preferencesDataStore("trigger_settings", 
 
 class NudgeApplication : Application() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    val settings by lazy { SettingsController(DataStoreSettingsRepository(preferences), scope) }
-    val customization = CustomizationSession()
     val configuration by lazy { ConfigurationController(DataStoreConfigurationRepository(preferences), scope) }
     val editor = EditorSession()
     val icons by lazy { IconRepository(this) }
