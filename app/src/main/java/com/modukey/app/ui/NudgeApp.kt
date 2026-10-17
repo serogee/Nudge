@@ -212,11 +212,11 @@ private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel) {
     Panel("Visible handle") {
         ToggleRow("Show outside customization", "Off keeps the touch area invisible during normal use", s.indicatorVisible) { value -> vm.update { it.copy(indicatorVisible = value) } }
         SettingSlider("Indicator length", s.indicatorLengthFraction, 0f..1f, "${(s.indicatorLengthFraction * 100).roundToInt()}% of touch length") { value -> vm.update { it.copy(indicatorLengthFraction = value) } }
-        SettingSlider("Thickness", s.indicatorThicknessDp, 1f..32f, "${s.indicatorThicknessDp.roundToInt()} dp") { value -> vm.update { it.copy(indicatorThicknessDp = value) } }
+        SettingSlider("Indicator thickness", s.indicatorThicknessFraction, 0f..1f, "${(s.indicatorThicknessFraction * 100).roundToInt()}% of touch depth") { value -> vm.update { it.copy(indicatorThicknessFraction = value) } }
         SettingSlider("Opacity", s.indicatorOpacity, 0f..1f, "${(s.indicatorOpacity * 100).roundToInt()}%") { value -> vm.update { it.copy(indicatorOpacity = value) } }
         SettingSlider("Corner radius", s.cornerRadiusDp, 0f..16f, "${s.cornerRadiusDp.roundToInt()} dp") { value -> vm.update { it.copy(cornerRadiusDp = value) } }
         ColorPicker(s.indicatorColor) { value -> vm.update { it.copy(indicatorColor = value) } }
-        Text("Thickness and radius fit inside the touch area when drawn. Their saved values are kept if you make the touch area smaller.", style = MaterialTheme.typography.bodySmall)
+        Text("Length and thickness scale with the touch area. Corner radius fits inside the indicator when drawn; its saved value is kept when you resize.", style = MaterialTheme.typography.bodySmall)
     }
 }
 

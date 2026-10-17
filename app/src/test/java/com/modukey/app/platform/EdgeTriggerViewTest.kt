@@ -29,6 +29,11 @@ class EdgeTriggerViewTest {
         }
         view.configure(TriggerSettings(), Edge.RIGHT, false)
         assertTrue(renderedPixels().all { it == 0 })
+        val zeroThickness = TriggerSettings(indicatorVisible = true, indicatorThicknessFraction = 0f)
+        view.configure(zeroThickness, Edge.RIGHT, false)
+        assertTrue(renderedPixels().all { it == 0 })
+        view.configure(zeroThickness, Edge.RIGHT, true)
+        assertTrue(renderedPixels().any { it != 0 })
         view.configure(TriggerSettings(), Edge.RIGHT, true)
         assertTrue(renderedPixels().any { it != 0 })
         assertFalse(view.isClickable)

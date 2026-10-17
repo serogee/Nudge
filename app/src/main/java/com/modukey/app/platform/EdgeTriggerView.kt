@@ -58,7 +58,7 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
     private fun updateHighlight() { EdgeHighlightShape.path(width.toFloat(), height.toFloat(), edge, highlightPath) }
 
     private fun updateIndicator() {
-        val bounds = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), resources.displayMetrics.density, settings, edge)
+        val bounds = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), settings, edge)
         indicatorRect.set(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height)
         indicatorRadius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(bounds.width, bounds.height) / 2)
     }

@@ -56,7 +56,7 @@ class SettingsController(private val repository: SettingsRepository, private val
         field("depth", before.depthDp, after.depthDp) { s, v -> s.copy(depthDp = v) }
         field("indicator.visible", before.indicatorVisible, after.indicatorVisible) { s, v -> s.copy(indicatorVisible = v) }
         field("indicator.fraction", before.indicatorLengthFraction, after.indicatorLengthFraction) { s, v -> s.copy(indicatorLengthFraction = v) }
-        field("indicator.thickness", before.indicatorThicknessDp, after.indicatorThicknessDp) { s, v -> s.copy(indicatorThicknessDp = v) }
+        field("indicator.thickness.fraction", before.indicatorThicknessFraction, after.indicatorThicknessFraction) { s, v -> s.copy(indicatorThicknessFraction = v) }
         field("indicator.color", before.indicatorColor, after.indicatorColor) { s, v -> s.copy(indicatorColor = v) }
         field("indicator.opacity", before.indicatorOpacity, after.indicatorOpacity) { s, v -> s.copy(indicatorOpacity = v) }
         field("indicator.radius", before.cornerRadiusDp, after.cornerRadiusDp) { s, v -> s.copy(cornerRadiusDp = v) }

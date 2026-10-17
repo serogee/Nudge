@@ -5,6 +5,7 @@ import android.media.AudioManager
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.DataStoreSettingsRepository
 import com.modukey.app.data.IndicatorFractionMigration
+import com.modukey.app.data.IndicatorThicknessFractionMigration
 import com.modukey.app.data.SettingsController
 import com.modukey.app.core.CustomizationSession
 import com.modukey.app.platform.LocalDiagnostics
@@ -12,7 +13,9 @@ import com.modukey.app.platform.NativeVolumeController
 import com.modukey.app.platform.ServiceStatusStore
 import kotlinx.coroutines.*
 
-private val Application.preferences by preferencesDataStore("trigger_settings", produceMigrations = { listOf(IndicatorFractionMigration()) })
+private val Application.preferences by preferencesDataStore("trigger_settings", produceMigrations = {
+    listOf(IndicatorFractionMigration(), IndicatorThicknessFractionMigration())
+})
 
 class NudgeApplication : Application() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

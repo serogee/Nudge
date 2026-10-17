@@ -25,7 +25,7 @@ The debug APK is `app/build/outputs/apk/debug/app-debug.apk`. Its application ID
 
 While **Customize is resumed**, the real indicator and a faint touch-area guide stay visible with Accessibility connected, including when the master switch is off. This editing overlay passes touches through and cannot activate volume. Leaving the screen, backgrounding or closing the activity restores **Show outside customization** without changing it. With Accessibility disconnected, the in-app preview still works. The on-phone preview follows the actual orientation; the opposite orientation in the phone drawing is an estimate until rotation.
 
-Position means the trigger's center as a percentage of the usable edge, from top to bottom on a side or left to right on the bottom. Resizing preserves this center until a screen corner requires clamping. Indicator length is a continuous percentage of touch length. Thickness and radius are fitted at draw time; changing the touch area does not overwrite saved appearance values. Landscape inherits the default edge and position unless **Override placement in landscape** is enabled; turning the override off retains its values. Bottom remains the logical bottom in either landscape rotation.
+Position means the trigger's center as a percentage of the usable edge, from top to bottom on a side or left to right on the bottom. Resizing preserves this center until a screen corner requires clamping. Indicator length and thickness are continuous percentages of touch length and touch depth, respectively, from 0% to 100%. Their saved percentages stay constant when resizing; the default thickness is 25%. Corner radius is fitted at draw time without changing its saved value. Landscape inherits the default edge and position unless **Override placement in landscape** is enabled; turning the override off retains its values. Bottom remains the logical bottom in either landscape rotation.
 
 Edits update an application-owned draft immediately. Overlay updates coalesce to one display frame when needed; there is no idle frame loop. Disk saves wait for 150 ms of quiet, and flush on gesture completion or backgrounding. Field changes merge against current settings; failed saves retain the draft and offer Retry saving. Behavior includes swipe/tap/hold activation, haptics and launcher-app exclusions. A hold activates **on release** after 500 ms.
 
@@ -69,6 +69,8 @@ Install the new release over the old release, without uninstalling, to retain se
 The repository uses Git on `main` with the existing GitHub remote. Releases and uploads remain manual; the release script does not push, publish to a store or install an updater.
 
 Version 0.1.1 migrates the old indicator length once to `oldIndicatorLengthDp / oldTouchLengthDp`. Existing numeric position percentages are retained with their new center meaning. Landscape availability, saved landscape placement and all unrelated preferences are preserved; the new landscape override and lock-screen flags default off. A slight initial position shift from 0.1.0 reflects the center definition.
+
+Version 0.1.3 migrates indicator thickness once to `oldIndicatorThicknessDp / oldTouchDepthDp`, capped at 100% where it already filled the touch depth. Existing saved thickness and depth use their old validity limits before conversion. Later touch-depth changes keep this percentage, and all unrelated preferences are retained.
 
 ## Device verification
 

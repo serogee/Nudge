@@ -22,15 +22,18 @@ class TriggerGeometryTest {
         val config = TriggerSettings(portrait = Placement(Edge.LEFT, 1f))
         val bounds = TriggerGeometry.bounds(10f, 30f, 3f, Insets(), config, false)
         assertEquals(Bounds(0f, 0f, 10f, 30f), bounds)
-        val visible = TriggerGeometry.indicator(bounds.width, bounds.height, 3f, config, Edge.LEFT)
-        assertEquals(Bounds(0f, 5f, 10f, 20f), visible)
+        val visible = TriggerGeometry.indicator(bounds.width, bounds.height, config, Edge.LEFT)
+        assertEquals(Bounds(0f, 5f, 2.5f, 20f), visible)
     }
 
     @Test fun `corrupt or outdated preferences cannot make invalid touch windows`() {
-        val config = TriggerSettings(lengthDp = -4f, depthDp = Float.NaN, portrait = Placement(Edge.RIGHT, Float.POSITIVE_INFINITY)).normalized()
+        val config = TriggerSettings(lengthDp = -4f, depthDp = Float.NaN, indicatorThicknessFraction = Float.NaN, portrait = Placement(Edge.RIGHT, Float.POSITIVE_INFINITY)).normalized()
         assertEquals(48f, config.lengthDp)
         assertEquals(16f, config.depthDp)
         assertEquals(0.65f, config.portrait.position)
+        assertEquals(0.25f, config.indicatorThicknessFraction)
+        assertEquals(0f, config.copy(indicatorThicknessFraction = -1f).normalized().indicatorThicknessFraction)
+        assertEquals(1f, config.copy(indicatorThicknessFraction = 2f).normalized().indicatorThicknessFraction)
     }
 
     @Test fun `resizing preserves the chosen center and clamps at either corner`() {
@@ -74,15 +77,33 @@ class TriggerGeometryTest {
     }
 
     @Test fun `appearance settings are independent and constrained only when rendered`() {
-        val s = TriggerSettings(lengthDp = 200f, depthDp = 32f, indicatorLengthFraction = 0.73f, indicatorThicknessDp = 30f, cornerRadiusDp = 15f)
+        val s = TriggerSettings(lengthDp = 200f, depthDp = 32f, indicatorLengthFraction = 0.73f, indicatorThicknessFraction = 0.9375f, cornerRadiusDp = 15f)
         val small = s.copy(lengthDp = 48f, depthDp = 8f).normalized()
         assertEquals(0.73f, small.indicatorLengthFraction)
-        assertEquals(30f, small.indicatorThicknessDp)
+        assertEquals(0.9375f, small.indicatorThicknessFraction)
         assertEquals(15f, small.cornerRadiusDp)
-        val rendered = TriggerGeometry.indicator(8f, 48f, 1f, small, Edge.RIGHT)
+        val rendered = TriggerGeometry.indicator(8f, 48f, small, Edge.RIGHT)
         assertEquals(48 * 0.73f, rendered.height, 0.001f)
-        assertEquals(8f, rendered.width)
+        assertEquals(7.5f, rendered.width)
         val restored = small.copy(lengthDp = 200f, depthDp = 32f).normalized()
         assertEquals(s, restored)
+    }
+
+    @Test fun `thickness follows touch depth on each edge across densities including zero and full width`() {
+        for (edge in Edge.entries) for (density in listOf(1f, 3f)) {
+            for (depth in listOf(8f, 24f, 32f)) for (fraction in listOf(0f, 0.25f, 1f)) {
+                val s = TriggerSettings(portrait = Placement(edge), depthDp = depth, indicatorThicknessFraction = fraction)
+                val touch = TriggerGeometry.bounds(1080f, 2400f, density, Insets(), s, false)
+                val indicator = TriggerGeometry.indicator(touch.width, touch.height, s, edge)
+                val actualThickness = if (edge == Edge.BOTTOM) indicator.height else indicator.width
+                assertEquals(depth * density * fraction, actualThickness, 0.001f)
+                when (edge) {
+                    Edge.LEFT -> assertEquals(0f, indicator.x)
+                    Edge.RIGHT -> assertEquals(touch.width, indicator.x + indicator.width, 0.001f)
+                    Edge.BOTTOM -> assertEquals(touch.height, indicator.y + indicator.height, 0.001f)
+                }
+                assertEquals(fraction, s.normalized().indicatorThicknessFraction)
+            }
+        }
     }
 }

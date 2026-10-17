@@ -16,7 +16,7 @@ data class TriggerSettings(
     val depthDp: Float = 16f,
     val indicatorVisible: Boolean = false,
     val indicatorLengthFraction: Float = 2f / 3f,
-    val indicatorThicknessDp: Float = 4f,
+    val indicatorThicknessFraction: Float = 0.25f,
     val indicatorColor: Long = 0xFFB8D982,
     val indicatorOpacity: Float = 0.65f,
     val cornerRadiusDp: Float = 2f,
@@ -34,7 +34,7 @@ data class TriggerSettings(
         lengthDp = lengthDp.finite(120f).coerceIn(48f, 200f),
         depthDp = depthDp.finite(16f).coerceIn(8f, 32f),
         indicatorLengthFraction = indicatorLengthFraction.finite(2f / 3f).coerceIn(0f, 1f),
-        indicatorThicknessDp = indicatorThicknessDp.finite(4f).coerceIn(1f, 32f),
+        indicatorThicknessFraction = indicatorThicknessFraction.finite(0.25f).coerceIn(0f, 1f),
         indicatorColor = indicatorColor or 0xFF000000,
         indicatorOpacity = indicatorOpacity.finite(0.65f).coerceIn(0f, 1f),
         cornerRadiusDp = cornerRadiusDp.finite(2f).coerceIn(0f, 16f),
@@ -71,10 +71,10 @@ object TriggerGeometry {
         }
     }
 
-    fun indicator(width: Float, height: Float, density: Float, settings: TriggerSettings, edge: Edge): Bounds {
+    fun indicator(width: Float, height: Float, settings: TriggerSettings, edge: Edge): Bounds {
         val horizontal = edge == Edge.BOTTOM
         val length = settings.indicatorLengthFraction * (if (horizontal) width else height)
-        val thickness = (settings.indicatorThicknessDp * density).coerceAtMost(if (horizontal) height else width)
+        val thickness = settings.indicatorThicknessFraction * (if (horizontal) height else width)
         return when (edge) {
             Edge.LEFT -> Bounds(0f, (height - length) / 2, thickness, length)
             Edge.RIGHT -> Bounds(width - thickness, (height - length) / 2, thickness, length)
