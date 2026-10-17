@@ -28,7 +28,7 @@ $profile = [ordered]@{
     xiaomiGestureMode = Read-Device @('shell','settings','get','global','force_fsg_nav_bar')
     applicationId = $ApplicationId
     nativePopup = 'NOT TESTED: confirm popup opens from another app and volume does not change.'
-    backgroundAndUpgrade = 'NOT TESTED: complete docs/compatibility.md.'
+    backgroundAndUpgrade = 'NOT TESTED: complete the local plans/compatibility.md checklist (not tracked in Git).'
 }
 $directory = Join-Path $repoRoot '.local/device-checks'
 New-Item -ItemType Directory -Force -Path $directory | Out-Null

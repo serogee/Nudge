@@ -98,7 +98,7 @@ try {
         automatedValidation = 'Changelog integration checks, unit tests, lint and signed release build passed.'
         updateIdentity = $updateIdentity
         releaseNotes = $notesName
-        deviceCompatibility = 'See docs/compatibility.md; automated checks do not confirm Redmi behavior.'
+        deviceCompatibility = 'Local checklist: plans/compatibility.md (not tracked in Git); automated checks do not confirm Redmi behavior.'
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $releaseDirectory "Nudge-$name.json") -Encoding UTF8
     if ($CreateTag -and !$tagAlreadyExists) {
         & git -c $gitTrust tag -a "v$name" -m "Nudge $name"

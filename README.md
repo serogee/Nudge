@@ -76,7 +76,7 @@ The pending thickness update migrates indicator thickness once to `oldIndicatorT
 
 ## Device verification
 
-See [the compatibility checklist](docs/compatibility.md). An AOSP emulator or Robolectric cannot establish HyperOS compatibility. With a connected, authorized phone, run:
+Keep device results in the local, Git-ignored checklist at `plans/compatibility.md` (formerly `docs/compatibility.md`). This file is not included in a fresh clone. An AOSP emulator or Robolectric cannot establish HyperOS compatibility. With a connected, authorized phone, run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Device-Profile.ps1

@@ -11,6 +11,10 @@
 - Make handle visible immediately shows or hides the handle in both previews. Its appearance controls are grey and disabled while it is off, with saved values retained.
 - Round customization highlights into half-squircles (e021154; included in the unpublished local 0.1.2 build).
 
+### Maintenance
+
+- Move the local compatibility checklist to plans/compatibility.md and exclude it from Git.
+
 ## 0.1.2 - 2026-10-17 (local build only; not published)
 
 ### Fixed

@@ -13,3 +13,4 @@ keystore.properties
 *.iml
 captures/
 releases/
+/plans/compatibility.md
