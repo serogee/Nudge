@@ -1,6 +1,7 @@
 package com.modukey.app.platform
 
 import android.accessibilityservice.AccessibilityService
+import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -70,7 +71,11 @@ class EdgeAccessibilityService : AccessibilityService() {
         app.status.report(ServiceState(connected = true))
         scope?.launch {
             try {
-                app.settings.settings.collect { settings = it; refresh() }
+                app.settings.settings.collect {
+                    settings = it
+                    updateWindowEventSubscription(it)
+                    refresh()
+                }
             } catch (_: java.io.IOException) {
                 overlay?.hide()
                 app.status.report(ServiceState(connected = true, error = "Could not read saved settings. Reopen Nudge and try again."))
@@ -90,10 +95,23 @@ class EdgeAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        if (settings?.enabled != true || settings?.excludedPackages.isNullOrEmpty()) return
         // System panels are not foreground app switches. Never inspect the window's view tree.
         val pkg = event.packageName?.toString() ?: return
-        if (pkg != "com.android.systemui" && pkg != "android") foregroundPackage = pkg
+        if (pkg == "com.android.systemui" || pkg == "android" || pkg == foregroundPackage) return
+        foregroundPackage = pkg
         refresh()
+    }
+
+    private fun updateWindowEventSubscription(config: TriggerSettings) {
+        // With no exclusions (the default), the system sends no accessibility window events.
+        // The screen receiver, configuration callback and DataStore still handle real changes.
+        val requested = if (config.enabled && config.excludedPackages.isNotEmpty()) AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED else 0
+        val info = serviceInfo ?: return
+        if (info.eventTypes == requested) return
+        foregroundPackage = null
+        info.eventTypes = requested
+        serviceInfo = info
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); refresh() }
@@ -114,6 +132,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
 
     private fun refresh() {
+        if (scope == null) return
         val config = settings ?: return
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val show = TriggerVisibility.allowed(config, getSystemService(PowerManager::class.java).isInteractive,
@@ -134,6 +153,8 @@ class EdgeAccessibilityService : AccessibilityService() {
         }
     }
 
+    // These are physical display coordinates; START would mirror them in RTL locales.
+    @SuppressLint("RtlHardcoded")
     private fun params(bounds: Bounds) = WindowManager.LayoutParams(
         bounds.width.roundToInt().coerceAtLeast(1), bounds.height.roundToInt().coerceAtLeast(1),
         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,

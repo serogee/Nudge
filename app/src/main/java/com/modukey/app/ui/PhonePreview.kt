@@ -12,7 +12,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -25,7 +27,7 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Flo
     val context = LocalContext.current
     val config = androidx.compose.ui.platform.LocalConfiguration.current
     val metrics = remember(config) { context.getSystemService(WindowManager::class.java).currentWindowMetrics }
-    val density = context.resources.displayMetrics.density
+    val density = LocalDensity.current.density
     val actualLandscape = metrics.bounds.width() > metrics.bounds.height()
     val short = min(metrics.bounds.width(), metrics.bounds.height()).toFloat()
     val long = max(metrics.bounds.width(), metrics.bounds.height()).toFloat()
@@ -42,6 +44,7 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Flo
 
     Canvas(
         Modifier.fillMaxWidth().height(if (landscape) 175.dp else 280.dp)
+            .onSizeChanged { gestureSize = Size(it.width.toFloat(), it.height.toFloat()) }
             .semantics { contentDescription = "Phone preview. Drag the highlighted trigger to reposition it; the position slider provides the same control." }
             .pointerInput(landscape, placement.edge, settings.lengthDp, screenW, screenH, insets) {
                 detectDragGestures { change, _ ->
@@ -57,7 +60,6 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Flo
                 }
             },
     ) {
-        gestureSize = size
         val scale = min(size.width / screenW, size.height / screenH) * 0.92f
         val origin = Offset((size.width - screenW * scale) / 2, (size.height - screenH * scale) / 2)
         fun location(x: Float, y: Float) = origin + Offset(x * scale, y * scale)

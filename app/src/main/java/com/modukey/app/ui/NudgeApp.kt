@@ -3,7 +3,6 @@ package com.modukey.app.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,7 +29,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -56,7 +55,7 @@ fun NudgeApp(vm: NudgeViewModel = viewModel()) {
     val tell: (String) -> Unit = { message -> scope.launch { snackbar.showSnackbar(message) } }
     val openSettings: (String) -> Unit = { action ->
         val intent = Intent(action).apply {
-            if (action == Settings.ACTION_APPLICATION_DETAILS_SETTINGS) data = Uri.parse("package:${context.packageName}")
+            if (action == Settings.ACTION_APPLICATION_DETAILS_SETTINGS) data = "package:${context.packageName}".toUri()
         }
         try { context.startActivity(intent) }
         catch (_: android.content.ActivityNotFoundException) { tell("Open your phone's Settings app and follow the instructions below.") }
@@ -157,8 +156,11 @@ private fun HomeScreen(s: TriggerSettings, vm: NudgeViewModel, accessibility: Bo
 private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel, tell: (String) -> Unit) {
     var landscape by rememberSaveable { mutableStateOf(false) }
     val placement = s.placement(landscape)
-    fun place(transform: (Placement) -> Placement) = vm.update { current ->
-        if (landscape) current.copy(landscape = transform(current.landscape)) else current.copy(portrait = transform(current.portrait))
+    fun place(transform: (Placement) -> Placement) {
+        val editingLandscape = landscape
+        vm.update { current ->
+            if (editingLandscape) current.copy(landscape = transform(current.landscape)) else current.copy(portrait = transform(current.portrait))
+        }
     }
     Text("Make room for your thumb.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     Panel("Live preview") {
@@ -212,9 +214,10 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
         Text("The trigger is always hidden while the phone is locked or its screen is off.")
         Text("Landscape is ${if (s.landscapeEnabled) "enabled" else "disabled"}. Change its placement in Customize.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text("Excluded apps · ${s.excludedPackages.size}") }
-        Text("Nudge observes window-change package names only to apply these exclusions. It does not read screen content.", style = MaterialTheme.typography.bodySmall)
+        Text("Window-change observation is off until exclusions are needed. After enabling exclusions, switch apps once to initialize visibility. Nudge does not read screen content.", style = MaterialTheme.typography.bodySmall)
     }
     Panel("HyperOS setup & recovery") {
+        Text("Built to stay quiet: no polling, wake locks, periodic jobs, foreground service or ongoing animations. The trigger draws only when its appearance changes. Battery usage still needs measurement on your phone.", style = MaterialTheme.typography.bodySmall)
         HelpStep("1", "Accessibility", "Settings → Additional settings → Accessibility → Downloaded apps → Nudge edge shortcut. Some builds put Accessibility directly in Settings.")
         OutlinedButton(onClick = { openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text("Accessibility settings") }
         HelpStep("2", "If accessibility is restricted", "Open Nudge's App info → ⋮ → Allow restricted settings, then return to Accessibility. This option depends on your Android build and how the APK was installed.")

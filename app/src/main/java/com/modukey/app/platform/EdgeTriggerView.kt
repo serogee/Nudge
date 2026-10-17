@@ -18,6 +18,10 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
     private var highlighted = false
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val indicatorRect = RectF()
+    private var indicatorRadius = 0f
+
+    constructor(context: Context) : this(context, {})
 
     init {
         contentDescription = "Nudge volume shortcut"
@@ -31,6 +35,7 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
         this.edge = edge
         this.highlighted = highlighted
         gesture = recognizer()
+        updateIndicator()
         invalidate()
         updateExclusion()
     }
@@ -40,7 +45,13 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
         settings.swipeTimeoutMs, ViewConfiguration.get(context).scaledTouchSlop.toFloat(),
     )
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { updateExclusion() }
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { updateExclusion(); updateIndicator() }
+
+    private fun updateIndicator() {
+        val bounds = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), resources.displayMetrics.density, settings, edge)
+        indicatorRect.set(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height)
+        indicatorRadius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(bounds.width, bounds.height) / 2)
+    }
 
     private fun updateExclusion() {
         systemGestureExclusionRects = if (edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))
@@ -53,11 +64,9 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         }
         if (!settings.indicatorVisible && !highlighted) return
-        val bounds = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), resources.displayMetrics.density, settings, edge)
         paint.color = settings.indicatorColor.toInt()
         paint.alpha = if (highlighted) 255 else (settings.indicatorOpacity * 255).toInt()
-        val radius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(bounds.width, bounds.height) / 2)
-        canvas.drawRoundRect(RectF(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height), radius, radius, paint)
+        canvas.drawRoundRect(indicatorRect, indicatorRadius, indicatorRadius, paint)
     }
 
     @SuppressLint("ClickableViewAccessibility")

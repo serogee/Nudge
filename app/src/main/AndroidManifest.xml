@@ -9,6 +9,7 @@
     <application
         android:name=".NudgeApplication"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:theme="@style/Theme.Nudge"
         android:icon="@drawable/ic_modukey"
         android:label="@string/app_name"
