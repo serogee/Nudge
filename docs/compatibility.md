@@ -27,7 +27,8 @@ Record PASS/FAIL, observed behavior, configuration and build for each check. The
 - [ ] Edge swipe opens the same popup from launcher, browser and a media app.
 - [ ] Record volume before/after activation: no change, including minimum/maximum volume.
 - [ ] Verify media, Bluetooth/headphones and active-call behavior (where available).
-- [ ] Actual invisible area draws nothing outside Customize. The indicator and faint guide stay visible for more than ten seconds throughout Customize, even with the master off. Editing passes touches through and cannot activate volume.
+- [ ] Actual invisible area draws nothing outside Customize. The faint guide stays visible for more than ten seconds throughout Customize, even with the master off. Editing passes touches through and cannot activate volume.
+- [ ] Make handle visible immediately shows/hides the handle in both previews. With it off, length, thickness, opacity, radius, color swatches and hex input are grey and cannot be changed by touch, keyboard or accessibility actions. Re-enabling restores the saved values. Position and touch-area controls still work while the handle is hidden.
 - [ ] The guide has half-squircle inward corners and a flat side against the screen edge. Verify matching overlay/preview appearance for left, right and bottom placement in portrait and both landscape rotations.
 - [ ] Navigate away, background, rotate and recreate the activity: editing visibility ends/restores correctly without changing saved visibility. Disconnected Accessibility leaves the in-app preview usable with an explanation.
 - [ ] Sliders and dragging respond continuously, with no stale rollback while rapidly alternating controls. Final values survive restart; save errors retain edits and offer retry.

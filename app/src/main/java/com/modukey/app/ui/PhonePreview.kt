@@ -99,7 +99,7 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
             translate(position.x, position.y)
             scale(scale, scale, pivot = Offset.Zero)
         }) { drawPath(highlightPath, Color(0x554E7E21)) }
-        run {
+        if (settings.indicatorVisible) {
             val indicator = TriggerGeometry.indicator(bounds.width, bounds.height, settings, placement.edge)
             val radius = min(settings.cornerRadiusDp * density, min(indicator.width, indicator.height) / 2) * scale
             drawRoundRect(Color(settings.indicatorColor).copy(alpha = settings.indicatorOpacity), location(bounds.x + indicator.x, bounds.y + indicator.y), Size(indicator.width * scale, indicator.height * scale), CornerRadius(radius))

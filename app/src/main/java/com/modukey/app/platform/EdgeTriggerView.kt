@@ -73,7 +73,7 @@ class EdgeTriggerView(context: Context, private val onActivate: () -> Unit) : Vi
             paint.color = 0x554E7E21
             canvas.drawPath(highlightPath, paint)
         }
-        if (!settings.indicatorVisible && !editing) return
+        if (!settings.indicatorVisible) return
         paint.color = settings.indicatorColor.toInt()
         paint.alpha = (settings.indicatorOpacity * 255).toInt()
         canvas.drawRoundRect(indicatorRect, indicatorRadius, indicatorRadius, paint)

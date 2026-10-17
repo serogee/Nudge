@@ -195,7 +195,7 @@ private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel) {
     Panel("Live preview") {
         Choices(listOf(false, true), landscape, { if (it) "Landscape" else "Portrait" }) { landscape = it }
         PhonePreview(s, landscape, vm::flush) { value -> place { it.copy(position = value) } }
-        Text("Drag the shaded area to position it. The real indicator and a faint touch-area guide stay visible while Customize is open. They let touches through and cannot activate volume while editing.", style = MaterialTheme.typography.bodySmall)
+        Text("Drag the shaded area to position it. A faint touch-area guide stays visible while Customize is open. Make handle visible shows or hides the handle in both previews immediately. The on-phone preview lets touches through and cannot activate volume while editing.", style = MaterialTheme.typography.bodySmall)
         if (!service.connected) Notice("Connect Nudge in Accessibility for an on-phone preview. You can still customize with the preview above.")
         else Text("The on-phone preview follows your phone's current orientation, even with the shortcut switched off. Rotate your phone to preview the other orientation.", style = MaterialTheme.typography.bodySmall)
         ToggleRow("Enable in landscape", "Allow the shortcut when your phone is sideways", s.landscapeEnabled) { vm.update { current -> current.copy(landscapeEnabled = it) } }
@@ -210,13 +210,13 @@ private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel) {
         Text("Position is measured along the usable edge: top to bottom on sides, left to right on the bottom. Resizing keeps that center, clamping only at corners. Touch dimensions are shared across orientations.", style = MaterialTheme.typography.bodySmall)
     }
     Panel("Visible handle") {
-        ToggleRow("Show outside customization", "Off keeps the touch area invisible during normal use", s.indicatorVisible) { value -> vm.update { it.copy(indicatorVisible = value) } }
-        SettingSlider("Indicator length", s.indicatorLengthFraction, 0f..1f, "${(s.indicatorLengthFraction * 100).roundToInt()}% of touch length") { value -> vm.update { it.copy(indicatorLengthFraction = value) } }
-        SettingSlider("Indicator thickness", s.indicatorThicknessFraction, 0f..1f, "${(s.indicatorThicknessFraction * 100).roundToInt()}% of touch depth") { value -> vm.update { it.copy(indicatorThicknessFraction = value) } }
-        SettingSlider("Opacity", s.indicatorOpacity, 0f..1f, "${(s.indicatorOpacity * 100).roundToInt()}%") { value -> vm.update { it.copy(indicatorOpacity = value) } }
-        SettingSlider("Corner radius", s.cornerRadiusDp, 0f..16f, "${s.cornerRadiusDp.roundToInt()} dp") { value -> vm.update { it.copy(cornerRadiusDp = value) } }
-        ColorPicker(s.indicatorColor) { value -> vm.update { it.copy(indicatorColor = value) } }
-        Text("Length and thickness scale with the touch area. Corner radius fits inside the indicator when drawn; its saved value is kept when you resize.", style = MaterialTheme.typography.bodySmall)
+        ToggleRow("Make handle visible", "Show the handle in the previews and during normal use", s.indicatorVisible) { value -> vm.update { it.copy(indicatorVisible = value) } }
+        SettingSlider("Indicator length", s.indicatorLengthFraction, 0f..1f, "${(s.indicatorLengthFraction * 100).roundToInt()}% of touch length", enabled = s.indicatorVisible) { value -> vm.update { it.copy(indicatorLengthFraction = value) } }
+        SettingSlider("Indicator thickness", s.indicatorThicknessFraction, 0f..1f, "${(s.indicatorThicknessFraction * 100).roundToInt()}% of touch depth", enabled = s.indicatorVisible) { value -> vm.update { it.copy(indicatorThicknessFraction = value) } }
+        SettingSlider("Opacity", s.indicatorOpacity, 0f..1f, "${(s.indicatorOpacity * 100).roundToInt()}%", enabled = s.indicatorVisible) { value -> vm.update { it.copy(indicatorOpacity = value) } }
+        SettingSlider("Corner radius", s.cornerRadiusDp, 0f..16f, "${s.cornerRadiusDp.roundToInt()} dp", enabled = s.indicatorVisible) { value -> vm.update { it.copy(cornerRadiusDp = value) } }
+        ColorPicker(s.indicatorColor, enabled = s.indicatorVisible) { value -> vm.update { it.copy(indicatorColor = value) } }
+        Text(if (s.indicatorVisible) "Length and thickness scale with the touch area. Corner radius fits inside the indicator when drawn; its saved value is kept when you resize." else "Turn on Make handle visible to edit its appearance. Your handle settings are kept while it is off.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -305,20 +305,21 @@ private fun ExclusionsDialog(s: TriggerSettings, vm: NudgeViewModel, dismiss: ()
 }
 
 @Composable
-private fun ColorPicker(color: Long, change: (Long) -> Unit) {
+private fun ColorPicker(color: Long, enabled: Boolean = true, change: (Long) -> Unit) {
     var custom by remember(color) { mutableStateOf("%06X".format(color and 0xFFFFFF)) }
-    Text("Indicator color", style = MaterialTheme.typography.labelLarge)
+    val labelColor = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    Text("Indicator color", style = MaterialTheme.typography.labelLarge, color = labelColor)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(0xFFB8D982L, 0xFF6BB7E8L, 0xFFE3A0CFL, 0xFFF1BA70L, 0xFFFFFFFFL, 0xFF242A20L).forEach { value ->
-            FilledIconButton(onClick = { change(value) }, modifier = Modifier.semantics { contentDescription = "Indicator color #%06X".format(value and 0xFFFFFF) }, colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(value))) {
-                if ((color and 0xFFFFFF) == (value and 0xFFFFFF)) Text("✓", color = if (value == 0xFF242A20L) Color.White else Color.Black)
+            FilledIconButton(onClick = { change(value) }, enabled = enabled, modifier = Modifier.semantics { contentDescription = "Indicator color #%06X".format(value and 0xFFFFFF) }, colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(value))) {
+                if ((color and 0xFFFFFF) == (value and 0xFFFFFF)) Text("✓", color = if (!enabled) labelColor else if (value == 0xFF242A20L) Color.White else Color.Black)
             }
         }
     }
     OutlinedTextField(value = custom, onValueChange = { value ->
         custom = value.removePrefix("#").take(6)
         if (custom.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or custom.toLong(16))
-    }, label = { Text("Hex color") }, prefix = { Text("#") }, singleLine = true, modifier = Modifier.fillMaxWidth(), isError = !custom.matches(Regex("[0-9a-fA-F]{6}")))
+    }, enabled = enabled, label = { Text("Hex color") }, prefix = { Text("#") }, singleLine = true, modifier = Modifier.fillMaxWidth(), isError = enabled && !custom.matches(Regex("[0-9a-fA-F]{6}")))
 }
 
 @Composable
@@ -340,14 +341,15 @@ private fun ToggleRow(title: String, detail: String, checked: Boolean, change: (
 }
 
 @Composable
-private fun SettingSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, display: String, change: (Float) -> Unit) {
+private fun SettingSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, display: String, enabled: Boolean = true, change: (Float) -> Unit) {
     val finish = LocalFinishAdjustment.current
+    val disabledColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(title, style = MaterialTheme.typography.bodyMedium)
-            Text(display, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = if (enabled) LocalContentColor.current else disabledColor)
+            Text(display, style = MaterialTheme.typography.labelMedium, color = if (enabled) MaterialTheme.colorScheme.primary else disabledColor)
         }
-        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range)
+        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range, enabled = enabled)
     }
 }
 
