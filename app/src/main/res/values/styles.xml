@@ -4,5 +4,7 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:colorAccent">#556B2F</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_modukey</item>
+        <item name="android:windowSplashScreenBackground">#DDF6A5</item>
     </style>
 </resources>

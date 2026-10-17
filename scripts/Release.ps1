@@ -19,6 +19,8 @@ try {
     $commit = & git -c $gitTrust rev-parse HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Could not read the release commit.' }
     $tagAlreadyExists = $false
+    $previousReleaseName = $null
+    $previousReleaseCode = 0
     $tags = @(& git -c $gitTrust tag --list 'v*')
     if ($LASTEXITCODE -ne 0) { throw 'Could not read release tags.' }
     foreach ($tag in $tags) {
@@ -33,6 +35,10 @@ try {
             if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $commit) { throw "Release $tag already exists at another commit. Increase both version values; do not move the tag." }
             $tagAlreadyExists = $true
         } elseif ($code -le $oldCode) { throw "versionCode must be greater than $oldCode from $tag." }
+        elseif ($oldCode -gt $previousReleaseCode) {
+            $previousReleaseName = $tag.Substring(1)
+            $previousReleaseCode = $oldCode
+        }
     }
     if (!(Test-Path -LiteralPath '.local/signing/keystore.properties')) { throw 'Run scripts/Initialize-Signing.ps1 or restore your original .local/signing directory first.' }
     $sdkRoot = $env:ANDROID_HOME
@@ -48,8 +54,25 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Release checks or build failed; nothing was distributed.' }
     $apk = Join-Path $repoRoot 'app/build/outputs/apk/release/app-release.apk'
     if (!(Test-Path -LiteralPath $apk)) { throw 'Signed APK was not generated. Verify the signing configuration.' }
-    & $apksigner verify --verbose --print-certs $apk
+    $certificateReport = @(& $apksigner verify --verbose --print-certs $apk)
     if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
+    $certificateReport | Write-Output
+    $certificateLine = $certificateReport | Where-Object { $_ -match '^Signer #1 certificate SHA-256 digest: ' } | Select-Object -First 1
+    if (!$certificateLine) { throw 'Could not read the verified signing certificate digest.' }
+    $certificateDigest = ($certificateLine -split ': ', 2)[1].Trim().ToLowerInvariant()
+    $updateIdentity = 'No archived prior APK available for signer comparison; perform the device upgrade check.'
+    if ($previousReleaseName) {
+        $previousApk = Join-Path $repoRoot "releases/Nudge-$previousReleaseName.apk"
+        if (Test-Path -LiteralPath $previousApk) {
+            $previousCertificate = @(& $apksigner verify --print-certs $previousApk)
+            if ($LASTEXITCODE -ne 0) { throw 'Archived prior APK failed signature verification.' }
+            $previousLine = $previousCertificate | Where-Object { $_ -match '^Signer #1 certificate SHA-256 digest: ' } | Select-Object -First 1
+            if (!$previousLine -or ($previousLine -split ': ', 2)[1].Trim().ToLowerInvariant() -ne $certificateDigest) {
+                throw 'Release signer differs from the prior APK. Restore the original signing key; do not distribute this APK.'
+            }
+            $updateIdentity = "Signer matches $previousReleaseName; versionCode increases from $previousReleaseCode to $code. Installation/settings check still requires a device."
+        }
+    }
     $metadata = Get-Content -LiteralPath 'app/build/outputs/apk/release/output-metadata.json' -Raw | ConvertFrom-Json
     if ($metadata.applicationId -ne 'com.modukey.app' -or $metadata.elements[0].versionCode -ne $code -or $metadata.elements[0].versionName -ne $name) {
         throw 'APK metadata does not match the release identity/version.'
@@ -62,7 +85,10 @@ try {
     "$hash  Nudge-$name.apk" | Set-Content -LiteralPath "$destination.sha256" -Encoding ASCII
     [ordered]@{
         name = 'Nudge'; versionName = $name; versionCode = $code; applicationId = 'com.modukey.app'
-        commit = $commit; sha256 = $hash; builtAtUtc = [DateTime]::UtcNow.ToString('o')
+        commit = $commit; sha256 = $hash; signingCertificateSha256 = $certificateDigest; builtAtUtc = [DateTime]::UtcNow.ToString('o')
+        compileSdk = 36; targetSdk = 36; minSdk = 31
+        automatedValidation = 'Unit tests, lint and signed release build passed.'
+        updateIdentity = $updateIdentity
         deviceCompatibility = 'See docs/compatibility.md; automated checks do not confirm Redmi behavior.'
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $releaseDirectory "Nudge-$name.json") -Encoding UTF8
     if ($CreateTag -and !$tagAlreadyExists) {

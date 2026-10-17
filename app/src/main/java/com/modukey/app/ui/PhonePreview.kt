@@ -23,7 +23,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Composable
-fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Float) -> Unit) {
+fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -> Unit, onPosition: (Float) -> Unit) {
     val context = LocalContext.current
     val config = androidx.compose.ui.platform.LocalConfiguration.current
     val metrics = remember(config) { context.getSystemService(WindowManager::class.java).currentWindowMetrics }
@@ -40,22 +40,40 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Flo
     val placement = settings.placement(landscape)
     val bounds = TriggerGeometry.bounds(screenW, screenH, density, insets, settings, landscape)
     val currentPosition by rememberUpdatedState(onPosition)
+    val currentSettings by rememberUpdatedState(settings)
+    val finish by rememberUpdatedState(onFinished)
     var gestureSize by remember { mutableStateOf(Size.Zero) }
 
     Canvas(
         Modifier.fillMaxWidth().height(if (landscape) 175.dp else 280.dp)
             .onSizeChanged { gestureSize = Size(it.width.toFloat(), it.height.toFloat()) }
             .semantics { contentDescription = "Phone preview. Drag the highlighted trigger to reposition it; the position slider provides the same control." }
-            .pointerInput(landscape, placement.edge, settings.lengthDp, screenW, screenH, insets) {
-                detectDragGestures { change, _ ->
-                    change.consume()
+            .pointerInput(landscape, placement.edge, screenW, screenH, insets) {
+                var grabOffset = 0f
+                var dragging = false
+                fun along(point: Offset): Float {
                     val scale = min(gestureSize.width / screenW, gestureSize.height / screenH) * 0.92f
-                    if (scale > 0) {
+                    if (scale <= 0f) return 0f
+                    val origin = Offset((gestureSize.width - screenW * scale) / 2, (gestureSize.height - screenH * scale) / 2)
+                    return if (placement.edge == Edge.BOTTOM) (point.x - origin.x) / scale - insets.left else (point.y - origin.y) / scale - insets.top
+                }
+                val available = if (placement.edge == Edge.BOTTOM) screenW - insets.left - insets.right else screenH - insets.top - insets.bottom
+                detectDragGestures(
+                    onDragStart = { point ->
+                        val scale = min(gestureSize.width / screenW, gestureSize.height / screenH) * 0.92f
                         val origin = Offset((gestureSize.width - screenW * scale) / 2, (gestureSize.height - screenH * scale) / 2)
-                        val along = if (placement.edge == Edge.BOTTOM) (change.position.x - origin.x) / scale - insets.left else (change.position.y - origin.y) / scale - insets.top
-                        val available = if (placement.edge == Edge.BOTTOM) screenW - insets.left - insets.right else screenH - insets.top - insets.bottom
-                        val length = min(settings.lengthDp * density, available)
-                        currentPosition(((along - length / 2) / (available - length).coerceAtLeast(1f)).coerceIn(0f, 1f))
+                        val rect = TriggerGeometry.bounds(screenW, screenH, density, insets, currentSettings, landscape)
+                        val margin = 14 * density
+                        dragging = point.x >= origin.x + rect.x * scale - margin && point.x <= origin.x + (rect.x + rect.width) * scale + margin &&
+                            point.y >= origin.y + rect.y * scale - margin && point.y <= origin.y + (rect.y + rect.height) * scale + margin
+                        grabOffset = along(point) - currentSettings.placement(landscape).position * available
+                    },
+                    onDragEnd = { if (dragging) finish(); dragging = false },
+                    onDragCancel = { if (dragging) finish(); dragging = false },
+                ) { change, _ ->
+                    if (dragging) {
+                        change.consume()
+                        currentPosition(TriggerGeometry.draggedPosition(along(change.position), grabOffset, available))
                     }
                 }
             },
@@ -71,7 +89,7 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onPosition: (Flo
         drawRoundRect(Color(0xFFCBD6BD), location(screenW * 0.14f, screenH * 0.46f), Size(screenW * 0.46f * scale, 5 * density * scale), CornerRadius(5f))
         drawRoundRect(Color(0xFFD6DDCA), location(screenW * 0.14f, screenH * 0.51f), Size(screenW * 0.65f * scale, 4 * density * scale), CornerRadius(5f))
         drawRect(Color(0x554E7E21), location(bounds.x, bounds.y), Size(bounds.width * scale, bounds.height * scale))
-        if (settings.indicatorVisible) {
+        run {
             val indicator = TriggerGeometry.indicator(bounds.width, bounds.height, density, settings, placement.edge)
             val radius = min(settings.cornerRadiusDp * density, min(indicator.width, indicator.height) / 2) * scale
             drawRoundRect(Color(settings.indicatorColor).copy(alpha = settings.indicatorOpacity), location(bounds.x + indicator.x, bounds.y + indicator.y), Size(indicator.width * scale, indicator.height * scale), CornerRadius(radius))

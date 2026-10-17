@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,8 +23,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -36,9 +39,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.modukey.app.BuildConfig
+import com.modukey.app.R
 import com.modukey.app.core.*
+import com.modukey.app.platform.ConnectionState
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+private val LocalFinishAdjustment = staticCompositionLocalOf<() -> Unit> { {} }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,18 +67,28 @@ fun NudgeApp(vm: NudgeViewModel = viewModel()) {
         try { context.startActivity(intent) }
         catch (_: android.content.ActivityNotFoundException) { tell("Open your phone's Settings app and follow the instructions below.") }
     }
-    DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) vm.refreshPermissions() }
+    DisposableEffect(lifecycle, tab, vm) {
+        val token = Any()
+        fun resume() { vm.refreshPermissions(); if (tab == 1) vm.beginCustomization(token) }
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> resume()
+                Lifecycle.Event.ON_PAUSE -> { vm.endCustomization(token); vm.flush() }
+                else -> Unit
+            }
+        }
         lifecycle.addObserver(observer)
-        vm.refreshPermissions()
-        onDispose { lifecycle.removeObserver(observer) }
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) resume()
+        onDispose { vm.endCustomization(token); vm.flush(); lifecycle.removeObserver(observer) }
     }
 
+    CompositionLocalProvider(LocalFinishAdjustment provides vm::flush) {
     NudgeTheme {
         Scaffold(
             topBar = { TopAppBar(title = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("≋", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineLarge)
+                    Image(painterResource(R.drawable.ic_modukey), contentDescription = null,
+                        modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)))
                     Text("Nudge", fontWeight = FontWeight.Bold)
                 }
             }, actions = { Text("${BuildConfig.VERSION_NAME}  ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }) },
@@ -89,24 +106,31 @@ fun NudgeApp(vm: NudgeViewModel = viewModel()) {
             val s = settings
             if (s == null) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    if (error == null) CircularProgressIndicator() else Text(error!!, modifier = Modifier.padding(24.dp))
+                    if (error == null) CircularProgressIndicator() else Column(Modifier.padding(24.dp)) {
+                        Text(error!!)
+                        OutlinedButton(onClick = vm::retrySaving) { Text("Retry reading settings") }
+                    }
                 }
             } else {
                 Column(
                     Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    error?.let { Notice(it, error = true) }
+                    error?.let {
+                        Notice(it, error = true)
+                        OutlinedButton(onClick = vm::retrySaving) { Text("Retry saving") }
+                    }
                     service.error?.let { Notice(it, error = true) }
                     when (tab) {
                         0 -> HomeScreen(s, vm, accessibility, openSettings, tell)
-                        1 -> CustomizeScreen(s, vm, tell)
+                        1 -> CustomizeScreen(s, vm)
                         else -> BehaviorScreen(s, vm, openSettings, tell)
                     }
                     Spacer(Modifier.height(12.dp))
                 }
             }
         }
+    }
     }
 }
 
@@ -126,7 +150,11 @@ private fun HomeScreen(s: TriggerSettings, vm: NudgeViewModel, accessibility: Bo
     }
     Panel("Connection") {
         StatusLine("Accessibility permission", if (accessibility) "Enabled" else "Needs setup", accessibility)
-        StatusLine("Accessibility service", if (service.connected) "Connected" else "Disconnected", service.connected)
+        StatusLine("Accessibility service", when (service.connection(accessibility)) {
+            ConnectionState.DISABLED -> "Disabled"
+            ConnectionState.ENABLED_DISCONNECTED -> "Enabled but disconnected"
+            ConnectionState.CONNECTED -> "Connected"
+        }, service.connected)
         StatusLine("Edge touch area", when { service.triggerAttached -> "Active"; !s.enabled -> "Paused"; !service.connected -> "Waiting for service"; else -> "Hidden by current conditions" }, service.triggerAttached)
         if (!accessibility || !service.connected) {
             Text(if (!accessibility) "Open Accessibility → Downloaded apps → Nudge edge shortcut and enable it." else "Permission is enabled but the service is disconnected. In Accessibility, switch Nudge off and on again.")
@@ -147,17 +175,18 @@ private fun HomeScreen(s: TriggerSettings, vm: NudgeViewModel, accessibility: Bo
     Notice("Invisible still means touchable. The configured edge area receives touches; other screen areas work normally. Use a narrow area to keep it comfortable.")
     Panel("Made for your phone") {
         Text("HyperOS 1 • Redmi Note 12", fontWeight = FontWeight.SemiBold)
-        Text("Compatibility is confirmed on your installed build through testing. Native popup styling and timeout are controlled by HyperOS.")
+        Text("Confirm compatibility on your installed build with the device checks. Native popup styling and timeout are controlled by HyperOS.")
         Text("Set up background autostart and battery behavior in Behavior & help if the shortcut stops responding.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
 @Composable
-private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel, tell: (String) -> Unit) {
+private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel) {
+    val service by vm.status.collectAsStateWithLifecycle()
     var landscape by rememberSaveable { mutableStateOf(false) }
     val placement = s.placement(landscape)
     fun place(transform: (Placement) -> Placement) {
-        val editingLandscape = landscape
+        val editingLandscape = landscape && s.landscapeOverrideEnabled
         vm.update { current ->
             if (editingLandscape) current.copy(landscape = transform(current.landscape)) else current.copy(portrait = transform(current.portrait))
         }
@@ -165,29 +194,29 @@ private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel, tell: (Strin
     Text("Make room for your thumb.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     Panel("Live preview") {
         Choices(listOf(false, true), landscape, { if (it) "Landscape" else "Portrait" }) { landscape = it }
-        PhonePreview(s, landscape) { value -> place { it.copy(position = value) } }
-        Text("Drag to position. Green shading shows the touch area here, even when the real trigger is invisible.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = {
-            tell(if (vm.highlight()) "The real touch area is highlighted for 10 seconds." else "Enable the shortcut and connect Accessibility first. The trigger must be active in this orientation and app.")
-        }, modifier = Modifier.fillMaxWidth()) { Text("Highlight on phone · 10 seconds") }
-        if (landscape) ToggleRow("Enable in landscape", "Uses the landscape placement below", s.landscapeEnabled) { vm.update { current -> current.copy(landscapeEnabled = it) } }
+        PhonePreview(s, landscape, vm::flush) { value -> place { it.copy(position = value) } }
+        Text("Drag the shaded area to position it. The real indicator and a faint touch-area guide stay visible while Customize is open. They let touches through and cannot activate volume while editing.", style = MaterialTheme.typography.bodySmall)
+        if (!service.connected) Notice("Connect Nudge in Accessibility for an on-phone preview. You can still customize with the preview above.")
+        else Text("The on-phone preview follows your phone's current orientation, even with the shortcut switched off. Rotate your phone to preview the other orientation.", style = MaterialTheme.typography.bodySmall)
+        ToggleRow("Enable in landscape", "Allow the shortcut when your phone is sideways", s.landscapeEnabled) { vm.update { current -> current.copy(landscapeEnabled = it) } }
+        ToggleRow("Override placement in landscape", "Off uses the default edge and center in both orientations", s.landscapeOverrideEnabled) { vm.update { current -> current.copy(landscapeOverrideEnabled = it) } }
+        if (landscape && !s.landscapeOverrideEnabled) Text("Editing the shared default placement. Bottom stays at the bottom after rotation.", style = MaterialTheme.typography.bodySmall)
     }
     Panel("Position & touch area") {
         Choices(Edge.entries, placement.edge, { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { edge -> place { it.copy(edge = edge) } }
-        SettingSlider("Position", placement.position, 0f..1f, "${(placement.position * 100).roundToInt()}%") { value -> place { it.copy(position = value) } }
+        SettingSlider("Center along edge", placement.position, 0f..1f, "${(placement.position * 100).roundToInt()}%") { value -> place { it.copy(position = value) } }
         SettingSlider("Touch length", s.lengthDp, 48f..200f, "${s.lengthDp.roundToInt()} dp") { value -> vm.update { it.copy(lengthDp = value) } }
         SettingSlider("Touch depth", s.depthDp, 8f..32f, "${s.depthDp.roundToInt()} dp") { value -> vm.update { it.copy(depthDp = value) } }
-        Text("Touch dimensions are shared across orientations. Position and edge are saved separately. The side trigger reserves only its own area from Back gestures.", style = MaterialTheme.typography.bodySmall)
+        Text("Position is measured along the usable edge: top to bottom on sides, left to right on the bottom. Resizing keeps that center, clamping only at corners. Touch dimensions are shared across orientations.", style = MaterialTheme.typography.bodySmall)
     }
     Panel("Visible handle") {
-        ToggleRow("Show an indicator", "Off keeps the touch area completely invisible", s.indicatorVisible) { value -> vm.update { it.copy(indicatorVisible = value) } }
-        if (s.indicatorVisible) {
-            SettingSlider("Indicator length", s.indicatorLengthDp, 12f..s.lengthDp, "${s.indicatorLengthDp.roundToInt()} dp") { value -> vm.update { it.copy(indicatorLengthDp = value) } }
-            SettingSlider("Thickness", s.indicatorThicknessDp, 1f..s.depthDp, "${s.indicatorThicknessDp.roundToInt()} dp") { value -> vm.update { it.copy(indicatorThicknessDp = value) } }
-            SettingSlider("Opacity", s.indicatorOpacity, 0f..1f, "${(s.indicatorOpacity * 100).roundToInt()}%") { value -> vm.update { it.copy(indicatorOpacity = value) } }
-            SettingSlider("Corner radius", s.cornerRadiusDp, 0f..16f, "${s.cornerRadiusDp.roundToInt()} dp") { value -> vm.update { it.copy(cornerRadiusDp = value) } }
-            ColorPicker(s.indicatorColor) { value -> vm.update { it.copy(indicatorColor = value) } }
-        }
+        ToggleRow("Show outside customization", "Off keeps the touch area invisible during normal use", s.indicatorVisible) { value -> vm.update { it.copy(indicatorVisible = value) } }
+        SettingSlider("Indicator length", s.indicatorLengthFraction, 0f..1f, "${(s.indicatorLengthFraction * 100).roundToInt()}% of touch length") { value -> vm.update { it.copy(indicatorLengthFraction = value) } }
+        SettingSlider("Thickness", s.indicatorThicknessDp, 1f..32f, "${s.indicatorThicknessDp.roundToInt()} dp") { value -> vm.update { it.copy(indicatorThicknessDp = value) } }
+        SettingSlider("Opacity", s.indicatorOpacity, 0f..1f, "${(s.indicatorOpacity * 100).roundToInt()}%") { value -> vm.update { it.copy(indicatorOpacity = value) } }
+        SettingSlider("Corner radius", s.cornerRadiusDp, 0f..16f, "${s.cornerRadiusDp.roundToInt()} dp") { value -> vm.update { it.copy(cornerRadiusDp = value) } }
+        ColorPicker(s.indicatorColor) { value -> vm.update { it.copy(indicatorColor = value) } }
+        Text("Thickness and radius fit inside the touch area when drawn. Their saved values are kept if you make the touch area smaller.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -211,7 +240,8 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
         ToggleRow("Haptic feedback", "A small confirmation when you activate the shortcut", s.haptics) { value -> vm.update { it.copy(haptics = value) } }
     }
     Panel("Visibility") {
-        Text("The trigger is always hidden while the phone is locked or its screen is off.")
+        ToggleRow("Available on lock screen", "Works on the awake lock screen after the first unlock following reboot. App exclusions are ignored while locked.", s.lockScreenEnabled) { value -> vm.update { it.copy(lockScreenEnabled = value) } }
+        Text("Always hidden while the screen is off or on the always-on display. This option does not wake or unlock your phone or change indicator visibility.", style = MaterialTheme.typography.bodySmall)
         Text("Landscape is ${if (s.landscapeEnabled) "enabled" else "disabled"}. Change its placement in Customize.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text("Excluded apps · ${s.excludedPackages.size}") }
         Text("Window-change observation is off until exclusions are needed. After enabling exclusions, switch apps once to initialize visibility. Nudge does not read screen content.", style = MaterialTheme.typography.bodySmall)
@@ -223,15 +253,17 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
         HelpStep("2", "If accessibility is restricted", "Open Nudge's App info → ⋮ → Allow restricted settings, then return to Accessibility. This option depends on your Android build and how the APK was installed.")
         OutlinedButton(onClick = { openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) }) { Text("Nudge app info") }
         HelpStep("3", "Background autostart", "Settings → Apps → Permissions → Background autostart → enable Nudge. On some builds, use the Security app's Permissions page.")
-        HelpStep("4", "Battery behavior", "App info → Battery saver → No restrictions. If Recents cleanup stops the shortcut, lock Nudge in Recents where your build supports it.")
-        HelpStep("5", "If it stops", "Reopen Nudge and check Connection on Home. If permission is enabled but disconnected, switch Nudge off and on in Accessibility. Force-stop or revoked permissions require recovery by you.")
+        HelpStep("4", "Battery behavior", "App info → Battery saver → No restrictions. For background app locking, try Security → Settings → Boost speed → Lock apps → Nudge, or lock Nudge in Recents where available. Menus vary by build.")
+        HelpStep("5", "If it stops or says malfunctioning", "Reopen Nudge and check Connection on Home. Enabled but disconnected means the permission remains enabled but Android lost the service connection. Copy diagnostics below before switching Nudge off and on in Accessibility. Recent process-exit records can help distinguish a crash from system cleanup. Force-stop or revoked permissions require recovery by you.")
         Text("Extra overlay permission, root and ADB are not required by this implementation. Menu labels can vary by region. A missing native popup is a failed compatibility test, not a successful activation.", style = MaterialTheme.typography.bodySmall)
     }
     Panel("Device & updates") {
         Text("${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\nAndroid ${android.os.Build.VERSION.RELEASE} · API ${android.os.Build.VERSION.SDK_INT}\nNudge ${BuildConfig.VERSION_NAME}")
         OutlinedButton(onClick = {
-            context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Nudge compatibility", vm.diagnostics()))
-            tell("Device and service details copied. Add your exact HyperOS version and test results.")
+            vm.inspectDiagnostics { details ->
+                context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Nudge compatibility", details))
+                tell("Device, service and recent exit details copied. Add your HyperOS version and test results.")
+            }
         }) { Text("Copy compatibility details") }
         Text("Install newer Nudge release APKs over this installation to keep settings. Debug and release are separate apps. All release updates must use the original signing key.", style = MaterialTheme.typography.bodySmall)
     }
@@ -309,12 +341,13 @@ private fun ToggleRow(title: String, detail: String, checked: Boolean, change: (
 
 @Composable
 private fun SettingSlider(title: String, value: Float, range: ClosedFloatingPointRange<Float>, display: String, change: (Float) -> Unit) {
+    val finish = LocalFinishAdjustment.current
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, style = MaterialTheme.typography.bodyMedium)
             Text(display, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         }
-        Slider(value = value.coerceIn(range), onValueChange = change, valueRange = range)
+        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range)
     }
 }
 

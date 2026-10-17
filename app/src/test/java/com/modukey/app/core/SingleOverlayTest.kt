@@ -31,4 +31,18 @@ class SingleOverlayTest {
         overlay.show(1)
         assertEquals(2, attempts)
     }
+
+    @Test fun `failed removal is attempted once and repeated cleanup is safe`() {
+        var removals = 0
+        val overlay = SingleOverlay(object : OverlayHost<Int> {
+            override fun attach(value: Int) = Unit
+            override fun update(value: Int) = Unit
+            override fun detach() { removals++; error("window already removed by system") }
+        })
+        overlay.show(1)
+        assertTrue(runCatching { overlay.hide() }.isFailure)
+        overlay.hide()
+        overlay.hide()
+        assertEquals(1, removals)
+    }
 }

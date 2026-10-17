@@ -10,10 +10,12 @@ data class TriggerSettings(
     val portrait: Placement = Placement(),
     val landscape: Placement = Placement(),
     val landscapeEnabled: Boolean = false,
+    val landscapeOverrideEnabled: Boolean = false,
+    val lockScreenEnabled: Boolean = false,
     val lengthDp: Float = 120f,
     val depthDp: Float = 16f,
     val indicatorVisible: Boolean = false,
-    val indicatorLengthDp: Float = 80f,
+    val indicatorLengthFraction: Float = 2f / 3f,
     val indicatorThicknessDp: Float = 4f,
     val indicatorColor: Long = 0xFFB8D982,
     val indicatorOpacity: Float = 0.65f,
@@ -24,15 +26,15 @@ data class TriggerSettings(
     val haptics: Boolean = false,
     val excludedPackages: Set<String> = emptySet(),
 ) {
-    fun placement(isLandscape: Boolean) = if (isLandscape) landscape else portrait
+    fun placement(isLandscape: Boolean) = if (isLandscape && landscapeOverrideEnabled) landscape else portrait
 
     fun normalized() = copy(
         portrait = portrait.copy(position = portrait.position.finite(0.65f).coerceIn(0f, 1f)),
         landscape = landscape.copy(position = landscape.position.finite(0.65f).coerceIn(0f, 1f)),
         lengthDp = lengthDp.finite(120f).coerceIn(48f, 200f),
         depthDp = depthDp.finite(16f).coerceIn(8f, 32f),
-        indicatorLengthDp = indicatorLengthDp.finite(80f).coerceIn(12f, lengthDp.finite(120f).coerceIn(48f, 200f)),
-        indicatorThicknessDp = indicatorThicknessDp.finite(4f).coerceIn(1f, depthDp.finite(16f).coerceIn(8f, 32f)),
+        indicatorLengthFraction = indicatorLengthFraction.finite(2f / 3f).coerceIn(0f, 1f),
+        indicatorThicknessDp = indicatorThicknessDp.finite(4f).coerceIn(1f, 32f),
         indicatorColor = indicatorColor or 0xFF000000,
         indicatorOpacity = indicatorOpacity.finite(0.65f).coerceIn(0f, 1f),
         cornerRadiusDp = cornerRadiusDp.finite(2f).coerceIn(0f, 16f),
@@ -47,6 +49,13 @@ data class Bounds(val x: Float, val y: Float, val width: Float, val height: Floa
 data class Insets(val left: Float = 0f, val top: Float = 0f, val right: Float = 0f, val bottom: Float = 0f)
 
 object TriggerGeometry {
+    fun start(position: Float, length: Float, edgeLength: Float): Float =
+        (position * edgeLength - length / 2).coerceIn(0f, (edgeLength - length).coerceAtLeast(0f))
+
+    /** Inverse of center placement, including the initial pointer-to-center grab offset. */
+    fun draggedPosition(pointer: Float, grabOffset: Float, edgeLength: Float): Float =
+        if (edgeLength > 0f) ((pointer - grabOffset) / edgeLength).coerceIn(0f, 1f) else 0f
+
     fun bounds(width: Float, height: Float, density: Float, insets: Insets, settings: TriggerSettings, landscape: Boolean): Bounds {
         val config = settings.normalized()
         val placement = config.placement(landscape)
@@ -56,15 +65,15 @@ object TriggerGeometry {
         val length = (config.lengthDp * density).coerceAtMost(if (horizontal) usableWidth else usableHeight)
         val depth = (config.depthDp * density).coerceAtMost(if (horizontal) usableHeight else usableWidth)
         return when (placement.edge) {
-            Edge.LEFT -> Bounds(insets.left, insets.top + (usableHeight - length) * placement.position, depth, length)
-            Edge.RIGHT -> Bounds(width - insets.right - depth, insets.top + (usableHeight - length) * placement.position, depth, length)
-            Edge.BOTTOM -> Bounds(insets.left + (usableWidth - length) * placement.position, height - insets.bottom - depth, length, depth)
+            Edge.LEFT -> Bounds(insets.left, insets.top + start(placement.position, length, usableHeight), depth, length)
+            Edge.RIGHT -> Bounds(width - insets.right - depth, insets.top + start(placement.position, length, usableHeight), depth, length)
+            Edge.BOTTOM -> Bounds(insets.left + start(placement.position, length, usableWidth), height - insets.bottom - depth, length, depth)
         }
     }
 
     fun indicator(width: Float, height: Float, density: Float, settings: TriggerSettings, edge: Edge): Bounds {
         val horizontal = edge == Edge.BOTTOM
-        val length = (settings.indicatorLengthDp * density).coerceAtMost(if (horizontal) width else height)
+        val length = settings.indicatorLengthFraction * (if (horizontal) width else height)
         val thickness = (settings.indicatorThicknessDp * density).coerceAtMost(if (horizontal) height else width)
         return when (edge) {
             Edge.LEFT -> Bounds(0f, (height - length) / 2, thickness, length)

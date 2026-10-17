@@ -20,4 +20,22 @@ class TriggerVisibilityTest {
         assertFalse(TriggerVisibility.allowed(s, true, false, false, null))
         assertTrue(TriggerVisibility.allowed(s, true, false, false, "browser"))
     }
+
+    @Test fun `lock screen opt-in ignores apps behind keyguard but never wakes the screen`() {
+        val s = TriggerSettings(enabled = true, lockScreenEnabled = true, excludedPackages = setOf("game"))
+        assertTrue(TriggerVisibility.allowed(s, true, true, false, "game"))
+        assertTrue(TriggerVisibility.allowed(s, true, true, false, null))
+        assertFalse(TriggerVisibility.allowed(s, true, false, false, "game"))
+        assertFalse(TriggerVisibility.allowed(s, false, true, false, "game"))
+        assertFalse(TriggerVisibility.allowed(s, true, true, true, "game"))
+        assertFalse(TriggerVisibility.allowed(s.copy(enabled = false), true, true, false, "game"))
+        assertFalse(s.indicatorVisible)
+        assertFalse(s.landscapeEnabled)
+    }
+
+    @Test fun `editing can preview with master off but never on keyguard or screen off`() {
+        assertTrue(TriggerVisibility.editingAllowed(true, false))
+        assertFalse(TriggerVisibility.editingAllowed(true, true))
+        assertFalse(TriggerVisibility.editingAllowed(false, false))
+    }
 }

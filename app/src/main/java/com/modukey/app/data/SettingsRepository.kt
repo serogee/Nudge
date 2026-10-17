@@ -1,6 +1,7 @@
 package com.modukey.app.data
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.*
 import com.modukey.app.core.*
 import kotlinx.coroutines.flow.Flow
@@ -29,10 +30,12 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             portrait = Placement(enumValue(p[stringPreferencesKey("portrait.edge")], Edge.RIGHT), p[floatPreferencesKey("portrait.position")] ?: 0.65f),
             landscape = Placement(enumValue(p[stringPreferencesKey("landscape.edge")], Edge.RIGHT), p[floatPreferencesKey("landscape.position")] ?: 0.65f),
             landscapeEnabled = p[booleanPreferencesKey("landscape.enabled")] ?: false,
+            landscapeOverrideEnabled = p[booleanPreferencesKey("landscape.override")] ?: false,
+            lockScreenEnabled = p[booleanPreferencesKey("lockscreen.enabled")] ?: false,
             lengthDp = p[floatPreferencesKey("length")] ?: 120f,
             depthDp = p[floatPreferencesKey("depth")] ?: 16f,
             indicatorVisible = p[booleanPreferencesKey("indicator.visible")] ?: false,
-            indicatorLengthDp = p[floatPreferencesKey("indicator.length")] ?: 80f,
+            indicatorLengthFraction = p[floatPreferencesKey("indicator.fraction")] ?: legacyIndicatorFraction(p),
             indicatorThicknessDp = p[floatPreferencesKey("indicator.thickness")] ?: 4f,
             indicatorColor = p[longPreferencesKey("indicator.color")] ?: defaults.indicatorColor,
             indicatorOpacity = p[floatPreferencesKey("indicator.opacity")] ?: 0.65f,
@@ -52,10 +55,12 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         p[stringPreferencesKey("landscape.edge")] = s.landscape.edge.name
         p[floatPreferencesKey("landscape.position")] = s.landscape.position
         p[booleanPreferencesKey("landscape.enabled")] = s.landscapeEnabled
+        p[booleanPreferencesKey("landscape.override")] = s.landscapeOverrideEnabled
+        p[booleanPreferencesKey("lockscreen.enabled")] = s.lockScreenEnabled
         p[floatPreferencesKey("length")] = s.lengthDp
         p[floatPreferencesKey("depth")] = s.depthDp
         p[booleanPreferencesKey("indicator.visible")] = s.indicatorVisible
-        p[floatPreferencesKey("indicator.length")] = s.indicatorLengthDp
+        p[floatPreferencesKey("indicator.fraction")] = s.indicatorLengthFraction
         p[floatPreferencesKey("indicator.thickness")] = s.indicatorThicknessDp
         p[longPreferencesKey("indicator.color")] = s.indicatorColor
         p[floatPreferencesKey("indicator.opacity")] = s.indicatorOpacity
@@ -66,6 +71,23 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         p[booleanPreferencesKey("haptics")] = s.haptics
         p[stringSetPreferencesKey("excluded.packages")] = s.excludedPackages
     }
+}
+
+private fun legacyIndicatorFraction(p: Preferences): Float =
+    ((p[floatPreferencesKey("indicator.length")] ?: 80f) /
+        (p[floatPreferencesKey("length")] ?: 120f)).let {
+        if (it.isFinite()) it.coerceIn(0f, 1f) else 2f / 3f
+    }
+
+/** Writes the ratio once, leaving every unrelated preference and legacy placement intact. */
+class IndicatorFractionMigration : DataMigration<Preferences> {
+    override suspend fun shouldMigrate(currentData: Preferences) =
+        currentData[floatPreferencesKey("indicator.fraction")] == null
+    override suspend fun migrate(currentData: Preferences): Preferences = currentData.toMutablePreferences().apply {
+        this[floatPreferencesKey("indicator.fraction")] = legacyIndicatorFraction(currentData)
+        remove(floatPreferencesKey("indicator.length"))
+    }
+    override suspend fun cleanUp() = Unit
 }
 
 private inline fun <reified T : Enum<T>> enumValue(value: String?, default: T): T =

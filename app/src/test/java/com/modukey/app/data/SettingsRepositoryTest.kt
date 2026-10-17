@@ -2,6 +2,7 @@ package com.modukey.app.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.PreferencesSerializer
+import androidx.datastore.preferences.core.*
 import androidx.datastore.core.okio.OkioStorage
 import com.modukey.app.core.*
 import kotlinx.coroutines.*
@@ -40,6 +41,48 @@ class SettingsRepositoryTest {
             assertEquals(0.3f, saved.indicatorOpacity)
             repository.reset()
             assertEquals(TriggerSettings(enabled = true), repository.settings.first())
+        }
+    }
+
+    @Test fun `legacy indicator ratio migrates once and preserves unrelated preferences`() = runTest {
+        val file = folder.newFile("legacy.preferences_pb")
+        suspend fun session(migrate: Boolean, block: suspend (androidx.datastore.core.DataStore<Preferences>) -> Unit) {
+            val job = SupervisorJob()
+            val storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) { file.absolutePath.toPath() }
+            val store = PreferenceDataStoreFactory.create(storage = storage, migrations = if (migrate) listOf(IndicatorFractionMigration()) else emptyList(), scope = CoroutineScope(Dispatchers.IO + job))
+            try { block(store) } finally { job.cancelAndJoin() }
+        }
+        session(false) { store ->
+            store.edit {
+                it[floatPreferencesKey("length")] = 180f
+                it[floatPreferencesKey("indicator.length")] = 45f
+                it[floatPreferencesKey("portrait.position")] = 0.31f
+                it[stringPreferencesKey("landscape.edge")] = "BOTTOM"
+                it[floatPreferencesKey("landscape.position")] = 0.9f
+                it[booleanPreferencesKey("landscape.enabled")] = true
+                it[stringSetPreferencesKey("excluded.packages")] = setOf("game")
+                it[stringPreferencesKey("future.field")] = "keep me"
+            }
+        }
+        session(true) { store ->
+            val repo = DataStoreSettingsRepository(store)
+            val s = repo.settings.first()
+            assertEquals(0.25f, s.indicatorLengthFraction)
+            assertEquals(0.31f, s.portrait.position)
+            assertEquals(Placement(Edge.BOTTOM, 0.9f), s.landscape)
+            assertTrue(s.landscapeEnabled)
+            assertFalse(s.landscapeOverrideEnabled)
+            assertFalse(s.lockScreenEnabled)
+            assertEquals(setOf("game"), s.excludedPackages)
+            assertNull(store.data.first()[floatPreferencesKey("indicator.length")])
+            repo.update { it.copy(lengthDp = 80f, lockScreenEnabled = true) }
+        }
+        session(true) { store ->
+            val s = DataStoreSettingsRepository(store).settings.first()
+            assertEquals(0.25f, s.indicatorLengthFraction)
+            assertEquals(80f, s.lengthDp)
+            assertTrue(s.lockScreenEnabled)
+            assertEquals("keep me", store.data.first()[stringPreferencesKey("future.field")])
         }
     }
 }

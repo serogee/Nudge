@@ -6,7 +6,7 @@ interface OverlayHost<T> {
     fun detach()
 }
 
-/** Makes repeated settings/window/screen events idempotent. State changes only after host success. */
+/** Makes repeated events idempotent. Forget ownership before removal, even if the host fails. */
 class SingleOverlay<T>(private val host: OverlayHost<T>) {
     private var current: T? = null
 
@@ -16,7 +16,8 @@ class SingleOverlay<T>(private val host: OverlayHost<T>) {
     }
 
     fun hide() {
-        if (current != null) host.detach()
+        val attached = current != null
         current = null
+        if (attached) host.detach()
     }
 }
