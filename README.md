@@ -6,7 +6,7 @@ Each handle has its own gestures, appearance, placement, exclusions, lock-screen
 
 The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
 
-See [Handles and panels](docs/handles-and-panels.md) for gesture sequences, panel layouts, icon packs, backups, and action behavior. These changes remain under Unreleased until a release is explicitly requested.
+Version 0.2.0 adds independent handles and custom panels. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior, and [release notes](docs/release-notes-0.2.0.md) for changes and pending device checks.
 
 ## Build
 

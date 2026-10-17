@@ -1,6 +1,6 @@
 # Handles and panels
 
-This feature is under development. Physical Redmi Note 12 / HyperOS checks remain pending. It does not create a new release.
+These controls are available in Nudge 0.2.0. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
