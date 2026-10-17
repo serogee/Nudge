@@ -2,7 +2,26 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Added
+
+- Create, name, duplicate, order, enable, and delete independent handles, each with three private panels.
+- Assign tap, hold, swipe and hold, and three immediate swipe stages. Volume sequences use a configurable expiry without background timers.
+- Build Fixed or Scrollable panels in either grid direction, with live previews, safe placement, and retained landscape overrides. Fixed overflow buttons remain saved and editable but do not appear or cause scrolling.
+- Choose whether each panel blocks or passes through an outside touch while closing. Back dismisses the panel without navigating the app beneath.
+- Add media, ringtone, DND, lock, settings, and app buttons. Choose static icon packs, manual icon overrides, shapes, and corners.
+- Enable handles independently on the awake lock screen. App and settings actions continue only after the normal system unlock succeeds.
+- Export and import configuration backups, including hidden buttons and icon references. Added copies start disabled; replacement leaves the master switch off.
+
+### Changed
+
+- Replace the single-handle interface with Home, Handles, and Settings. Remove slogans and use short, consistent app text from string resources.
+- Migrate existing customization and activation into Handle 1 while retaining global settings and unrelated preferences.
+- Share one accessibility service across handles. Reconcile changed windows, release closed panel resources, and load cached icons off the main thread.
+
+### Compatibility
+
+- Redmi Note 12 / HyperOS native-popup coexistence, touch delivery, authentication, Recents recovery, battery measurements, and signed upgrade checks remain pending physical-device testing.
+- No release version, signing identity, published notes, or release tags changed.
 
 ## 0.1.2 - 2026-10-17
 

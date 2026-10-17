@@ -1,44 +1,57 @@
 # Nudge
 
-An invisible edge shortcut that opens Android's own volume popup. Built with Kotlin, Jetpack Compose and Material 3 for personal use on Redmi Note 12 / HyperOS 1.
+Configurable edge handles for Android volume controls and custom button panels. Built with Kotlin, Jetpack Compose, and Material 3 for personal use on Redmi Note 12 / HyperOS 1.
 
-Nudge's touch area is an accessibility overlay. Invisible mode draws nothing during normal use, but touches inside its rectangle belong to the shortcut. The default is a 16 × 120 dp area on the right edge, centered at 65% of the usable edge. Swipe inward 24 dp within 600 ms and release. Nudge requests the system popup without changing volume; HyperOS owns its appearance and dismissal. Landscape and lock-screen availability start disabled. The master switch starts off until you finish setup.
+Each handle has its own gestures, appearance, placement, exclusions, lock-screen option, and three panels. All handles share one accessibility service. New and duplicated handles start disabled. Home provides a master switch and actual connection status.
+
+The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
+
+See [Handles and panels](docs/handles-and-panels.md) for gesture sequences, panel layouts, icon packs, backups, and action behavior. These changes remain under Unreleased until a release is explicitly requested.
 
 ## Build
 
-Use Android SDK 36, build-tools 36.0.0 and Java 17 or newer supported by Gradle 9.1. The local build was performed with JDK 24. Set `ANDROID_HOME` or create an ignored `local.properties` containing `sdk.dir=C\:/path/to/Android/Sdk` (escape the drive colon).
+Use Android SDK 36, build-tools 36.0.0, and a JDK supported by Gradle 9.1. The local environment uses JDK 24. Set `ANDROID_HOME` or create the ignored `local.properties` with your SDK path.
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:lint :app:assembleDebug
 ```
 
-The debug APK is `app/build/outputs/apk/debug/app-debug.apk`. Its application ID is `com.modukey.app.debug`; releases use the permanent ID `com.modukey.app`. The source namespace retains the original project identifier; the displayed name is **Nudge**.
+The debug APK is `app/build/outputs/apk/debug/app-debug.apk`. Its application ID is `com.modukey.app.debug`; releases use `com.modukey.app`. Debug and release are separate installations.
 
-## Install and set up on HyperOS 1
+## HyperOS setup
 
-1. Install the APK and open Nudge. Open Accessibility from Home.
-2. Enable **Nudge edge shortcut** under Accessibility → Downloaded apps. Some phones use Settings → Additional settings → Accessibility.
-3. If Android blocks this for a sideloaded APK, open Nudge's App info → ⋮ → **Allow restricted settings**, then return to Accessibility.
-4. **Recommended on HyperOS:** enable **Nudge** in Settings → Apps → Permissions → **Background autostart**. Some builds use Settings → Apps → Background autostart, call it Autostart, or list it in Security → Permissions. Search Settings for "autostart" if needed. This is a manual step; Nudge does not verify its state.
-5. Turn on the master switch. Home reports permission enabled, service connected and trigger attached independently.
-6. Use **Test volume popup** and visually confirm it appeared. Also test an actual swipe while another app is foregrounded. A submitted request is not proof the popup appeared.
-7. If HyperOS still stops the service, try App info → Battery saver → **No restrictions**. For background app locking, try Security → Settings → Boost speed → Lock apps → Nudge, or lock it in Recents where available. Leave battery settings unchanged if the shortcut stays connected; check battery usage after any change. Menu names vary.
+1. Install the APK and open Nudge. Select Open Accessibility on Home.
+2. Enable **Nudge handles** under Accessibility → Downloaded apps. Some builds use Settings → Additional settings → Accessibility.
+3. If Android blocks Accessibility, open Nudge App info → ⋮ → Allow restricted settings. Return to Accessibility and enable Nudge.
+4. Enable Background autostart for Nudge. Look under Settings → Apps → Permissions → Background autostart, Apps → Autostart, or Security → Permissions.
+5. Enable the desired handles and the master switch. Home distinguishes Disabled, Enabled but disconnected, and Connected.
+6. Use Test volume popup and visually confirm that it appears. Test the gesture from another app as well.
+7. If HyperOS still disconnects Nudge, try App info → Battery saver → No restrictions. Keep current restrictions if Nudge stays connected.
+8. If needed, lock Nudge through Security → Settings → Boost speed → Lock apps, or Recents where supported.
 
-Accessibility permission is required. Background autostart is a recommended HyperOS reliability setting; its necessity for Nudge on the exact Redmi Note 12 build remains unverified. [Xiaomi documents the autostart control](https://www.mi.com/global/support/faq/details/KA-507611/), and [Android manages the enabled accessibility service's lifecycle](https://developer.android.com/guide/topics/ui/accessibility/service#lifecycle). Enabling autostart does not add polling, wake locks or periodic restart work to Nudge. It does not guarantee recovery from force-stop or revoked accessibility permission.
+Menu names vary by build. Nudge cannot verify Xiaomi autostart or background-lock settings. Force-stop and revoked permissions require manual recovery. Copy diagnostics before re-enabling a disconnected service.
 
-While **Customize is resumed**, a faint touch-area guide stays visible with Accessibility connected, including when the master switch is off. **Make handle visible** immediately shows or hides the handle in both previews and controls its visibility during normal use. Turning it off greys out and disables the handle appearance controls, keeping their saved values. Position and touch-area controls remain available. The editing overlay passes touches through and cannot activate volume; leaving the screen, backgrounding or closing the activity removes the guide without changing saved visibility. With Accessibility disconnected, the in-app preview still works. The on-phone preview follows the actual orientation; the opposite orientation in the phone drawing is an estimate until rotation.
+Do Not Disturb access is needed for DND and certain ringtone changes. Lock screen uses the existing accessibility service. No root, device administrator, gesture injection, hardware-key interception, or separate Display over other apps permission is requested.
 
-Position means the trigger's center as a percentage of the usable edge, from top to bottom on a side or left to right on the bottom. Resizing preserves this center until a screen corner requires clamping. Indicator length and thickness are continuous percentages of touch length and touch depth, respectively, from 0% to 100%. Their saved percentages stay constant when resizing; the default thickness is 25%. Corner radius is fitted at draw time without changing its saved value. Landscape inherits the default edge and position unless **Override placement in landscape** is enabled; turning the override off retains its values. Bottom remains the logical bottom in either landscape rotation.
+## Customization and panels
 
-Edits update an application-owned draft immediately. Overlay updates coalesce to one display frame when needed; there is no idle frame loop. Disk saves wait for 150 ms of quiet, and flush on gesture completion or backgrounding. Field changes merge against current settings; failed saves retain the draft and offer Retry saving. Behavior includes swipe/tap/hold activation, haptics and launcher-app exclusions. A hold activates **on release** after 500 ms.
+Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Editors show non-touchable phone guides while visible, even with the master off. Normal activation resumes when editing ends.
 
-The service observes window-change package names only when the master switch is on and exclusions are configured, without retrieving screen content. With the default empty exclusions, accessibility event delivery is disabled at the system subscription. Repeated events for the same package and System UI panels are ignored. After enabling exclusions, switch apps once to initialize visibility.
+Fixed panels show only the first buttons within their row and column limits and never scroll. Extra buttons stay saved and editable with a Not shown label. Scrollable panels expose all buttons inside an adjustable viewport. Switching modes retains button order and mode settings.
 
-Battery use is a design priority: a system-bound accessibility service, event-driven screen/rotation/settings handling, no foreground service, polling, wake lock, periodic jobs, boot loop or ongoing overlay animation. Update metadata is requested only when you tap **Check for updates**; there are no startup or scheduled update checks. The small trigger draws only when its appearance changes. Appearance changes do not move its window, equal bounds do not update the window layout, and redraws schedule no follow-up frames. The save debounce exists only while edits are pending. Actual drain must be measured on the Redmi; no zero-drain claim is made.
+Each panel chooses whether an outside touch closes and blocks the touch or closes and passes it through. Back closes the panel without navigating the app beneath. Handle gestures remain available. Preview buttons do not run actions; Test panel opens working controls.
 
-There is no root, ADB runtime dependency or separate draw-over-apps permission. The Internet permission is used for the on-demand GitHub update check; the trigger itself works offline. Keep the reserved rectangle clear of native volume controls when positioning it. **Available on lock screen** optionally permits the same shortcut on the awake lock screen after the first unlock following reboot. App exclusions are ignored while locked; normal indicator visibility and landscape availability still apply. Nudge does not wake the screen, run on the always-on display, dismiss keyguard or unlock the phone. Force-stop and permission revocation require manual recovery.
+Handle and panel landscape overrides retain separate values when disabled. Bottom remains the logical bottom after rotation. Center-based placement remains stable during resizing, subject to safe screen bounds.
 
-Connection distinguishes **Disabled**, **Enabled but disconnected**, and **Connected**, plus window errors. An enabled service reported as “malfunctioning” may have lost its connection; this alone does not establish whether Nudge crashed or HyperOS killed it. Startup and **Copy compatibility details** inspect recent Android process-exit reasons. Bounded app-private lifecycle/error records survive process restarts; they contain no screen contents or app-switch history. Capture these details before re-enabling the service. No restart loop is used or survival after force-stop promised.
+Lock-screen availability is configured per handle and defaults off. All configured actions remain available. Apps and settings request Android's normal unlock step before opening. Nudge does not wake the screen or operate on always-on display. After reboot, unlock the phone once before use.
+
+Backups use the system file picker and include hidden buttons and icon references. Add imports disabled independent copies. Replace requires confirmation and leaves the master switch off. Icon packs must be installed separately.
+
+## Battery use and compatibility
+
+One system-bound service manages all handles. There is no polling, wake lock, periodic restart work, foreground service, or idle redraw loop. Gesture timing uses touch timestamps. Panels release their composition and observers when closed. Icons load off the main thread with an 8 MiB bitmap cache. Update checks run only when requested.
+
+Physical Redmi Note 12 checks and battery measurements remain pending. Passing automated tests does not prove HyperOS compatibility or zero battery drain. Record the exact model, Android version, HyperOS build, and navigation mode in the local compatibility checklist.
 
 ## Releases and updates
 
@@ -71,9 +84,9 @@ The generator uses the first line of each full commit message, including message
 
 Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
-In **Behavior & help → Device & updates**, tap **Check for updates**. Nudge reads the [public GitHub release list](https://github.com/serogee/Nudge/releases), compares version numbers automatically and reports an update, the current version, or a newer local build. **Include pre-releases (testing)** is saved and defaults to off: off checks stable releases only; on checks stable releases and published test versions, with pre-releases labelled. Changing this option cancels the active check, clears its result and discards any late reply. It does not start a new request. Customization reset preserves this update preference. Drafts and unsupported version tags are excluded. Only published releases are used, not local Git tags. Numeric versions compare correctly (for example, 0.1.10 is newer than 0.1.9); the debug suffix does not count as a new release. Checks are bounded by connection/read timeouts, run off the main thread and report network/rate-limit errors instead of claiming the app is current.
+In **Settings → Updates**, tap **Check for updates**. Nudge reads the [public GitHub release list](https://github.com/serogee/Nudge/releases), compares version numbers automatically and reports an update, the current version, or a newer local build. **Include pre-releases (testing)** is saved and defaults to off: off checks stable releases only; on checks stable releases and published test versions, with pre-releases labelled. Changing this option cancels the active check, clears its result and discards any late reply. It does not start a new request. Customization reset preserves this update preference. Drafts and unsupported version tags are excluded. Only published releases are used, not local Git tags. Numeric versions compare correctly (for example, 0.1.10 is newer than 0.1.9); the debug suffix does not count as a new release. Checks are bounded by connection/read timeouts, run off the main thread and report network/rate-limit errors instead of claiming the app is current.
 
-As of 2026-10-17, the published 0.1.0 and 0.1.1 releases are marked as pre-releases on GitHub. When only pre-releases are published, checks with testing off report that no stable release is available; turn testing on to include them. The app does not change GitHub release labels.
+If only pre-releases are published, checks with testing off report that no stable release is available. Enable testing to include them. The app does not change GitHub release labels.
 
 When a newer version is available, **Download APK** opens that release's attached `Nudge-<version>.apk` in the external browser or download handler. **View release notes** opens its GitHub page. Downloads and installation require your action; Android confirms installation and checks update signing. A release APK installs separately from a debug copy. Missing APKs, unavailable browsers and missing releases are reported. No account, token, device diagnostics or saved settings are sent with the metadata request. See the [GitHub releases API](https://docs.github.com/en/rest/releases/releases) for the public metadata format.
 
@@ -92,6 +105,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Device-Profile.ps1
 # For multiple devices: add -Serial <adb-serial>
 ```
 
-The profile is saved under `.local/device-checks`; manually complete the checklist with the model, exact HyperOS build, navigation mode and observations. Home's popup confirmation is session-local and user-reported. Copy compatibility details from Behavior & help for support.
+The profile is saved under `.local/device-checks`; manually complete the checklist with the model, exact HyperOS build, navigation mode and observations. Home's popup confirmation is session-local and user-reported. Copy compatibility details from Settings for support.
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
