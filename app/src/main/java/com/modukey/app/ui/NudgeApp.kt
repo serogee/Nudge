@@ -41,6 +41,8 @@ import com.modukey.app.BuildConfig
 import com.modukey.app.R
 import com.modukey.app.core.*
 import com.modukey.app.platform.ConnectionState
+import com.modukey.app.updates.GitHubReleaseSource
+import com.modukey.app.updates.UpdateState
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -222,8 +224,16 @@ private fun CustomizeScreen(s: TriggerSettings, vm: NudgeViewModel) {
 @Composable
 private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings: (String) -> Unit, tell: (String) -> Unit) {
     val context = LocalContext.current
+    val updates by vm.updates.collectAsStateWithLifecycle()
     var exclusions by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
+    fun openUpdateLink(url: String) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE))
+        } catch (_: android.content.ActivityNotFoundException) {
+            tell("No browser is available. Open $url to view the release.")
+        }
+    }
     Text("Your gesture. Your rhythm.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     Panel("Activation") {
         Choices(Activation.entries, s.activation, { when (it) { Activation.SWIPE -> "Swipe"; Activation.TAP -> "Tap"; Activation.LONG_PRESS -> "Hold" } }) { value -> vm.update { it.copy(activation = value) } }
@@ -258,6 +268,7 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
     }
     Panel("Device & updates") {
         Text("${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\nAndroid ${android.os.Build.VERSION.RELEASE} · API ${android.os.Build.VERSION.SDK_INT}\nNudge ${BuildConfig.VERSION_NAME}")
+        UpdateControls(updates, s.includePrereleases, vm::setIncludePrereleases, vm::checkForUpdates, ::openUpdateLink)
         OutlinedButton(onClick = {
             vm.inspectDiagnostics { details ->
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Nudge compatibility", details))
@@ -270,10 +281,52 @@ private fun BehaviorScreen(s: TriggerSettings, vm: NudgeViewModel, openSettings:
     if (exclusions) ExclusionsDialog(s, vm) { exclusions = false }
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false }, title = { Text("Reset customization?") },
-        text = { Text("Restore gesture, placement, appearance and exclusions to defaults. Your enable switch stays as it is.") },
+        text = { Text("Restore gesture, placement, appearance and exclusions to defaults. Your enable switch and update preference stay as they are.") },
         confirmButton = { TextButton(onClick = { vm.reset(); confirmReset = false }) { Text("Reset") } },
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun UpdateControls(state: UpdateState, includePrereleases: Boolean, changePrereleases: (Boolean) -> Unit, check: () -> Unit, open: (String) -> Unit) {
+    ToggleRow("Include pre-releases (testing)", "Off checks stable releases only. On also includes published test versions.", includePrereleases, changePrereleases)
+    val checking = state == UpdateState.Checking
+    OutlinedButton(onClick = check, enabled = !checking) {
+        if (checking) {
+            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(if (checking) "Checking…" else "Check for updates")
+    }
+    when (state) {
+        UpdateState.Idle -> Text(if (includePrereleases) "Check published stable and test versions on GitHub." else "Check stable GitHub releases for a newer Nudge version.", style = MaterialTheme.typography.bodySmall)
+        UpdateState.Checking -> Unit
+        is UpdateState.NoRelease -> {
+            Text(if (state.includePrereleases) "No published Nudge version could be found to compare." else "No stable release is published yet. Turn on Include pre-releases (testing) to check test versions.", style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick = { open(GitHubReleaseSource.RELEASES_PAGE) }) { Text("View releases") }
+        }
+        is UpdateState.Failed -> {
+            Notice(state.message, error = true)
+            OutlinedButton(onClick = { open(GitHubReleaseSource.RELEASES_PAGE) }) { Text("View releases") }
+        }
+        is UpdateState.Result -> {
+            val release = state.release
+            val channel = if (state.includePrereleases) "published version" else "stable release"
+            Text(when {
+                state.comparison > 0 -> "Nudge ${release.tag} is available."
+                state.comparison < 0 -> "This build is newer than the latest $channel (${release.tag})."
+                else -> "You have the latest $channel (${release.tag})."
+            })
+            if (release.prerelease) Text("Published as a pre-release", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            if (state.comparison > 0) {
+                if (BuildConfig.DEBUG) Text("The release APK installs separately from this debug copy.", style = MaterialTheme.typography.bodySmall)
+                if (release.apkUrl != null) Button(onClick = { open(release.apkUrl) }) { Text("Download APK") }
+                else Text("The APK has not been attached to this release yet.", style = MaterialTheme.typography.bodySmall)
+            }
+            OutlinedButton(onClick = { open(release.pageUrl) }) { Text("View release notes") }
+        }
+    }
+    Text("Checks run only when you tap Check for updates. Changing the testing option clears the previous result.", style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable

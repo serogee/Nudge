@@ -30,18 +30,20 @@ class SettingsRepositoryTest {
         }
         session { repository ->
             assertFalse(repository.settings.first().enabled)
-            repository.update { it.copy(enabled = true, portrait = Placement(Edge.BOTTOM, 0.2f), excludedPackages = setOf("sample.app")) }
+            assertFalse(repository.settings.first().includePrereleases)
+            repository.update { it.copy(enabled = true, portrait = Placement(Edge.BOTTOM, 0.2f), excludedPackages = setOf("sample.app"), includePrereleases = true) }
             repository.update { it.copy(indicatorOpacity = 0.3f, indicatorThicknessFraction = 0.4f, landscapeEnabled = true) }
         }
         session { repository ->
             val saved = repository.settings.first()
             assertTrue(saved.enabled)
+            assertTrue(saved.includePrereleases)
             assertEquals(Placement(Edge.BOTTOM, 0.2f), saved.portrait)
             assertEquals(setOf("sample.app"), saved.excludedPackages)
             assertEquals(0.3f, saved.indicatorOpacity)
             assertEquals(0.4f, saved.indicatorThicknessFraction)
             repository.reset()
-            assertEquals(TriggerSettings(enabled = true), repository.settings.first())
+            assertEquals(TriggerSettings(enabled = true, includePrereleases = true), repository.settings.first())
         }
     }
 
@@ -74,6 +76,7 @@ class SettingsRepositoryTest {
             assertTrue(s.landscapeEnabled)
             assertFalse(s.landscapeOverrideEnabled)
             assertFalse(s.lockScreenEnabled)
+            assertFalse(s.includePrereleases)
             assertEquals(setOf("game"), s.excludedPackages)
             assertNull(store.data.first()[floatPreferencesKey("indicator.length")])
             repo.update { it.copy(lengthDp = 80f, lockScreenEnabled = true) }

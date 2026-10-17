@@ -84,7 +84,7 @@ class SettingsControllerTest {
         val store = SlowStore().apply { fail = true }
         val c = SettingsController(store, backgroundScope)
         runCurrent()
-        c.update { it.copy(lockScreenEnabled = true, indicatorLengthFraction = 0.42f, indicatorThicknessFraction = 0.37f) }
+        c.update { it.copy(lockScreenEnabled = true, indicatorLengthFraction = 0.42f, indicatorThicknessFraction = 0.37f, includePrereleases = true) }
         c.flush()
         runCurrent()
         assertNotNull(c.error.value)
@@ -105,6 +105,10 @@ class SettingsControllerTest {
         assertEquals(29f, store.disk.value.depthDp)
         assertFalse(store.disk.value.indicatorVisible)
         assertFalse(store.disk.value.landscapeEnabled)
+        assertTrue(store.disk.value.includePrereleases)
+        c.reset()
+        runCurrent()
+        assertEquals(TriggerSettings(includePrereleases = true), store.disk.value)
     }
 
     @Test fun `completing a slow save does not bypass a newer adjustment debounce`() = runTest {

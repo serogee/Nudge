@@ -20,8 +20,8 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         store.edit { prefs -> encode(prefs, transform(decode(prefs)).normalized()) }
     }
 
-    // Preserve the master switch: reset appearance/behavior must not silently enable the trigger.
-    override suspend fun reset() = update { TriggerSettings(enabled = it.enabled) }
+    // A customization reset preserves the master switch and the unrelated update preference.
+    override suspend fun reset() = update { TriggerSettings(enabled = it.enabled, includePrereleases = it.includePrereleases) }
 
     private fun decode(p: Preferences): TriggerSettings {
         val defaults = TriggerSettings()
@@ -45,6 +45,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             swipeTimeoutMs = p[longPreferencesKey("swipe.timeout")] ?: 600L,
             haptics = p[booleanPreferencesKey("haptics")] ?: false,
             excludedPackages = p[stringSetPreferencesKey("excluded.packages")] ?: emptySet(),
+            includePrereleases = p[booleanPreferencesKey("updates.include.prereleases")] ?: false,
         ).normalized()
     }
 
@@ -70,6 +71,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         p[longPreferencesKey("swipe.timeout")] = s.swipeTimeoutMs
         p[booleanPreferencesKey("haptics")] = s.haptics
         p[stringSetPreferencesKey("excluded.packages")] = s.excludedPackages
+        p[booleanPreferencesKey("updates.include.prereleases")] = s.includePrereleases
     }
 }
 

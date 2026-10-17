@@ -14,6 +14,8 @@ import com.modukey.app.NudgeApplication
 import com.modukey.app.core.TriggerSettings
 import com.modukey.app.platform.AccessibilityPermission
 import com.modukey.app.platform.VolumeResult
+import com.modukey.app.updates.GitHubReleaseSource
+import com.modukey.app.updates.UpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -30,6 +32,8 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val launchableApps = MutableStateFlow<List<LaunchableApp>>(emptyList())
     val appsLoaded = MutableStateFlow(false)
     val popupCheck = MutableStateFlow("Not checked this session")
+    private val updateChecker = UpdateChecker(GitHubReleaseSource(), BuildConfig.VERSION_NAME, viewModelScope)
+    val updates = updateChecker.state
     private val permissionObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) { refreshPermissions() }
     }
@@ -54,6 +58,15 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshPermissions() {
         accessibilityEnabled.value = AccessibilityPermission.enabled(app)
+    }
+
+    fun checkForUpdates() = updateChecker.check(settings.value?.includePrereleases ?: false)
+
+    fun setIncludePrereleases(value: Boolean) {
+        if (settings.value?.includePrereleases == value) return
+        updateChecker.clear()
+        app.settings.update { it.copy(includePrereleases = value) }
+        app.settings.flush()
     }
 
     override fun onCleared() {

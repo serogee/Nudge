@@ -65,6 +65,7 @@ class SettingsController(private val repository: SettingsRepository, private val
         field("swipe.timeout", before.swipeTimeoutMs, after.swipeTimeoutMs) { s, v -> s.copy(swipeTimeoutMs = v) }
         field("haptics", before.haptics, after.haptics) { s, v -> s.copy(haptics = v) }
         field("exclusions", before.excludedPackages, after.excludedPackages) { s, v -> s.copy(excludedPackages = v) }
+        field("updates.include.prereleases", before.includePrereleases, after.includePrereleases) { s, v -> s.copy(includePrereleases = v) }
         mutableState.value = after
         debounce?.cancel()
         debounce = scope.launch { delay(150); debounce = null; scope.launch { save() } }
@@ -77,7 +78,7 @@ class SettingsController(private val repository: SettingsRepository, private val
     }
 
     fun retry() { if (mutableState.value == null) load() else flush() }
-    fun reset() { update { TriggerSettings(enabled = it.enabled) }; flush() }
+    fun reset() { update { TriggerSettings(enabled = it.enabled, includePrereleases = it.includePrereleases) }; flush() }
 
     private suspend fun save() = saveLock.withLock {
         if (pending.isNotEmpty()) {

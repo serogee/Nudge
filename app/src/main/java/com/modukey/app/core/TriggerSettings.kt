@@ -25,6 +25,7 @@ data class TriggerSettings(
     val swipeTimeoutMs: Long = 600,
     val haptics: Boolean = false,
     val excludedPackages: Set<String> = emptySet(),
+    val includePrereleases: Boolean = false,
 ) {
     fun placement(isLandscape: Boolean) = if (isLandscape && landscapeOverrideEnabled) landscape else portrait
 

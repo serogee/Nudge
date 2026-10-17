@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add Check for updates in Behavior & help with automatic GitHub version comparison, APK and release-note links, and network error handling. A saved Include pre-releases (testing) option defaults off; checks run only when tapped.
 - make indicator thickness a percentage (634e444)
 
 ### Fixed
