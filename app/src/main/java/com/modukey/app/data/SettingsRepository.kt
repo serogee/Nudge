@@ -23,7 +23,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
     // A customization reset preserves the master switch and the unrelated update preference.
     override suspend fun reset() = update { TriggerSettings(enabled = it.enabled, includePrereleases = it.includePrereleases) }
 
-    private fun decode(p: Preferences): TriggerSettings {
+    internal fun decode(p: Preferences): TriggerSettings {
         val defaults = TriggerSettings()
         return TriggerSettings(
             enabled = p[booleanPreferencesKey("enabled")] ?: defaults.enabled,
