@@ -3,12 +3,13 @@ package com.modukey.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.activity.enableEdgeToEdge
+import com.modukey.app.ui.NudgeApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { Text("Modukey") } }
+        enableEdgeToEdge()
+        setContent { NudgeApp() }
     }
 }
