@@ -46,7 +46,7 @@ import com.modukey.app.updates.UpdateState
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private val LocalFinishAdjustment = staticCompositionLocalOf<() -> Unit> { {} }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -354,24 +354,6 @@ private fun ExclusionsDialog(s: TriggerSettings, vm: NudgeViewModel, dismiss: ()
             }
         }
     }, confirmButton = { TextButton(onClick = dismiss) { Text("Done") } })
-}
-
-@Composable
-private fun ColorPicker(color: Long, enabled: Boolean = true, change: (Long) -> Unit) {
-    var custom by remember(color) { mutableStateOf("%06X".format(color and 0xFFFFFF)) }
-    val labelColor = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    Text("Indicator color", style = MaterialTheme.typography.labelLarge, color = labelColor)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(0xFFB8D982L, 0xFF6BB7E8L, 0xFFE3A0CFL, 0xFFF1BA70L, 0xFFFFFFFFL, 0xFF242A20L).forEach { value ->
-            FilledIconButton(onClick = { change(value) }, enabled = enabled, modifier = Modifier.semantics { contentDescription = "Indicator color #%06X".format(value and 0xFFFFFF) }, colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(value))) {
-                if ((color and 0xFFFFFF) == (value and 0xFFFFFF)) Text("✓", color = if (!enabled) labelColor else if (value == 0xFF242A20L) Color.White else Color.Black)
-            }
-        }
-    }
-    OutlinedTextField(value = custom, onValueChange = { value ->
-        custom = value.removePrefix("#").take(6)
-        if (custom.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or custom.toLong(16))
-    }, enabled = enabled, label = { Text("Hex color") }, prefix = { Text("#") }, singleLine = true, modifier = Modifier.fillMaxWidth(), isError = enabled && !custom.matches(Regex("[0-9a-fA-F]{6}")))
 }
 
 @Composable
