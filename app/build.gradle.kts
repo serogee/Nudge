@@ -59,6 +59,7 @@ dependencies {
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.datastore.core.okio)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
 }
