@@ -11,8 +11,8 @@ object ConfigurationCodec {
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", 1).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle))).toString()
 
-    fun decode(text: String): AppConfiguration {
-        if (text.toByteArray(Charsets.UTF_8).size > MAX_BYTES) throw IOException("backup_size")
+    fun decode(text: String, checkBackupSize: Boolean = true): AppConfiguration {
+        if (checkBackupSize && text.toByteArray(Charsets.UTF_8).size > MAX_BYTES) throw IOException("backup_size")
         try {
             val root = JSONObject(text)
             if (root.getInt("schema") != 1) throw IOException("configuration_version")
