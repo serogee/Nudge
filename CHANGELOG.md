@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 - 2026-10-17
+
+### Fixed
+
+- round customization highlights into half-squircles (e021154)
+
+### Maintenance
+
+- define commit scopes and message rules (c2aeda2)
+- generate changelogs from scoped commits (cefeb75)
+
 ## 0.1.1 — 2026-10-17
 
 - Continuous, non-touchable indicator and touch-area preview while Customize is visible, even with the master switch off. Normal visibility returns on navigation or backgrounding.
