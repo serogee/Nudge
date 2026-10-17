@@ -2,32 +2,33 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## 0.1.2 - 2026-10-17
+
 ### Added
 
-- Add Check for updates in Behavior & help with automatic GitHub version comparison, APK and release-note links, and network error handling. A saved Include pre-releases (testing) option defaults off; checks run only when tapped.
-- make indicator thickness a percentage (634e444)
+- Set indicator thickness as a continuous percentage of touch depth. Existing thickness settings migrate once and stay proportional when resized. (634e444)
+- Check GitHub versions automatically from Behavior & help, with APK and release-note links. Include pre-releases (testing) is saved and defaults off; checks run only when tapped. (9ae4350)
 
 ### Fixed
 
-- Round the shared app icon background, including the launch screen, and use that shape directly inside the app.
-- Make handle visible immediately shows or hides the handle in both previews. Its appearance controls are grey and disabled while it is off, with saved values retained.
-- Round customization highlights into half-squircles (e021154; included in the unpublished local 0.1.2 build).
+- Round customization guides into half-squircles with a flat side against the screen edge. (e021154)
+- Apply Make handle visible immediately in both previews. Grey out and disable handle appearance controls while hidden, retaining saved values. (d26cb05)
+- Use the same rounded icon container on launch and inside the app. (40932fb)
 
 ### Maintenance
 
-- Recommend Background autostart during HyperOS setup, document menu variations, and reserve battery setting changes for disconnections. Exact Redmi requirements remain pending device testing.
-- Move the local compatibility checklist to plans/compatibility.md and exclude it from Git.
+- Recommend Background autostart during HyperOS setup and document menu variations. Battery restriction changes remain recovery steps for disconnections. (2966580)
+- Generate changelogs from scoped commits and document commit conventions. (cefeb75, c2aeda2)
+- Keep the compatibility checklist local at plans/compatibility.md, excluded from Git. (54cc453)
 
-## 0.1.2 - 2026-10-17 (local build only; not published)
+### Update and compatibility
 
-### Fixed
-
-- round customization highlights into half-squircles (e021154)
-
-### Maintenance
-
-- define commit scopes and message rules (c2aeda2)
-- generate changelogs from scoped commits (cefeb75)
+- Version code 4. Install over 0.1.1 or the earlier local 0.1.2 build without uninstalling to preserve settings; releases use the same application ID and signing key.
+- The testing preference starts off and survives customization reset. Update requests run off the main thread and report network or rate-limit failures.
+- Debug verification: 53 JVM/Robolectric tests passed; lint reported 0 errors and 14 existing warnings. Release packaging runs signed-build and certificate checks, recorded in the generated build metadata.
+- Redmi Note 12 / HyperOS 1 popup behavior, Recents recovery, battery use and installation over a previous release remain pending physical-device testing.
 
 ## 0.1.1 — 2026-10-17
 

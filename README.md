@@ -42,7 +42,7 @@ Connection distinguishes **Disabled**, **Enabled but disconnected**, and **Conne
 
 ## Releases and updates
 
-Release preparation happens only when you request a new release. Feature changes remain under Unreleased until then; tests, lint and debug builds can run during development. The latest user-confirmed published version is 0.1.1. The 0.1.2 APK and tag were local only.
+Release preparation happens only when you request a new release. Feature changes remain under Unreleased until then; tests, lint and debug builds can run during development. GitHub publishing is a separate manual step.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Initialize-Signing.ps1
@@ -81,7 +81,7 @@ The repository uses Git on `main` with the existing GitHub remote. Releases and 
 
 Version 0.1.1 migrates the old indicator length once to `oldIndicatorLengthDp / oldTouchLengthDp`. Existing numeric position percentages are retained with their new center meaning. Landscape availability, saved landscape placement and all unrelated preferences are preserved; the new landscape override and lock-screen flags default off. A slight initial position shift from 0.1.0 reflects the center definition.
 
-The pending thickness update migrates indicator thickness once to `oldIndicatorThicknessDp / oldTouchDepthDp`, capped at 100% where it already filled the touch depth. Existing saved thickness and depth use their old validity limits before conversion. Later touch-depth changes keep this percentage, and all unrelated preferences are retained.
+Version 0.1.2 migrates indicator thickness once to `oldIndicatorThicknessDp / oldTouchDepthDp`, capped at 100% where it already filled the touch depth. Existing saved thickness and depth use their old validity limits before conversion. Later touch-depth changes keep this percentage, and all unrelated preferences are retained.
 
 ## Device verification
 

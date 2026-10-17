@@ -15,7 +15,7 @@
 
 - Make a release only when the user explicitly requests one. A feature or fix request does not authorize version bumps, versioned release notes, release APK builds, tags, or publishing.
 - During development, keep changes under Unreleased and use tests, lint, or debug builds for verification. Do not invoke `scripts/Release.ps1` automatically.
-- Use the latest user-confirmed published release as the changelog baseline. As of 2026-10-17, only 0.1.1 is confirmed published; the 0.1.2 APK/tag were local only. The 0.1.3 release build was canceled before export or tagging.
+- Use the latest user-confirmed published release as the changelog baseline. As of 2026-10-17, only 0.1.1 is confirmed published. The user requested the current changes as 0.1.2; this build keeps that version name and increases the version code to 4. The earlier unpublished code-3 APK and exact tag object are preserved under `releases/archive/0.1.2-build.3/` and `archive/v0.1.2-build.3`. The old tag was never pushed. The 0.1.3 build was canceled before export or tagging.
 - Commit completed features and fixes before preparing release notes. Increase both version values in `version.properties` for a new distributed APK.
 - Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Write` to prepare the new version's changelog and release notes from commit titles.
 - Review the notes and add observed compatibility results after the final generation. Commit the version and notes before running `scripts/Release.ps1`.
