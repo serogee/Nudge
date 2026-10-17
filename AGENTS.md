@@ -11,6 +11,16 @@
 - When asked only for a commit message, return only that message.
 - Apply these rules to future commits. Do not rewrite existing commits or release tags to change their format unless the user explicitly asks.
 
+## App text
+
+- Use ASD-STE100 as the style target for approximately 90% of app-generated English. Keep Android menu names, app names, and necessary technical terms.
+- Use short, active sentences. Give one instruction per sentence and one topic per paragraph.
+- Aim for at most 20 words in instructions and 25 words in explanations. Labels can be short phrases.
+- Use consistent terms: handle, touch area, visible handle, panel, button, and volume popup.
+- Remove slogans, metaphors, repeated explanations, and implementation details that do not help the user act.
+- Put essential instructions beside controls. Put longer setup and recovery steps in Help.
+- Keep app-generated labels, explanations, errors, and accessibility descriptions in string resources. User-supplied names and external release content keep their original text.
+
 ## Release notes
 
 - Make a release only when the user explicitly requests one. A feature or fix request does not authorize version bumps, versioned release notes, release APK builds, tags, or publishing.
