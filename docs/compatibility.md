@@ -35,7 +35,7 @@ Record PASS/FAIL, observed behavior, configuration and build for each check. The
 - [ ] Touches outside the rectangle and Back/Home outside its reserved area work normally. Native volume controls remain fully touchable with the chosen placement.
 - [ ] Left/right/bottom placement and grab-offset drag preview agree with the real rectangle. Check cutouts/navigation insets and center positions at 0%, 50%, 100%. Resizing preserves center except corner clamping.
 - [ ] Indicator length/thickness percentages stay constant when touch length/depth changes, on all three edges and after rotation. Zero opacity/length/thickness leaves the editing guide visible. Saved radius returns when the indicator is enlarged.
-- [ ] Upgrade from 0.1.2 to 0.1.3: thickness is converted once from dp to its previous proportion of touch depth. Changing depth and restarting preserves the new percentage and all unrelated preferences.
+- [ ] In the next authorized update, thickness is converted once from dp to its previous proportion of touch depth. Changing depth and restarting preserves the new percentage and all unrelated preferences.
 - [ ] Bottom stays bottom in both landscape rotations with override off. Enable/change/disable/re-enable the override: values are retained. Landscape disabling still hides the normal trigger.
 - [ ] Excluded launcher apps hide the trigger and returning to another app restores it.
 - [ ] With lock-screen availability off, locking hides the trigger. With it on, the awake lock screen permits activation and ignores exclusions behind it, preserving normal indicator/landscape settings. Native volume action does not change volume or unlock the phone. Screen-off/AOD always hides it; verify first-unlock requirement after reboot.

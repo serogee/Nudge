@@ -1,12 +1,16 @@
 # Changelog
 
-## 0.1.3 - 2026-10-17
+## Unreleased
 
 ### Added
 
 - make indicator thickness a percentage (634e444)
 
-## 0.1.2 - 2026-10-17
+### Fixed
+
+- Round customization highlights into half-squircles (e021154; included in the unpublished local 0.1.2 build).
+
+## 0.1.2 - 2026-10-17 (local build only; not published)
 
 ### Fixed
 
