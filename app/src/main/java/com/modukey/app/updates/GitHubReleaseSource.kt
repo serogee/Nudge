@@ -25,10 +25,13 @@ class GitHubReleaseSource(
             connection.setRequestProperty("X-GitHub-Api-Version", "2026-03-10")
             when (val code = connection.responseCode) {
                 200 -> Unit
-                429 -> throw UpdateCheckException("GitHub's update limit was reached. Try again later.")
-                403 -> throw UpdateCheckException(if (connection.getHeaderField("X-RateLimit-Remaining") == "0") "GitHub's update limit was reached. Try again later." else "GitHub blocked the update check. Try again later or view releases on GitHub.")
-                404 -> throw UpdateCheckException("Nudge's public releases could not be found on GitHub.")
-                else -> throw UpdateCheckException(if (code >= 500) "GitHub is unavailable. Try again later." else "GitHub could not complete the update check. View releases on GitHub.")
+                429 -> throw UpdateCheckException("GitHub's update limit was reached. Try again later.", UpdateFailure.RATE_LIMIT)
+                403 -> {
+                    val limited = connection.getHeaderField("X-RateLimit-Remaining") == "0"
+                    throw UpdateCheckException(if (limited) "GitHub's update limit was reached. Try again later." else "GitHub blocked the update check. Try again later or view releases on GitHub.", if (limited) UpdateFailure.RATE_LIMIT else UpdateFailure.BLOCKED)
+                }
+                404 -> throw UpdateCheckException("Nudge's public releases could not be found on GitHub.", UpdateFailure.NOT_FOUND)
+                else -> throw UpdateCheckException(if (code >= 500) "GitHub is unavailable. Try again later." else "GitHub could not complete the update check. View releases on GitHub.", if (code >= 500) UpdateFailure.UNAVAILABLE else UpdateFailure.BLOCKED)
             }
             val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
                 val text = StringBuilder()
@@ -37,7 +40,7 @@ class GitHubReleaseSource(
                     currentCoroutineContext().ensureActive()
                     val count = reader.read(buffer)
                     if (count < 0) break
-                    if (text.length + count > MAX_RESPONSE_CHARS) throw UpdateCheckException("GitHub's update response was too large. View releases on GitHub.")
+                    if (text.length + count > MAX_RESPONSE_CHARS) throw UpdateCheckException("GitHub's update response was too large. View releases on GitHub.", UpdateFailure.TOO_LARGE)
                     text.append(buffer, 0, count)
                 }
                 text.toString()
@@ -80,7 +83,7 @@ class GitHubReleaseSource(
                 }
                 return latest
             } catch (_: JSONException) {
-                throw UpdateCheckException("GitHub's release data could not be read. Try again later or view releases on GitHub.")
+                throw UpdateCheckException("GitHub's release data could not be read. Try again later or view releases on GitHub.", UpdateFailure.INVALID_RESPONSE)
             }
         }
 

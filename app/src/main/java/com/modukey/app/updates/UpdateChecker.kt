@@ -19,10 +19,11 @@ sealed interface UpdateState {
     data object Checking : UpdateState
     data class NoRelease(val includePrereleases: Boolean) : UpdateState
     data class Result(val release: PublishedRelease, val comparison: Int, val includePrereleases: Boolean) : UpdateState
-    data class Failed(val message: String) : UpdateState
+    data class Failed(val message: String, val reason: UpdateFailure = UpdateFailure.UNKNOWN) : UpdateState
 }
 
-class UpdateCheckException(message: String) : IOException(message)
+enum class UpdateFailure { UNKNOWN, NETWORK, RATE_LIMIT, BLOCKED, NOT_FOUND, UNAVAILABLE, INVALID_RESPONSE, TOO_LARGE, VERSION }
+class UpdateCheckException(message: String, val reason: UpdateFailure = UpdateFailure.UNKNOWN) : IOException(message)
 
 class UpdateChecker(private val source: ReleaseSource, private val installedVersion: String, private val scope: CoroutineScope) {
     private val mutableState = MutableStateFlow<UpdateState>(UpdateState.Idle)
@@ -48,18 +49,18 @@ class UpdateChecker(private val source: ReleaseSource, private val installedVers
         request = scope.launch {
             try {
                 val installed = ReleaseVersion.parse(installedVersion.removeSuffix("-debug"))
-                    ?: throw UpdateCheckException("The installed version could not be compared. View Nudge's releases on GitHub.")
+                    ?: throw UpdateCheckException("The installed version could not be compared. View Nudge's releases on GitHub.", UpdateFailure.VERSION)
                 val release = source.latest(includePrereleases)
                 publish(if (release == null) UpdateState.NoRelease(includePrereleases) else UpdateState.Result(release, release.version.compareTo(installed), includePrereleases))
             } catch (error: CancellationException) {
                 publish(UpdateState.Idle)
                 throw error
             } catch (error: UpdateCheckException) {
-                publish(UpdateState.Failed(error.message.orEmpty()))
+                publish(UpdateState.Failed(error.message.orEmpty(), error.reason))
             } catch (_: IOException) {
-                publish(UpdateState.Failed("Could not connect to GitHub. Check your connection and try again."))
+                publish(UpdateState.Failed("Could not connect to GitHub. Check your connection and try again.", UpdateFailure.NETWORK))
             } catch (_: RuntimeException) {
-                publish(UpdateState.Failed("The update response could not be read. Try again later or view releases on GitHub."))
+                publish(UpdateState.Failed("The update response could not be read. Try again later or view releases on GitHub.", UpdateFailure.INVALID_RESPONSE))
             }
         }
     }
