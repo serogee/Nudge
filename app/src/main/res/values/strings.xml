@@ -355,4 +355,8 @@
     <string name="longer_touch_help">Use the longer screen edge as the maximum. The saved length stays unchanged when space is limited.</string>
     <string name="touch_length_limited">Saved length: %1$d dp. Available length: %2$d dp.</string>
     <string name="overlay_preview">On-phone preview</string>
+    <string name="soft_hide">Soft hide in full screen</string>
+    <string name="soft_hide_help">The first gesture reveals the handle. The next gesture runs its action. The hidden touch area still receives touches.</string>
+    <string name="hide_after">Hide after</string>
+    <string name="soft_hide_detection">Full screen uses hidden status bars. If the phone does not report visibility, the handle keeps its normal behavior.</string>
 </resources>

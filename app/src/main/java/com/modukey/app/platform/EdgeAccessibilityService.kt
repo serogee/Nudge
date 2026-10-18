@@ -39,6 +39,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var open: OpenPanel? = null
     private var attachedPanel: Pair<OpenPanel, Boolean>? = null
     private var foreground: String? = null
+    private var softHideForeground: String? = null
     private var registered = false
     private var handleBounds = emptyMap<String, Bounds>()
     private var actions: ActionExecutor? = null
@@ -67,7 +68,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             })
         registry = OverlayRegistry { id -> object : OverlayHost<HandleSpec> {
             override fun attach(value: HandleSpec) {
-                val view = HandleTriggerView(this@EdgeAccessibilityService) { activate(id, it) }
+                val view = HandleTriggerView(this@EdgeAccessibilityService, { activate(id, it) }, { sessions.reset(id) })
                 view.configure(value.settings, value.edge, value.editing)
                 val p = params(value); views[id] = view
                 try { manager.addView(view, p); layouts[id] = p } catch (e: RuntimeException) { detach(); throw e }
@@ -113,7 +114,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (pkg == "android" || pkg == "com.android.systemui") { frames?.request(); return }
         if (pkg != foreground) { foreground = pkg; if (open?.testing == false) dismissPanel(); frames?.request() }
     }
-    override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); views.values.forEach { it.cancelGesture() }; frames?.request() }
+    override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); views.values.forEach { it.cancelGesture(); it.resetSoftHide() }; frames?.request() }
     override fun onInterrupt() { views.values.forEach { it.cancelGesture() }; refresh() }
     override fun onUnbind(intent: Intent?): Boolean { app.diagnostics.record("Accessibility unbound"); stopSession(); return super.onUnbind(intent) }
     override fun onDestroy() { stopSession(); super.onDestroy() }
@@ -203,6 +204,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private fun render() {
         if (scope == null) return
         val config = app.configuration.state.value ?: return
+        if (softHideForeground != foreground) { views.values.forEach { it.resetSoftHide() }; softHideForeground = foreground }
         val s = screen(); val selected = app.editor.state.value
         val editing = selected != null && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
         val reasons = config.handles.associate { it.id to reason(config, it) }.toMutableMap()
@@ -248,6 +250,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
         val failures = registry?.reconcile(desired, raise = changed && wanted != null).orEmpty()
+        views.forEach { (id, view) -> view.setPanelOpen(open?.handleId == id) }
         errors.keys.filter { it != "panel" && it !in desired }.toList().forEach(errors::remove)
         failures.forEach { (id, error) -> errors[id] = getString(R.string.overlay_error); app.diagnostics.record("Handle window failed", error); reasons[id] = HandleAvailability.ERROR }
         desired.keys.filter { it in registry?.attached.orEmpty() }.forEach { errors.remove(it) }
@@ -272,7 +275,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private fun stopSession() {
         panelTimeout?.stop(); panelTimeout = null
         frames?.stop(); frames = null; scope?.cancel(); scope = null
-        open = null; attachedPanel = null; sessions.clear(); app.unlocks.clear(); handleBounds = emptyMap(); foreground = null
+        open = null; attachedPanel = null; sessions.clear(); app.unlocks.clear(); handleBounds = emptyMap(); foreground = null; softHideForeground = null
         try { panelHost?.hide(animate = false) } catch (e: RuntimeException) { app.diagnostics.record("Panel cleanup failed", e) }; panelHost = null
         registry?.clear()?.values?.forEach { app.diagnostics.record("Handle cleanup failed", it) }; registry = null
         views.clear(); layouts.clear(); errors.clear(); actions = null
