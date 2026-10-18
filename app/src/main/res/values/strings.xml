@@ -269,7 +269,7 @@
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>
     <string name="offset_y">Y offset</string>
-    <string name="offset_help">Offsets move the panel from the handle. Positive X moves right. Positive Y moves down.</string>
+    <string name="offset_help">Positive X moves right. Positive Y moves up. Screen edges can limit movement.</string>
     <string name="no_buttons_setup">No buttons set up</string>
     <string name="edit_panel">Edit panel</string>
     <string name="edit_button">Edit button</string>
@@ -351,4 +351,7 @@
     <string name="empty_no_button">No button</string>
     <string name="empty_slash">Slash icon</string>
     <string name="empty_button_help">This button keeps its grid space and performs no action.</string>
+    <string name="longer_touch_length">Enable longer touch length</string>
+    <string name="longer_touch_help">Use the longer screen edge as the maximum. The saved length stays unchanged when space is limited.</string>
+    <string name="touch_length_limited">Saved length: %1$d dp. Available length: %2$d dp.</string>
 </resources>

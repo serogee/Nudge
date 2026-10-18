@@ -76,7 +76,11 @@ import kotlin.math.roundToInt
                             PercentSlider(R.string.center_position, placement.position, default = .65f) { value -> vm.editTrigger(h.id) { current ->
                                 if (landscape && current.landscapeOverrideEnabled) current.copy(landscape = current.landscape.copy(position = value)) else current.copy(portrait = current.portrait.copy(position = value))
                             } }
-                            SettingSlider(R.string.touch_length, s.lengthDp, 48f..200f, t(R.string.dp_value, s.lengthDp.roundToInt()), default = 120f) { value -> vm.editTrigger(h.id) { it.copy(lengthDp = value) } }
+                            val maximumLength = TriggerGeometry.maximumLengthDp(screen.width, screen.height, screen.density, screen.insets, s.longerTouchLength).coerceAtLeast(48f)
+                            SettingSlider(R.string.touch_length, s.lengthDp, 48f..maximumLength, t(R.string.dp_value, s.lengthDp.roundToInt()), default = 120f) { value -> vm.editTrigger(h.id) { it.copy(lengthDp = value) } }
+                            Toggle(R.string.longer_touch_length, R.string.longer_touch_help, s.longerTouchLength, default = false) { value -> vm.editTrigger(h.id) { it.copy(longerTouchLength = value) } }
+                            val effectiveLength = (if (s.placement(landscape).edge == Edge.BOTTOM) bounds.width else bounds.height) / screen.density
+                            if (s.lengthDp > effectiveLength + .5f) Notice(t(R.string.touch_length_limited, s.lengthDp.roundToInt(), effectiveLength.roundToInt()))
                             SettingSlider(R.string.touch_depth, s.depthDp, 8f..32f, t(R.string.dp_value, s.depthDp.roundToInt()), default = 16f) { value -> vm.editTrigger(h.id) { it.copy(depthDp = value) } }
                         }
                         Section(R.string.visible_handle) {
