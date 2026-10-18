@@ -95,7 +95,16 @@ import kotlin.math.roundToInt
                     }
                     1 -> {
                         Section(R.string.gestures) {
-                            GestureSlot.entries.forEach { slot -> GestureBindingRow(config, slot, h.target(slot), vm) { value -> vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) } } }
+                            GestureSlot.entries.forEach { slot ->
+                                GestureBindingRow(config, slot, h.target(slot), vm) { value -> vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) } }
+                                when (slot) {
+                                    GestureSlot.SWIPE_HOLD -> SettingSlider(R.string.swipe_hold_time, s.swipeHoldTimeMs.toFloat(), 300f..3000f,
+                                        t(R.string.ms_value, s.swipeHoldTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = value.toLong()) } }
+                                    GestureSlot.HOLD -> SettingSlider(R.string.hold_time, s.holdTimeMs.toFloat(), 300f..3000f,
+                                        t(R.string.ms_value, s.holdTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(holdTimeMs = value.toLong()) } }
+                                    else -> Unit
+                                }
+                            }
                             Help(R.string.gesture_help); Help(R.string.hold_help)
                         }
                         Section(R.string.settings) {

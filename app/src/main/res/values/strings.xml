@@ -87,7 +87,9 @@
     <string name="no_action">No action</string>
     <string name="volume_popup">Volume popup</string>
     <string name="gesture_help">Swipe inward, then release. Further swipes cycle through assigned actions while a panel is open or before the timeout.</string>
-    <string name="hold_help">Hold still for 500 ms, then release. For Swipe and hold, first swipe inward.</string>
+    <string name="hold_help">Hold still for the selected time, then release. For Swipe and hold, first swipe inward.</string>
+    <string name="hold_time">Hold time</string>
+    <string name="swipe_hold_time">Swipe and hold time</string>
     <string name="swipe_distance">Swipe distance</string>
     <string name="swipe_time">Swipe time limit</string>
     <string name="volume_sequence">Swipe sequence timeout</string>
