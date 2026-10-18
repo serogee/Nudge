@@ -93,7 +93,7 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
     val behind = if (container) background else Color(panel.background)
     val tint = if (panel.automaticIconColor) contrastOn(behind) else Color(panel.iconColor)
     Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(background) else Modifier)
-        .then(if (interactive) Modifier.clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
+        .then(if (interactive) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
         .semantics { contentDescription = description }, contentAlignment = androidx.compose.ui.Alignment.Center) {
         ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape), tint, cell.value.toInt())
     }
