@@ -34,9 +34,9 @@ import kotlin.math.roundToInt
         Column {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedVisibility(!collapsed) { HandleBadge(h, context.handleLabel(config, h)) }
+                HandleBadge(h, context.handleLabel(config, h))
                 Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 EditIcon(AppIcons.Edit, R.string.rename_handle) { name = h.name; renaming = true }
             }
             AnimatedVisibility(!collapsed) {

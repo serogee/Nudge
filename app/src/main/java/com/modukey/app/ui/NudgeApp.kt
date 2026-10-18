@@ -77,13 +77,13 @@ import com.modukey.app.platform.*
     }
     CompositionLocalProvider(LocalFinishAdjustment provides vm::flush) { NudgeTheme {
         Scaffold(topBar = {
-            if (tab != 0) TopAppBar(title = { Text(t(R.string.app_name)) },
+            if (tab != 0) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { Image(painterResource(R.drawable.ic_modukey), null, Modifier.size(32.dp)); Text(t(R.string.app_name)) } },
                 navigationIcon = { if (handle != null || panel != null) EditIcon(AppIcons.Back, R.string.back, action = ::back) },
                 actions = { Text(BuildConfig.VERSION_NAME, Modifier.padding(end = 16.dp), style = MaterialTheme.typography.labelSmall) })
         }, bottomBar = { NavigationBar {
             listOf(R.string.home, R.string.handles, R.string.panels, R.string.info).forEachIndexed { index, title ->
                 NavigationBarItem(selected = tab == index, onClick = { tab = index; handleId = null; panelId = null; previewHandleId = null }, label = { Text(t(title)) },
-                    icon = { Icon(when(index) { 0 -> Icons.Outlined.Home; 1 -> AppIcons.Drag; 2 -> AppIcons.Apps; else -> Icons.Outlined.Info }, null) })
+                    icon = { Icon(when(index) { 0 -> Icons.Outlined.Home; 1 -> AppIcons.Handle; 2 -> AppIcons.Apps; else -> Icons.Outlined.Info }, null) })
             }
         } }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
