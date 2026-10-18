@@ -4,6 +4,7 @@
 
 ### Added
 
+- Assign Close panels or Screenshot to a panel button or direct gesture. Closing panels resets their swipe sequence. Screenshot closes interactive panels before requesting Android's capture UI.
 - Set Hold time and Swipe and hold time independently for each handle, from 300 to 3000 ms. Keep 500 ms defaults for existing settings and backups.
 - Choose a background-free Nudge mark from the built-in icon library. Apply the panel's icon color and use Standalone to remove the button container.
 
@@ -13,6 +14,12 @@
 - Identify panel and direct gesture choices with a four-square icon and Panel: or Action: prefixes. Add gaps between panel options.
 - Keep wrapped action names centered. Rename Input method picker to Input Method.
 - Label handle and panel previews Visual Preview (Non-interactive).
+
+### Fixed
+
+- Keep ownership of handle windows before attachment completes. Remove pending windows during replacement, reconnection, and rotation.
+- Apply the editor's orientation to on-phone guides. Map landscape Bottom to the left edge on an upright phone. Keep runtime Bottom at the logical bottom in either landscape rotation.
+- Rotate panel preview content with its guide and use the same safe insets in mini previews and live guides.
 
 ## 0.3.0 - 2026-10-18
 
