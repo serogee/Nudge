@@ -341,4 +341,5 @@
     <string name="auto_close_help">Close the panel after no touch input. Reset the swipe sequence.</string>
     <string name="close_after">Close after</string>
     <string name="panel_timeout_help">The timer restarts when you open or touch the panel. It pauses while you touch the panel.</string>
+    <string name="outside_keep">Pass touch through and keep open</string>
 </resources>

@@ -60,4 +60,14 @@ class PanelRootTest {
         assertFalse(touch(root,MotionEvent.ACTION_DOWN,10f,10f)); touch(root,MotionEvent.ACTION_UP,10f,10f)
         assertEquals(listOf(true,false,true,false),held)
     }
+    @Test fun `keep open passes outside touches through and Back dismisses once`() {
+        val root = PanelRoot(context) { false to OutsideTouch.KEEP_OPEN }
+        var dismissed = 0
+        root.dismiss = { dismissed++ }; root.layout(0, 0, 100, 100)
+        assertFalse(touch(root, MotionEvent.ACTION_OUTSIDE, 150f, 20f))
+        assertEquals(0, dismissed)
+        assertTrue(root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)))
+        assertTrue(root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)))
+        assertEquals(1, dismissed)
+    }
 }

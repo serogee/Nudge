@@ -141,7 +141,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         spec.geometry.bounds.height.roundToInt().coerceAtLeast(1), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
             (if (spec.editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
-            (if (spec.panel.outsideTouch == OutsideTouch.PASS_THROUGH) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
+            (if (spec.panel.outsideTouch != OutsideTouch.BLOCK) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
         PixelFormat.TRANSLUCENT).apply {
         gravity = Gravity.TOP or Gravity.LEFT; x = spec.geometry.bounds.x.roundToInt(); y = spec.geometry.bounds.y.roundToInt()
         setFitInsetsTypes(0); layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS

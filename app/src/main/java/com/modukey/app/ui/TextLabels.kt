@@ -11,7 +11,7 @@ import com.modukey.app.core.*
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
     PanelMode.FIXED -> R.string.fixed; PanelMode.SCROLLABLE -> R.string.scrollable
     PanelDirection.VERTICAL -> R.string.vertical; PanelDirection.HORIZONTAL -> R.string.horizontal
-    OutsideTouch.BLOCK -> R.string.outside_block; OutsideTouch.PASS_THROUGH -> R.string.outside_pass
+    OutsideTouch.BLOCK -> R.string.outside_block; OutsideTouch.PASS_THROUGH -> R.string.outside_pass; OutsideTouch.KEEP_OPEN -> R.string.outside_keep
     ButtonAction.PHONE_SETTINGS -> R.string.phone_settings; ButtonAction.NUDGE_SETTINGS -> R.string.nudge_settings
     ButtonAction.VOLUME_UP -> R.string.volume_up; ButtonAction.VOLUME_DOWN -> R.string.volume_down; ButtonAction.MEDIA_MUTE -> R.string.media_mute
     ButtonAction.SILENT -> R.string.silent_ringer; ButtonAction.VIBRATE -> R.string.vibrate; ButtonAction.DND -> R.string.dnd
