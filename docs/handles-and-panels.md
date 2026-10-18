@@ -8,6 +8,12 @@ Open **Handles** to add, name, enable, duplicate, move, or delete a handle. New 
 
 In the development interface, drag a card's left grip to change its priority. Select the pencil to edit or rename it. The handle title and tabs stay visible while the options scroll. A reset icon appears beside a changed setting. It restores only that setting.
 
+Handle and panel editors keep changes in a temporary draft. The top pencil changes to Save and Cancel after an edit. Save applies all changes in that editor. Cancel restores its saved settings. Long titles use an ellipsis so both controls stay visible.
+
+Mini previews and on-phone guides show pending changes immediately. Normal gestures use saved settings when Nudge is in the background. Pending edits survive activity recreation and temporary backgrounding. They are not included in backups or disk saves until you select Save. Closing the app process discards the draft.
+
+Before leaving an editor with pending changes, select Save, Discard, or Keep editing. Save inside a name, gesture, or button dialog updates the editor draft. Use the top Save control to apply that draft. List switches and list management actions still apply immediately.
+
 Each handle owns its touch area, visible handle, gestures, exclusions, and lock-screen option. Duplicating a handle creates an independent disabled handle. Panel assignments continue to refer to the same panels. Deleting or resetting a handle does not delete any panel.
 
 In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
@@ -18,7 +24,7 @@ Both previews use the selected Portrait or Landscape tab. On an upright phone, a
 
 ## Gestures
 
-Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. Save applies the selection; Cancel keeps the existing assignment.
+Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. The dialog's Save updates the editor draft. Cancel keeps the existing draft assignment.
 
 Panel choices show a four-square icon and the prefix Panel:. Direct actions show the same icon and the prefix Action:. Panel options have separate rows with space between them. Action names stay centered when they wrap.
 
