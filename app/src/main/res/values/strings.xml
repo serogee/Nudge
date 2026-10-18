@@ -48,7 +48,7 @@
     <string name="landscape">Landscape</string>
     <string name="preview_help">Use the position controls to move the handle. The phone guide passes touches through while you edit.</string>
     <string name="preview_unavailable">Connect Accessibility to show the guide on your phone.</string>
-    <string name="preview_orientation">The phone guide uses the current screen orientation. Rotate the phone to check landscape.</string>
+    <string name="preview_orientation">The phone guide follows the selected orientation. A landscape bottom handle appears on the left when the phone is upright.</string>
     <string name="landscape_enabled">Enable in landscape</string>
     <string name="landscape_enabled_help">Allow this handle when the phone is sideways.</string>
     <string name="landscape_override">Override landscape placement</string>
@@ -329,6 +329,9 @@
     <string name="gesture_action">Gesture action</string>
     <string name="direct_action">Direct action</string>
     <string name="input_method_picker">Input Method</string>
+    <string name="close_panels">Close panels</string>
+    <string name="screenshot">Screenshot</string>
+    <string name="screenshot_failed">Cannot take a screenshot. Check the current screen and try again.</string>
     <string name="input_method_picker_failed">Cannot open Input Method. Try again.</string>
     <string name="search_panels">Search panels</string>
     <string name="create_panel_help">Create a panel in the Panels tab to assign it here.</string>
