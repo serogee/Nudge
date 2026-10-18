@@ -54,10 +54,7 @@ import kotlin.math.roundToInt
                         val others = config.handles.filter { it.id != h.id && it.enabled }.map { it.trigger }
                         Section(R.string.preview) {
                             OrientationChoices(landscape) { landscape = it }
-                            PhonePreview(s, landscape, vm::flush, others) { value -> vm.editTrigger(h.id) { current ->
-                                if (landscape && current.landscapeOverrideEnabled) current.copy(landscape = current.landscape.copy(position = value))
-                                else current.copy(portrait = current.portrait.copy(position = value))
-                            } }
+                            PhonePreview(s, landscape, others)
                             Help(R.string.preview_help)
                             Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
                             if (others.any { bounds.overlaps(TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, it, landscape)) }) Notice(t(R.string.overlap_help))

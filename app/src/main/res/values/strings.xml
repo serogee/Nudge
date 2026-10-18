@@ -46,7 +46,7 @@
     <string name="preview">Preview</string>
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
-    <string name="preview_help">Drag the touch area to move it. The phone guide passes touches through while you edit.</string>
+    <string name="preview_help">Use the position controls to move the handle. The phone guide passes touches through while you edit.</string>
     <string name="preview_unavailable">Connect Accessibility to show the guide on your phone.</string>
     <string name="preview_orientation">The phone guide uses the current screen orientation. Rotate the phone to check landscape.</string>
     <string name="landscape_enabled">Enable in landscape</string>
@@ -234,7 +234,7 @@
     <string name="diagnostics_copied">Diagnostics copied. Add the HyperOS version and observed test results.</string>
     <string name="device_version">%1$s %2$s · Android %3$s · Nudge %4$s</string>
     <string name="overlay_error">A handle or panel could not be shown. Re-enable Accessibility and check diagnostics.</string>
-    <string name="handle_preview_description">Phone preview. Drag the touch area or use Center along edge to move it.</string>
+    <string name="handle_preview_description">Phone preview. Use Center along edge to move the handle.</string>
     <string name="handle_description">Nudge handle</string>
     <string name="pending">Unavailable in the current screen state</string>
     <string name="active">Active</string>

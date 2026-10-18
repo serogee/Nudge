@@ -60,11 +60,8 @@ import kotlin.math.roundToInt
         PreviewHandleChoice(config, previewHandleId, preview)
         Help(R.string.preview_handle_help)
         OrientationChoices(landscape) { landscape = it }
-        PanelPreview(p, l, g, screen, handle, trigger, vm::flush) { x, y ->
-            layout { if (it.followHandle) it.copy(offsetXDp = x, offsetYDp = y) else it.copy(x = x, y = y) }
-        }
+        PanelPreview(p, l, g, screen, handle, trigger)
         Help(R.string.panel_preview_help)
-        Help(R.string.panel_drag_help)
         Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
         OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected) { Text(t(R.string.test_panel)) }
         Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { it.copy(landscapeOverride = value) } }
