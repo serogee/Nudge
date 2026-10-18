@@ -10,6 +10,7 @@
 
 ### Changed
 
+- Show app icons in exclusions. Keep selected apps at the top and restore cleared apps to their original list order.
 - Use icon sample 1 with gaps between its three pills throughout the app. Use ExtraBold initials in handle badges.
 - Identify panel and direct gesture choices with a four-square icon and Panel: or Action: prefixes. Add gaps between panel options.
 - Keep wrapped action names centered. Rename Input method picker to Input Method.
