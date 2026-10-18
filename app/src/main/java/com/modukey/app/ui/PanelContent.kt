@@ -112,6 +112,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
     else when (button.action) {
         ButtonAction.NUDGE_SETTINGS -> Image(painterResource(R.drawable.ic_modukey), null, modifier)
         ButtonAction.PHONE_SETTINGS -> Icon(Icons.Outlined.Settings, null, modifier, tint = tint)
+        ButtonAction.INPUT_METHOD_PICKER -> Icon(AppIcons.Keyboard, null, modifier, tint = tint)
         else -> Canvas(modifier) {
             val u = size.minDimension / 24f
             fun p(x: Float, y: Float) = Offset(x * u, y * u)

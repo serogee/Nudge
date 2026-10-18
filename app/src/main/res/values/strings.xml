@@ -326,6 +326,8 @@
     <string name="migrated_panel_name">%1$s · Panel %2$d</string>
     <string name="gesture_action">Gesture action</string>
     <string name="direct_action">Direct action</string>
+    <string name="input_method_picker">Input method picker</string>
+    <string name="input_method_picker_failed">Cannot open the input method picker. Try again.</string>
     <string name="direct_action_help">Run this action without opening a panel. App and settings actions require unlock on the lock screen.</string>
     <string name="search_panels">Search panels</string>
     <string name="create_panel_help">Create a panel in the Panels tab to assign it here.</string>

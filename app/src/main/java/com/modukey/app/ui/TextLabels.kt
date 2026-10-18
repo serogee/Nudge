@@ -16,6 +16,7 @@ import com.modukey.app.core.*
     ButtonAction.VOLUME_UP -> R.string.volume_up; ButtonAction.VOLUME_DOWN -> R.string.volume_down; ButtonAction.MEDIA_MUTE -> R.string.media_mute
     ButtonAction.SILENT -> R.string.silent_ringer; ButtonAction.VIBRATE -> R.string.vibrate; ButtonAction.DND -> R.string.dnd
     ButtonAction.LOCK -> R.string.lock_screen; ButtonAction.OPEN_APP -> R.string.open_app
+    ButtonAction.INPUT_METHOD_PICKER -> R.string.input_method_picker
     IconShape.CIRCLE -> R.string.circle; IconShape.ROUNDED_SQUARE -> R.string.rounded_square; IconShape.SQUIRCLE -> R.string.squircle
     PanelAnimation.NONE -> R.string.animation_none; PanelAnimation.FADE -> R.string.animation_fade
     PanelAnimation.SLIDE -> R.string.animation_slide; PanelAnimation.SCALE -> R.string.animation_scale
