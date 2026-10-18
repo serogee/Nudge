@@ -12,7 +12,9 @@ Each handle owns its touch area, visible handle, gestures, exclusions, and lock-
 
 In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
 
-The sticky Visual Preview (Non-interactive) switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability. The phone guide follows the actual orientation; rotate the phone to check landscape. The in-app opposite-orientation preview estimates its system insets.
+The sticky Visual Preview (Non-interactive) switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability.
+
+Both previews use the selected Portrait or Landscape tab. On an upright phone, a landscape bottom guide appears on the left. Landscape left appears at the top, and landscape right appears at the bottom. Cutout and navigation insets rotate with the guide. During normal use, Bottom stays at the logical bottom in both landscape rotations. Test panel uses the phone's current orientation.
 
 ## Gestures
 
@@ -27,6 +29,12 @@ Input Method is also available for every gesture and as a panel button. It opens
 On the lock screen, the picker first requests normal system unlock. Cancelled authentication, changed assignments, disabled handles, and service loss cancel the request. Screen-off cancels it too. The picker adds no idle observer or background service. Its system appearance and keyboard restoration on HyperOS require device testing.
 
 Each assignment owns its action settings. Editing it does not change a panel button or another gesture. Direct actions close the current Nudge panel. App and settings actions use the same normal system unlock step as panel buttons. A removed or changed assignment cannot continue after unlock. Sound-mode actions show required Do Not Disturb access on Home, including when no panel uses them.
+
+Close panels and Screenshot are available as panel buttons and direct actions. Close panels dismisses Nudge's open panel and resets its swipe sequence. It does not dismiss Android's volume popup. With no Nudge panel open, it has no effect.
+
+Screenshot removes the interactive Nudge panel, waits two display frames, and requests Android's native screenshot action. Android controls capture, saving, and restrictions. Nudge does not read or store the image. Screen-off and service shutdown cancel pending requests. Requests add no idle timer or observer. Editing guides still follow their preview switch.
+
+There is no setting to hide handles during every screenshot method. Android's supported APIs do not provide a reliable pre-capture signal for all device methods. The [screenshot detection API](https://developer.android.com/about/versions/14/features/screenshot-detection) is activity-scoped and reports supported captures after they occur. Visible handles can appear in screenshots, including those requested through Nudge.
 
 - Tap: release within 250 ms without moving beyond touch slop.
 - Hold: hold still for the selected Hold time, then release.
