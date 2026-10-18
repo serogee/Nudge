@@ -4,6 +4,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PanelGeometryTest {
+    @Test fun `follow offsets use density and retain absolute placement through switches and clamping`() {
+        val space = Bounds(20f, 40f, 900f, 1400f)
+        val saved = PanelLayout(x = .3f, y = .7f, offsetXDp = -10f, offsetYDp = 15f)
+        for (edge in Edge.entries) {
+            val area = when(edge) {
+                Edge.LEFT -> Bounds(20f, 500f, 32f, 240f)
+                Edge.RIGHT -> Bounds(888f, 500f, 32f, 240f)
+                Edge.BOTTOM -> Bounds(300f, 1408f, 240f, 32f)
+            }
+            val base = PanelGeometry.calculate(space, 2f, saved.copy(offsetXDp = 0f, offsetYDp = 0f), 1, area, edge).bounds
+            val shifted = PanelGeometry.calculate(space, 2f, saved, 1, area, edge).bounds
+            assertEquals(base.x - 20f, shifted.x, .001f)
+            assertEquals(base.y + 30f, shifted.y, .001f)
+            val absolute = PanelGeometry.calculate(space, 2f, saved.copy(followHandle = false), 1, area, edge).bounds
+            val absoluteWithoutOffsets = PanelGeometry.calculate(space, 2f, saved.copy(followHandle = false, offsetXDp = 0f, offsetYDp = 0f), 1, area, edge).bounds
+            assertEquals(absoluteWithoutOffsets, absolute)
+            val clamped = PanelGeometry.calculate(space, 2f, saved.copy(offsetXDp = 240f, offsetYDp = 240f), 1, area, edge).bounds
+            assertTrue(clamped.x >= space.x && clamped.x + clamped.width <= space.x + space.width)
+            assertTrue(clamped.y >= space.y && clamped.y + clamped.height <= space.y + space.height)
+        }
+        assertEquals(saved, saved.copy(followHandle = false).copy(followHandle = true))
+    }
     private val screen = Bounds(0f, 24f, 400f, 800f)
     private val handle = Bounds(384f, 450f, 16f, 120f)
     @Test fun `fixed overflow keeps ordered capacity and never expands past maximum lines`() {

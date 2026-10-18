@@ -1,5 +1,86 @@
 # Changelog
 
+## 0.2.1 - 2026-10-18
+
+### Release highlights
+
+- Create and share independent panels. Assign gestures to panels, volume, combined actions, or direct app, settings, sound, lock, and keyboard-picker actions.
+- Add Android's native Input method picker with normal unlock, focused requests, stale-request validation, and bounded cleanup.
+- Add optional panel auto-close, pause it during held input, and reset swipe progression on expiry. Keep direct-action sequence timing event-driven.
+- Retain Follow handle offsets and custom percentages separately. Preserve portrait and landscape settings, Fixed/Scrollable layouts, and hidden overflow buttons.
+- Add separate open/close effects, optional volume-popup flags, standalone icon shapes, icon packs, built-in icons, MIUI swatches, and automatic colors.
+- Add Home/Handles/Panels/Info navigation, joined tabs, pinned handle titles, detailed permission status, drag grips, panel-card previews, and staged pickers.
+- Add reset icons to common settings and optional HyperOS autostart navigation. Preserve clear app text, manual recovery guidance, and the existing Info controls.
+- Preserve single-handle preferences and backups through schema-3 migration. Remap copied IDs, retain shared links, and disable imported handles for review.
+- Retain lock-screen options, outside-touch policies, Back dismissal, one accessibility service, bounded icon caching, and versioned release folders.
+
+### Compatibility and known limits
+
+- Automated validation passed: 167 unit/Robolectric tests, lint with zero errors and 14 existing warnings, and the debug APK build.
+- Physical Redmi/HyperOS, native keyboard and volume popups, touch delivery, unlock, Recents, battery, and signed installation/settings checks remain pending.
+- The autostart shortcut depends on the build. App/pack images keep their colors; automatic contrast applies to built-in symbols.
+- Icon-background visibility has no automatic container choice. Some controls lack individual reset icons. Handle badges use portrait placement, and Edit shares the bottom action row.
+
+### Added
+
+- make indicator thickness a percentage (634e444)
+- check GitHub updates automatically on request (9ae4350)
+- add per-handle configuration and panel models (4e4e5af)
+- define editing sessions and handle eligibility (d1c7f74)
+- reconcile ordered handle windows (33bc560)
+- add native handle input and status (dc15e8d)
+- load static icon pack resources (6267535)
+- add panel actions and unlock continuation (de093e1)
+- share controls and render panel grids (5a3e82e)
+- host panels with touch dismissal (30f6451)
+- connect independent handle windows (709fc59)
+- preview panel placement and handle overlaps (396deac)
+- connect handle and panel settings (819d64f)
+- add an event-driven panel timeout (315e1aa)
+- add a HyperOS autostart shortcut (cfed5ed)
+- report the active panel ID (55a29d1)
+- add shared panels and direct gesture actions (c9f0600)
+- open the native input method picker (ed56829)
+
+### Fixed
+
+- round customization highlights into half-squircles (e021154)
+- apply handle visibility immediately (d26cb05)
+- round the launch icon container (40932fb)
+- keep configuration storage off the main thread (1239cd8)
+- bind settings viewmodels to the current application (79d486e)
+
+### Changed
+
+- define clear handle and panel text (a0f6b04)
+- classify update check failures (402db0b)
+- remove the legacy runtime writer (adb6fac)
+
+### Maintenance
+
+- define commit scopes and message rules (c2aeda2)
+- generate changelogs from scoped commits (cefeb75)
+- prepare Nudge 0.1.2 (25b6ad1)
+- prepare Nudge 0.1.3 (c84ca0a)
+- require explicit release requests (7f02c30)
+- keep the compatibility checklist local (54cc453)
+- recommend HyperOS background autostart (2966580)
+- finalize Nudge 0.1.2 (942146b)
+- define app text writing rules (45fd487)
+- verify handle and panel customization (b22e8c2)
+- document handle and panel controls (229cfff)
+- group artifacts by version (013382e)
+- update the 0.2.0 preparation context (18b34c4)
+- finalize Nudge 0.2.0 (d577022)
+- verify panel offsets and screen bounds (319d261)
+- verify panel and action persistence (ad14a52)
+- verify volume flags and unlock sources (3c2312e)
+- verify panel touch completion (64865ea)
+- verify panel window cleanup (df95eaf)
+- verify directional panel effects (292cce5)
+- describe independent panels and gesture actions (66d36b6)
+- update the app setup and feature guide (d9325fc)
+
 ## 0.2.0 - 2026-10-17
 
 ### Added
@@ -50,30 +131,7 @@
 
 ## Unreleased
 
-### Added
-
-- Create, name, duplicate, order, enable, and delete independent handles, each with three private panels.
-- Assign tap, hold, swipe and hold, and three immediate swipe stages. Volume sequences use a configurable expiry without background timers.
-- Build Fixed or Scrollable panels in either grid direction, with live previews, safe placement, and retained landscape overrides. Fixed overflow buttons remain saved and editable but do not appear or cause scrolling.
-- Choose whether each panel blocks or passes through an outside touch while closing. Back dismisses the panel without navigating the app beneath.
-- Add media, ringtone, DND, lock, settings, and app buttons. Choose static icon packs, manual icon overrides, shapes, and corners.
-- Enable handles independently on the awake lock screen. App and settings actions continue only after the normal system unlock succeeds.
-- Export and import configuration backups, including hidden buttons and icon references. Added copies start disabled; replacement leaves the master switch off.
-
-### Changed
-
-- Replace the single-handle interface with Home, Handles, and Settings. Remove slogans and use short, consistent app text from string resources.
-- Migrate existing customization and activation into Handle 1 while retaining global settings and unrelated preferences.
-- Share one accessibility service across handles. Reconcile changed windows, release closed panel resources, and load cached icons off the main thread.
-
-### Compatibility
-
-- Redmi Note 12 / HyperOS native-popup coexistence, touch delivery, authentication, Recents recovery, battery measurements, and signed upgrade checks remain pending physical-device testing.
-- No release version, signing identity, published notes, or release tags changed.
-
-### Maintenance
-
-- Store each version's release files in `releases/<version>/`. Retain prior-APK signer checks for version folders and the older flat layout.
+No pending changes. Reviewed development entries are included in the 0.2.1 notes above.
 
 ## 0.1.2 - 2026-10-17
 

@@ -16,10 +16,66 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
+import java.io.File
+import org.json.JSONObject
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationRepositoryTest {
     @get:Rule val folder=TemporaryFolder()
+    private suspend fun session(file:File,block:suspend (DataStore<Preferences>)->Unit) {
+        val job=SupervisorJob()
+        val storage=OkioStorage(FileSystem.SYSTEM,PreferencesSerializer) { file.absolutePath.toPath() }
+        val store=PreferenceDataStoreFactory.create(storage=storage,scope=CoroutineScope(Dispatchers.IO+job))
+        try { block(store) } finally { job.cancelAndJoin() }
+    }
+    @Test fun `panel upgrade persists one complete document and stable references across reopening`()=runTest {
+        val file=folder.newFile("panels.preferences_pb")
+        val key=stringPreferencesKey("configuration.v1")
+        val source=checkNotNull(javaClass.classLoader!!.getResourceAsStream("configuration-v1.json")).bufferedReader().use { it.readText() }
+        var migrated:AppConfiguration?=null
+        session(file) { store ->
+            store.edit { it[key]=source; it[stringPreferencesKey("future.field")]="keep" }
+            val result=DataStoreConfigurationRepository(store) { name,_,slot -> "$name / ${slot+1}" }.configuration.first()
+            assertEquals(2,result.panels.size); assertEquals("Side / 1",result.panels.first().name)
+            assertEquals(result,ConfigurationCodec.decode(store.data.first()[key]!!))
+            assertEquals(ConfigurationCodec.SCHEMA,JSONObject(store.data.first()[key]!!).getInt("schema"))
+            assertEquals("keep",store.data.first()[stringPreferencesKey("future.field")])
+            migrated=result
+        }
+        session(file) { store ->
+            assertEquals(migrated,DataStoreConfigurationRepository(store).configuration.first())
+        }
+    }
+    @Test fun `failed panel upgrade leaves original data intact`()=runTest {
+        val file=folder.newFile("invalid.preferences_pb")
+        val key=stringPreferencesKey("configuration.v1")
+        val source=checkNotNull(javaClass.classLoader!!.getResourceAsStream("configuration-v1.json")).bufferedReader().use { it.readText() }
+        val broken=JSONObject(source).apply { getJSONArray("handles").getJSONObject(0).getJSONArray("panels").getJSONObject(1).remove("buttons") }.toString()
+        session(file) { store ->
+            store.edit { it[key]=broken }
+            try { DataStoreConfigurationRepository(store).configuration.first(); fail("Accepted an incomplete migration") } catch (_:IOException) { }
+            assertEquals(broken,store.data.first()[key])
+        }
+    }
+    @Test fun `direct actions survive disk reopening and schema two upgrade keeps existing assignments`()=runTest {
+        val file=folder.newFile("actions.preferences_pb")
+        val key=stringPreferencesKey("configuration.v1")
+        val panel=SavedPanel(name="Tools")
+        val old=AppConfiguration(enabled=true,includePrereleases=true,panels=listOf(panel),handles=listOf(HandleConfig(enabled=true,
+            volumeSequenceMs=6_000,bindings=mapOf(GestureSlot.SWIPE_1 to GestureTarget.panel(panel.id,true)))))
+        val direct=PanelButton(action=ButtonAction.OPEN_APP,appPackage="test.camera",appActivity="test.camera.Main",appLabel="Camera")
+        var saved:AppConfiguration?=null
+        session(file) { store ->
+            store.edit { it[key]=JSONObject(ConfigurationCodec.encode(old)).put("schema",2).toString() }
+            val repo=DataStoreConfigurationRepository(store)
+            val upgraded=repo.configuration.first()
+            assertEquals(old.normalized(),upgraded)
+            assertEquals(ConfigurationCodec.SCHEMA,JSONObject(store.data.first()[key]!!).getInt("schema"))
+            saved=upgraded.editHandle(upgraded.handles.single().id) { h -> h.copy(bindings=h.bindings+(GestureSlot.HOLD to GestureTarget.direct(direct))) }.normalized()
+            repo.write(saved!!)
+        }
+        session(file) { store -> assertEquals(saved,DataStoreConfigurationRepository(store).configuration.first()) }
+    }
     @Test fun `legacy migration is atomic retains unknown keys and persists multiple handles on reopen`()=runTest {
         val file=folder.newFile("configuration.preferences_pb")
         suspend fun session(block:suspend (DataStore<Preferences>)->Unit) {

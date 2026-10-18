@@ -40,7 +40,7 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private fun components(dx: Float, dy: Float) = when (edge) { Edge.LEFT -> dx to dy; Edge.RIGHT -> -dx to dy; Edge.BOTTOM -> -dy to dx }
 }
 
-/** A volume request has an expiry; an owned panel has an explicit lifetime. */
+/** Actions without a panel have an expiry; an owned panel has an explicit lifetime. */
 class GestureSessions {
     private data class Session(val stage: Int, val expires: Long?)
     private val sessions = mutableMapOf<String, Session>()
@@ -57,13 +57,13 @@ class GestureSessions {
         for (offset in 0..2) {
             val stage = (start + offset) % 3
             val target = handle.target(GestureSlot.entries[stage])
-            if (target != GestureTarget.NONE) return target to stage
+            if (!target.isNone) return target to stage
         }
         reset(handle.id)
         return GestureTarget.NONE to null
     }
     fun submitted(handle: HandleConfig, stage: Int?, target: GestureTarget, now: Long) {
         if (stage == null) { reset(handle.id); return }
-        sessions[handle.id] = Session(stage, if (target == GestureTarget.VOLUME) now + handle.volumeSequenceMs else null)
+        sessions[handle.id] = Session(stage, if (target.panelId == null) now + handle.volumeSequenceMs else null)
     }
 }

@@ -1,8 +1,9 @@
 package com.modukey.app.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -10,117 +11,182 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun PanelEditor(config: AppConfiguration, h: HandleConfig, index: Int, vm: NudgeViewModel) {
+@Composable private fun PanelEditorContent(config: AppConfiguration, entry: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
     val context = LocalContext.current
-    var landscape by rememberSaveable(h.id, index) { mutableStateOf(false) }
+    var landscape by rememberSaveable(entry.id) { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<String?>(null) }
-    var appFor by remember { mutableStateOf<String?>(null) }
-    var iconFor by remember { mutableStateOf<String?>(null) }
+    var draft by remember { mutableStateOf<PanelButton?>(null) }
     var packPicker by remember { mutableStateOf(false) }
     val packs by vm.iconPacks.collectAsStateWithLifecycle()
     val service by vm.status.collectAsStateWithLifecycle()
-    LaunchedEffect(h.id, index) { vm.loadPacks() }
-    val p = h.panels[index]; val l = p.layout(landscape); val screen = rememberPreviewSpace(landscape)
-    val handle = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, h.trigger, landscape)
-    val g = PanelGeometry.calculate(screen.usable, screen.density, l, p.buttons.size, handle, h.trigger.placement(landscape).edge)
-    fun layout(change: (PanelLayout) -> PanelLayout) = vm.editLayout(h.id,index,landscape,change)
-    Section(t(R.string.panel_name,index+1)) {
-        Text(context.handleLabel(config,h), style = MaterialTheme.typography.bodySmall)
-        OrientationChoices(landscape) { landscape = it }
-        PanelPreview(p,l,g,screen,handle,h.trigger,vm::flush) { x,y -> layout { it.copy(x=x,y=y) } }
-        Help(R.string.panel_preview_help); Help(R.string.panel_drag_help)
-        Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
-        Button(onClick = { vm.testPanel(h.id,index) }, enabled = service.connected) { Text(t(R.string.test_panel)) }
-        Toggle(R.string.panel_landscape_override,R.string.override_help,p.landscapeOverride) { value -> vm.editPanel(h.id,index) { it.copy(landscapeOverride=value) } }
-        if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
-    }
-    Section(R.string.layout) {
-        Choices(PanelMode.entries,l.mode) { value -> layout { it.copy(mode=value) } }
-        Choices(PanelDirection.entries,l.direction) { value -> layout { it.copy(direction=value) } }
-        CountStepper(if(l.direction==PanelDirection.VERTICAL) R.string.columns else R.string.rows,l.crossCount,1,12) { value -> layout { it.copy(crossCount=value) } }
-        if(l.mode==PanelMode.FIXED) {
-            CountStepper(if(l.direction==PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns,l.maximumLines,1,20) { value -> layout { it.copy(maximumLines=value) } }
-            Help(R.string.fixed_help)
-        } else {
-            SettingSlider(if(l.direction==PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width,l.extentFraction,0.15f..1f,t(R.string.percent,(l.extentFraction*100).roundToInt())) { value -> layout { it.copy(extentFraction=value) } }
-            Help(R.string.scrollable_help)
-        }
-        SettingSlider(R.string.button_size,l.buttonSizeDp,48f..96f,t(R.string.dp_value,l.buttonSizeDp.roundToInt())) { value -> layout { it.copy(buttonSizeDp=value) } }
-        if (g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit,g.crossCount))
-        if (p.buttons.size>g.visibleCount) Notice(t(R.string.panel_overflow,p.buttons.size-g.visibleCount))
-    }
-    Section(R.string.position) {
-        Toggle(R.string.follow_handle,R.string.follow_handle_help,l.followHandle) { value -> layout { it.copy(followHandle=value) } }
-        PercentSlider(R.string.center_x,l.x,!l.followHandle) { value -> layout { it.copy(x=value) } }
-        PercentSlider(R.string.center_y,l.y,!l.followHandle) { value -> layout { it.copy(y=value) } }
-    }
-    Section(R.string.outside_touch) { Choices(OutsideTouch.entries,p.outsideTouch) { value -> vm.editPanel(h.id,index) { it.copy(outsideTouch=value) } }; Help(R.string.outside_help) }
-    Section(R.string.appearance) {
-        ColorPicker(p.background) { value -> vm.editPanel(h.id,index) { it.copy(background=value) } }
-        SettingSlider(R.string.opacity,p.opacity,0.1f..1f,t(R.string.percent,(p.opacity*100).roundToInt())) { value -> vm.editPanel(h.id,index) { it.copy(opacity=value) } }
-        SettingSlider(R.string.corner_radius,p.cornerDp,0f..48f,t(R.string.dp_value,p.cornerDp.roundToInt())) { value -> vm.editPanel(h.id,index) { it.copy(cornerDp=value) } }
-        Text(t(R.string.icon_shape)); Choices(IconShape.entries,p.iconShape) { value -> vm.editPanel(h.id,index) { it.copy(iconShape=value) } }
-        SettingSlider(R.string.icon_corners,p.iconCornerFraction,0f..0.5f,t(R.string.percent,(p.iconCornerFraction*100).roundToInt()),p.iconShape!=IconShape.CIRCLE) { value -> vm.editPanel(h.id,index) { it.copy(iconCornerFraction=value) } }
-        OutlinedButton(onClick = { vm.loadPacks(); packPicker=true }) { Text(packs.firstOrNull { it.packageName==p.iconPack }?.label ?: if(p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack) }
-        if(p.iconPack.isNotBlank() && packs.none { it.packageName==p.iconPack }) Help(R.string.pack_unavailable)
-    }
+    LaunchedEffect(entry.id) { vm.loadPacks() }
+    val p = entry.settings
+    val trigger = config.handle(previewHandleId)?.trigger ?: TriggerSettings()
+    val l = p.layout(landscape)
+    val defaults = PanelLayout()
+    val panelDefaults = PanelConfig()
+    val screen = rememberPreviewSpace(landscape)
+    val handle = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, trigger, landscape)
+    val g = PanelGeometry.calculate(screen.usable, screen.density, l, p.buttons.size, handle, trigger.placement(landscape).edge)
+    fun layout(change: (PanelLayout) -> PanelLayout) = vm.editLayout(entry.id, landscape, change)
     Section(R.string.buttons) {
-        Button(onClick = { adding=true }) { Text(t(R.string.add_button)) }
-        if(p.buttons.isEmpty()) Help(R.string.no_buttons)
-        else LazyColumn(Modifier.fillMaxWidth().heightIn(max=440.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            itemsIndexed(p.buttons,key={ _,b -> b.id }) { position,b ->
-                Column(Modifier.fillMaxWidth()) {
-                    Row(Modifier.alpha(if(position>=g.visibleCount) 0.38f else 1f),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                        ButtonGraphic(b,p.iconPack,Modifier.size(32.dp)); Text(context.buttonLabel(b),Modifier.weight(1f))
-                        if(position>=g.visibleCount) Text(t(R.string.not_shown),style=MaterialTheme.typography.labelSmall)
+        if (p.buttons.isEmpty()) Help(R.string.no_buttons_setup)
+        else ReorderableList(p.buttons, { it.id }, context::buttonLabel, Modifier.fillMaxWidth().heightIn(max = 400.dp),
+            moveTo = { id, target -> vm.reorderButton(entry.id, id, target) }, finish = vm::flush) { b, position ->
+            Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Row(Modifier.fillMaxWidth().padding(start = 10.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f).alpha(if (position >= g.visibleCount) .38f else 1f),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PanelButtonFace(b, p, 40.dp)
+                        Column { Text(context.buttonLabel(b)); if (position >= g.visibleCount) Text(t(R.string.not_shown), style = MaterialTheme.typography.labelSmall) }
                     }
-                    FlowRow(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-                        TextButton(onClick={ editing=b.id }) { Text(t(R.string.edit)) }
-                        TextButton(onClick={ vm.moveButton(h.id,index,b.id,-1) },enabled=position>0) { Text(t(R.string.move_up)) }
-                        TextButton(onClick={ vm.moveButton(h.id,index,b.id,1) },enabled=position<p.buttons.lastIndex) { Text(t(R.string.move_down)) }
-                        TextButton(onClick={ vm.editPanel(h.id,index) { it.copy(buttons=it.buttons.filterNot { item -> item.id==b.id }) } }) { Text(t(R.string.remove)) }
-                    }
+                    EditIcon(AppIcons.Edit, R.string.edit_button) { draft = b }
+                    EditIcon(AppIcons.Delete, R.string.delete) { vm.editPanel(entry.id) { it.copy(buttons = it.buttons.filterNot { item -> item.id == b.id }) }; vm.flush() }
                 }
             }
         }
+        if (p.buttons.size > g.visibleCount) Notice(t(R.string.panel_overflow, p.buttons.size - g.visibleCount))
+        FilledTonalButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(AppIcons.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(R.string.add_button))
+        }
     }
-    if(adding) ActionPicker({ adding=false }) { action ->
-        adding=false
-        if(action==ButtonAction.OPEN_APP) { vm.loadApps(); appFor="" }
-        else vm.editPanel(h.id,index) { it.copy(buttons=it.buttons+PanelButton(action=action)) }
+    Section(R.string.preview) {
+        PreviewHandleChoice(config, previewHandleId, preview)
+        Help(R.string.preview_handle_help)
+        OrientationChoices(landscape) { landscape = it }
+        PanelPreview(p, l, g, screen, handle, trigger, vm::flush) { x, y ->
+            layout { if (it.followHandle) it.copy(offsetXDp = x, offsetYDp = y) else it.copy(x = x, y = y) }
+        }
+        Help(R.string.panel_preview_help)
+        Help(R.string.panel_drag_help)
+        Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
+        OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected) { Text(t(R.string.test_panel)) }
+        Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { it.copy(landscapeOverride = value) } }
+        if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
-    appFor?.let { target -> AppPicker(vm,{ appFor=null }) { chosen ->
-        if(target.isEmpty()) vm.editPanel(h.id,index) { it.copy(buttons=it.buttons+PanelButton(action=ButtonAction.OPEN_APP,appPackage=chosen.packageName,appActivity=chosen.activityName,appLabel=chosen.label)) }
-        else vm.editButton(h.id,index,target) { it.copy(appPackage=chosen.packageName,appActivity=chosen.activityName,appLabel=chosen.label) }
-        appFor=null
+    Section(R.string.layout) {
+        OptionRow(t(R.string.layout), PanelMode.entries, l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
+        OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
+        CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
+        if (l.mode == PanelMode.FIXED) {
+            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
+            Help(R.string.fixed_help)
+        } else {
+            SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
+                t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f) { value -> layout { it.copy(extentFraction = value) } }
+            Help(R.string.scrollable_help)
+        }
+        SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
+        if (g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))
+    }
+    Section(R.string.position) {
+        Toggle(R.string.follow_handle, R.string.follow_handle_help, l.followHandle, default = true) { value -> layout { it.copy(followHandle = value) } }
+        if (l.followHandle) {
+            SettingSlider(R.string.offset_x, l.offsetXDp, -240f..240f, t(R.string.dp_value, l.offsetXDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetXDp = value) } }
+            SettingSlider(R.string.offset_y, l.offsetYDp, -240f..240f, t(R.string.dp_value, l.offsetYDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetYDp = value) } }
+            Help(R.string.offset_help)
+        } else {
+            PercentSlider(R.string.center_x, l.x, default = .5f) { value -> layout { it.copy(x = value) } }
+            PercentSlider(R.string.center_y, l.y, default = .5f) { value -> layout { it.copy(y = value) } }
+        }
+    }
+    Section(R.string.outside_touch) {
+        OptionRow(t(R.string.outside_touch), OutsideTouch.entries, p.outsideTouch, OutsideTouch.BLOCK) { value -> vm.editPanel(entry.id) { it.copy(outsideTouch = value) } }
+        Help(R.string.outside_help)
+    }
+    Section(R.string.panel_timeout) {
+        Toggle(R.string.auto_close_panel, R.string.auto_close_help, p.autoCloseEnabled, default = false) { value -> vm.editPanel(entry.id) { it.copy(autoCloseEnabled = value) } }
+        if (p.autoCloseEnabled) {
+            SettingSlider(R.string.close_after, p.autoCloseMs.toFloat(), 1000f..60000f,
+                t(R.string.seconds_value, p.autoCloseMs / 1000f), default = 3000f) { value -> vm.editPanel(entry.id) { it.copy(autoCloseMs = value.toLong()) } }
+            Help(R.string.panel_timeout_help)
+        }
+    }
+    Section(R.string.panel_animation) {
+        OptionRow(t(R.string.open_animation), PanelAnimation.entries, p.animation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(animation = value) } }
+        OptionRow(t(R.string.close_animation), PanelAnimation.entries, p.closeAnimation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(closeAnimation = value) } }
+        Help(R.string.animation_help)
+    }
+    Section(R.string.appearance) {
+        ColorPicker(p.background, title = R.string.panel_background, default = panelDefaults.background) { value -> vm.editPanel(entry.id) { it.copy(background = value) } }
+        SettingSlider(R.string.opacity, p.opacity, .1f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
+        SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
+        OptionRow(t(R.string.icon_shape), IconShape.entries, p.iconShape, IconShape.ROUNDED_SQUARE) { value -> vm.editPanel(entry.id) { it.copy(iconShape = value) } }
+        if (p.iconShape != IconShape.CIRCLE) SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
+            t(R.string.percent, (p.iconCornerFraction * 100).roundToInt()), default = .25f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
+        Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
+        Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
+        if (!p.automaticButtonColor) ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
+        Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
+        if (!p.automaticIconColor) ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
+        SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
+        OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {
+            Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack)
+        }
+        if (p.iconPack.isNotBlank() && packs.none { it.packageName == p.iconPack }) Help(R.string.pack_unavailable)
+    }
+    if (adding) ActionPicker({ adding = false }) { action -> adding = false; draft = PanelButton(action = action) }
+    draft?.let { button -> ButtonEditor(button, p, vm, dismiss = { draft = null }) { saved ->
+        vm.editPanel(entry.id) { current ->
+            current.copy(buttons = if (current.buttons.any { it.id == saved.id }) current.buttons.map { if (it.id == saved.id) saved else it } else current.buttons + saved)
+        }
+        vm.flush(); draft = null
     } }
-    p.buttons.firstOrNull { it.id==editing }?.let { b ->
-        AlertDialog(onDismissRequest={ editing=null },title={ Text(context.buttonLabel(b)) },text={ Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            OptionRow(t(R.string.buttons),ButtonAction.entries,b.action) { action -> vm.editButton(h.id,index,b.id) { it.copy(action=action) } }
-            if(b.action==ButtonAction.OPEN_APP) OutlinedButton(onClick={ vm.loadApps(); appFor=b.id }) { Text(t(R.string.choose_app)) }
-            OutlinedButton(onClick={ vm.loadPacks(); iconFor=b.id }) { Text(t(R.string.choose_icon)) }
-            TextButton(onClick={ vm.editButton(h.id,index,b.id) { it.copy(icon=IconReference()) } }) { Text(t(R.string.reset_icon)) }
-        } },confirmButton={ TextButton(onClick={ editing=null }) { Text(t(R.string.done)) } })
-    }
-    if(packPicker) PackPicker(packs,{ packPicker=false }) { pack -> vm.editPanel(h.id,index) { it.copy(iconPack=pack) }; packPicker=false }
-    iconFor?.let { id -> IconPicker(packs,{ iconFor=null }) { icon -> vm.editButton(h.id,index,id) { it.copy(icon=icon) }; iconFor=null } }
+    if (packPicker) PackPicker(packs, { packPicker = false }) { pack -> vm.editPanel(entry.id) { it.copy(iconPack = pack) }; packPicker = false }
 }
 
-@Composable private fun CountStepper(title: Int,value: Int,min: Int,max: Int,change:(Int)->Unit) {
-    val context=LocalContext.current; val text=t(title)
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-        Text(text,Modifier.weight(1f))
-        TextButton(onClick={ change(value-1) },enabled=value>min,modifier=Modifier.semantics { contentDescription=context.getString(R.string.decrease,text) }) { Text("−") }
-        Text(t(R.string.count_value,value))
-        TextButton(onClick={ change(value+1) },enabled=value<max,modifier=Modifier.semantics { contentDescription=context.getString(R.string.increase,text) }) { Text("+") }
+@Composable private fun CountStepper(title: Int, value: Int, min: Int, max: Int, default: Int, change: (Int) -> Unit) {
+    val text = t(title)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { SettingTitle(text, reset = if (value != default) ({ change(default) }) else null) }
+        IconButton(onClick = { change(value - 1) }, enabled = value > min) { Icon(AppIcons.Minus, t(R.string.decrease, text)) }
+        Text(t(R.string.count_value, value))
+        IconButton(onClick = { change(value + 1) }, enabled = value < max) { Icon(AppIcons.Add, t(R.string.increase, text)) }
+    }
+}
+
+
+@Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
+    val context = LocalContext.current
+    var renaming by rememberSaveable(panel.id) { mutableStateOf(false) }
+    var name by rememberSaveable(panel.id) { mutableStateOf("") }
+    Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Column {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(AppIcons.Apps, null, Modifier.size(28.dp))
+                Text(context.panelLabel(panel), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                EditIcon(AppIcons.Edit, R.string.rename_panel) { name = panel.name; renaming = true }
+            }
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                PanelEditorContent(config, panel, previewHandleId, vm, preview)
+            }
+        }
+    }
+    if (renaming) AlertDialog(onDismissRequest = { renaming = false }, title = { Text(t(R.string.rename_panel)) },
+        text = { OutlinedTextField(name, { name = it.take(80) }, label = { Text(t(R.string.name)) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { vm.editSavedPanel(panel.id) { it.copy(name = name.trim()) }; vm.flush(); renaming = false }) { Text(t(R.string.save)) } },
+        dismissButton = { TextButton(onClick = { renaming = false }) { Text(t(R.string.cancel)) } })
+}
+
+@Composable private fun PreviewHandleChoice(config: AppConfiguration, selected: String?, choose: (String?) -> Unit) {
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+    SettingTitle(t(R.string.preview_handle))
+    Box {
+        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            Text(config.handle(selected)?.let { context.handleLabel(config, it) } ?: t(R.string.default_preview_handle), Modifier.weight(1f))
+            Icon(AppIcons.Down, null, Modifier.size(18.dp))
+        }
+        DropdownMenu(expanded, { expanded = false }) {
+            DropdownMenuItem(text = { Text(t(R.string.default_preview_handle)) }, onClick = { choose(null); expanded = false })
+            config.handles.forEach { h -> DropdownMenuItem(text = { Text(context.handleLabel(config, h)) }, onClick = { choose(h.id); expanded = false }) }
+        }
     }
 }

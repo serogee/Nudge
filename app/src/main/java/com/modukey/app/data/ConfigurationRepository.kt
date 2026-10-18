@@ -11,12 +11,16 @@ interface ConfigurationRepository {
     val configuration: Flow<AppConfiguration>
     suspend fun write(value: AppConfiguration)
 }
-class DataStoreConfigurationRepository(private val store: DataStore<Preferences>) : ConfigurationRepository {
+class DataStoreConfigurationRepository(private val store: DataStore<Preferences>, private val migratedName: MigratedPanelName? = null) : ConfigurationRepository {
     private val key = stringPreferencesKey("configuration.v1")
     override val configuration = store.data.onStart {
         // One atomic update. Legacy and unknown keys remain intact; subsequent starts use the document.
         withContext(Dispatchers.IO) {
-            store.edit { p -> if (p[key] == null) p[key] = ConfigurationCodec.encode(AppConfiguration.fromLegacy(DataStoreSettingsRepository(store).decode(p))) }
+            store.edit { p ->
+                val raw = p[key]
+                p[key] = if (raw == null) ConfigurationCodec.encode(AppConfiguration.fromLegacy(DataStoreSettingsRepository(store).decode(p)))
+                    else if (migratedName == null) ConfigurationCodec.upgrade(raw) else ConfigurationCodec.upgrade(raw, migratedName)
+            }
         }
     }.map { preferences -> withContext(Dispatchers.Default) { ConfigurationCodec.decode(checkNotNull(preferences[key]), checkBackupSize = false) } }
     override suspend fun write(value: AppConfiguration) {

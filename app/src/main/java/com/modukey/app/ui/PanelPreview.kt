@@ -49,13 +49,18 @@ import kotlin.math.roundToInt
             }
         }.pointerInput(screen, layout.followHandle) {
             var dragging = false; var grab = Offset.Zero
+            var initial = Offset.Zero; var initialOffset = Offset.Zero
             fun point(p: Offset): Offset { val f = scale(measured); return if (f > 0) (p-origin(measured,f))/f else Offset.Zero }
             detectDragGestures(onDragStart = { p ->
-                val q = point(p); dragging = !currentLayout.followHandle && currentGeometry.bounds.contains(q.x,q.y)
+                val q = point(p); dragging = currentGeometry.bounds.contains(q.x,q.y)
+                initial = q; initialOffset = Offset(currentLayout.offsetXDp, currentLayout.offsetYDp)
                 grab = q - Offset(screen.usable.x + currentLayout.x*screen.usable.width, screen.usable.y + currentLayout.y*screen.usable.height)
             }, onDragEnd = { if (dragging) finish(); dragging = false }, onDragCancel = { if (dragging) finish(); dragging = false }) { change, _ ->
                 if (dragging) { change.consume(); val q = point(change.position)-grab
-                    position(((q.x-screen.usable.x)/screen.usable.width).coerceIn(0f,1f), ((q.y-screen.usable.y)/screen.usable.height).coerceIn(0f,1f)) }
+                    if (currentLayout.followHandle) {
+                        val delta = (point(change.position) - initial) / screen.density
+                        position((initialOffset.x + delta.x).coerceIn(-240f,240f), (initialOffset.y + delta.y).coerceIn(-240f,240f))
+                    } else position(((q.x-screen.usable.x)/screen.usable.width).coerceIn(0f,1f), ((q.y-screen.usable.y)/screen.usable.height).coerceIn(0f,1f)) }
             }
         }
     Layout(content = { PanelContent(panel, layout, geometry) }, modifier = modifier) { children, constraints ->

@@ -3,68 +3,126 @@ package com.modukey.app.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.modukey.app.R
-import com.modukey.app.core.GestureTarget
 import kotlin.math.roundToInt
 
 val LocalFinishAdjustment = staticCompositionLocalOf<() -> Unit> { {} }
 @Composable fun t(@StringRes id: Int, vararg args: Any): String = stringResource(id, *args)
+fun Modifier.semanticsDescription(value: String) = semantics { contentDescription = value }
 @Composable fun Section(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) = Section(t(title), content)
 @Composable fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold); content() }
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold); content()
+        }
     }
 }
 @Composable fun Help(@StringRes text: Int) { Text(t(text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Notice(text: String) { Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) { Text(text, Modifier.padding(12.dp)) } }
-@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(Modifier.weight(1f)) { Text(t(title)); detail?.let { Help(it) } }
-        Switch(checked = checked, onCheckedChange = change)
-    }
+@Composable fun EditIcon(icon: ImageVector, @StringRes description: Int, enabled: Boolean = true, action: () -> Unit) {
+    IconButton(onClick = action, enabled = enabled) { Icon(icon, t(description), Modifier.size(20.dp)) }
 }
-@Composable fun SettingSlider(@StringRes title: Int, value: Float, range: ClosedFloatingPointRange<Float>, display: String, enabled: Boolean = true, change: (Float) -> Unit) {
+@Composable fun SettingTitle(title: String, enabled: Boolean = true, reset: (() -> Unit)? = null) {
     val finish = LocalFinishAdjustment.current
-    val color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    Column { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(t(title), color = color); Text(display, color = color, style = MaterialTheme.typography.labelMedium) }
-        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range, enabled = enabled)
+    Row(Modifier.heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), modifier = Modifier.weight(1f, fill = false))
+        if (reset != null) {
+            val description = t(R.string.reset_setting, title)
+            IconButton(onClick = { reset(); finish() }, enabled = enabled, modifier = Modifier.size(40.dp)) {
+                Icon(AppIcons.Reset, description, Modifier.size(16.dp))
+            }
+        }
     }
 }
-@Composable fun PercentSlider(@StringRes title: Int, value: Float, enabled: Boolean = true, change: (Float) -> Unit) = SettingSlider(title, value, 0f..1f, t(R.string.percent, (value*100).roundToInt()), enabled, change)
+@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, default: Boolean? = null, change: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f)) {
+            SettingTitle(t(title), reset = if (default != null && checked != default) ({ change(default) }) else null)
+            detail?.let { Help(it) }
+        }
+        val description = t(title)
+        Switch(checked = checked, onCheckedChange = change, modifier = Modifier.semantics { contentDescription = description })
+    }
+}
+@Composable fun SettingSlider(@StringRes title: Int, value: Float, range: ClosedFloatingPointRange<Float>, display: String,
+    enabled: Boolean = true, default: Float? = null, change: (Float) -> Unit) {
+    val finish = LocalFinishAdjustment.current
+    Column {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { SettingTitle(t(title), enabled, if (default != null && value != default) ({ change(default) }) else null) }
+            Text(display, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), style = MaterialTheme.typography.labelMedium)
+        }
+        val name = t(title)
+        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range,
+            enabled = enabled, modifier = Modifier.semantics { contentDescription = name })
+    }
+}
+@Composable fun PercentSlider(@StringRes title: Int, value: Float, enabled: Boolean = true, default: Float? = null, change: (Float) -> Unit) =
+    SettingSlider(title, value, 0f..1f, t(R.string.percent, (value*100).roundToInt()), enabled, default, change)
 @Composable fun <T> Choices(values: List<T>, selected: T, change: (T) -> Unit) {
     val c = LocalContext.current
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { values.forEach { v -> FilterChip(selected = v == selected, onClick = { change(v) }, label = { Text(optionText(c, v as Any)) }) } }
 }
-fun optionText(context: android.content.Context, value: Any): String = if (value is GestureTarget && value.panelIndex != null) context.getString(R.string.panel_name, value.panelIndex!! + 1) else context.getString(label(value))
-@Composable fun <T> OptionRow(title: String, values: List<T>, selected: T, change: (T) -> Unit) {
+fun optionText(context: android.content.Context, value: Any): String = context.getString(label(value))
+@Composable fun <T> OptionRow(title: String, values: List<T>, selected: T, default: T? = null, change: (T) -> Unit) {
     val c = LocalContext.current; var expanded by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(title, Modifier.weight(1f))
-        Box { TextButton(onClick = { expanded = true }) { Text(optionText(c, selected as Any)) }
-            DropdownMenu(expanded, { expanded = false }) { values.forEach { v -> DropdownMenuItem(text = { Text(optionText(c, v as Any)) }, onClick = { expanded = false; change(v) }) } }
+    Column(Modifier.fillMaxWidth()) {
+        SettingTitle(title, reset = if (default != null && selected != default) ({ change(default) }) else null)
+        Box {
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(optionText(c, selected as Any), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
+            }
+            DropdownMenu(expanded, { expanded = false }) {
+                values.forEach { v -> DropdownMenuItem(text = { Text(optionText(c, v as Any)) }, onClick = { expanded = false; change(v) }) }
+            }
         }
     }
 }
-@Composable fun ColorPicker(color: Long, enabled: Boolean = true, change: (Long) -> Unit) {
+@Composable fun BrowserTabs(titles: List<String>, selected: Int, select: (Int) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        titles.forEachIndexed { index, title ->
+            val active = selected == index
+            Surface(modifier = Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                color = if (active) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow) {
+                Tab(selected = active, onClick = { select(index) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(title, Modifier.padding(horizontal = 4.dp, vertical = 14.dp), style = MaterialTheme.typography.labelMedium,
+                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+@Composable fun ColorPicker(color: Long, enabled: Boolean = true, @StringRes title: Int = R.string.color, default: Long? = null, change: (Long) -> Unit) {
     var hex by remember(color) { mutableStateOf("%06X".format(color and 0xFFFFFF)) }
     val c = LocalContext.current
-    Text(t(R.string.color), color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(0xFFB8D982L, 0xFF6BB7E8L, 0xFFE3A0CFL, 0xFFF1BA70L, 0xFFFFFFFFL, 0xFF252A21L).forEach { v ->
-            FilledIconButton(onClick = { change(v) }, enabled = enabled, modifier = Modifier.semantics { contentDescription = c.getString(R.string.color_description, "%06X".format(v and 0xFFFFFF)) },
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(v))) { if (v == color) Text("✓", color = Color.Black) }
+    SettingTitle(t(title), enabled, if (default != null && color != default) ({ change(default) }) else null)
+    val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),
+        listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L))
+    palettes.forEachIndexed { index, values ->
+        if (index == 1) Text(t(R.string.miui_palette), style = MaterialTheme.typography.labelSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            values.forEach { v -> FilledIconButton(onClick = { change(v) }, enabled = enabled,
+                modifier = Modifier.semantics { contentDescription = c.getString(R.string.color_description, "%06X".format(v and 0xFFFFFF)) },
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(v))) {
+                if (v == color) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contrastOn(Color(v)))
+            } }
         }
     }
     OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },

@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.app.KeyguardManager
 import android.app.NotificationManager
 import android.content.*
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.PowerManager
@@ -16,9 +17,9 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringer: Int = AudioManager.RINGER_MODE_NORMAL, val dnd: Boolean = false, val ownDnd: Boolean = false)
-data class ActionResult(val close: Boolean = false, val message: Int? = null)
+data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
-    fun execute(handleId: String, button: PanelButton, testing: Boolean): ActionResult
+    fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
     fun snapshot(): SoundState
 }
 class PanelActions(private val service: AccessibilityService) : ActionExecutor {
@@ -33,19 +34,22 @@ class PanelActions(private val service: AccessibilityService) : ActionExecutor {
         SoundState(audio.getStreamVolume(AudioManager.STREAM_MUSIC), audio.isStreamMute(AudioManager.STREAM_MUSIC), audio.ringerMode, dnd, own)
     } catch (_: RuntimeException) { SoundState() }
 
-    override fun execute(handleId: String, button: PanelButton, testing: Boolean): ActionResult = try {
+    override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?): ActionResult = try {
         when (button.action) {
-            ButtonAction.PHONE_SETTINGS, ButtonAction.NUDGE_SETTINGS, ButtonAction.OPEN_APP -> {
-                launch(handleId, button, testing); ActionResult(close = true)
+            ButtonAction.PHONE_SETTINGS, ButtonAction.NUDGE_SETTINGS, ButtonAction.OPEN_APP, ButtonAction.INPUT_METHOD_PICKER -> {
+                if (button.action == ButtonAction.INPUT_METHOD_PICKER && !service.packageManager.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS))
+                    ActionResult(message = R.string.input_method_picker_failed, succeeded = false)
+                else { launch(handleId, button, testing, gestureSlot = gestureSlot); ActionResult(close = true) }
             }
             ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN -> {
-                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (button.action == ButtonAction.VOLUME_UP) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER, 0)
+                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (button.action == ButtonAction.VOLUME_UP) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+                    if (button.showVolumePopup) AudioManager.FLAG_SHOW_UI else 0)
                 ActionResult()
             }
             ButtonAction.MEDIA_MUTE -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, 0); ActionResult() }
             ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND -> {
                 if (!notification.isNotificationPolicyAccessGranted) {
-                    launch(handleId, button, testing, policy = true)
+                    launch(handleId, button, testing, policy = true, gestureSlot = gestureSlot)
                     ActionResult(close = true, message = R.string.policy_required)
                 } else {
                     when (button.action) {
@@ -58,15 +62,16 @@ class PanelActions(private val service: AccessibilityService) : ActionExecutor {
                     ActionResult(message = if (button.action == ButtonAction.DND && Build.VERSION.SDK_INT >= 35) R.string.dnd_other_rule else null)
                 }
             }
-            ButtonAction.LOCK -> if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)) ActionResult(close = true) else ActionResult(message = R.string.action_failed)
+            ButtonAction.LOCK -> if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)) ActionResult(close = true) else ActionResult(message = R.string.action_failed, succeeded = false)
         }
-    } catch (_: ActivityNotFoundException) { ActionResult(message = R.string.app_missing) }
-    catch (_: RuntimeException) { ActionResult(message = R.string.action_failed) }
+    } catch (_: ActivityNotFoundException) { ActionResult(message = R.string.app_missing, succeeded = false) }
+    catch (_: RuntimeException) { ActionResult(message = R.string.action_failed, succeeded = false) }
 
-    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false) {
+    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false, gestureSlot: GestureSlot? = null) {
         if (!service.getSystemService(PowerManager::class.java).isInteractive) return
-        if (service.getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
-            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy))
+        val locked = service.getSystemService(KeyguardManager::class.java).isKeyguardLocked
+        if (button.action == ButtonAction.INPUT_METHOD_PICKER || locked) {
+            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked))
             service.startActivity(Intent(service, UnlockActionActivity::class.java).putExtra("token", token)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
         } else launchUnlocked(service, button, policy)
@@ -88,12 +93,21 @@ class PanelActions(private val service: AccessibilityService) : ActionExecutor {
     }
 }
 
-data class PendingLaunch(val handleId: String, val button: PanelButton, val testing: Boolean, val policy: Boolean)
+data class PendingLaunch(val handleId: String, val button: PanelButton, val testing: Boolean, val policy: Boolean, val gestureSlot: GestureSlot? = null,
+    val fromLockScreen: Boolean = true) {
+    // Recheck the exact source after authentication. Deleted or changed assignments must not launch.
+    fun currentButton(config: AppConfiguration): PanelButton? {
+        val current = if (gestureSlot != null) config.handle(handleId)?.target(gestureSlot)?.action
+            else config.panels.asSequence().flatMap { it.settings.buttons }.firstOrNull { it.id == button.id }
+        return current?.takeIf { it == button }
+    }
+}
 class UnlockRequests {
     private val pending = mutableMapOf<String, PendingLaunch>()
     fun put(request: PendingLaunch): String { pending.clear(); return newId().also { pending[it] = request } }
     fun take(token: String) = pending.remove(token)
     fun contains(token: String) = token in pending
+    fun peek(token: String) = pending[token]
     fun cancel(token: String) { pending.remove(token) }
     fun clear() = pending.clear()
 }

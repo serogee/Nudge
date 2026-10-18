@@ -4,20 +4,33 @@ import java.util.UUID
 
 enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
-enum class GestureTarget { NONE, VOLUME, PANEL_1, PANEL_2, PANEL_3;
-    val panelIndex: Int? get() = when (this) { PANEL_1 -> 0; PANEL_2 -> 1; PANEL_3 -> 2; else -> null }
+data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null) {
+    val isNone get() = panelId == null && !volume && action == null
+    fun normalized() = if (action != null) copy(panelId = null, volume = false) else this
+    fun duplicate() = copy(action = action?.copy(id = newId()))
+    companion object {
+        val NONE = GestureTarget()
+        val VOLUME = GestureTarget(volume = true)
+        fun panel(id: String, volume: Boolean = false) = GestureTarget(id, volume)
+        fun direct(action: PanelButton) = GestureTarget(action = action)
+    }
 }
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
+enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
+enum class IconContainer { DEFAULT, CONTAINER, STANDALONE }
+enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS }
 
-data class IconReference(val packageName: String = "", val drawable: String = "")
+data class IconReference(val packageName: String = "", val drawable: String = "", val builtIn: BuiltInIcon? = null)
 data class PanelButton(
     val id: String = newId(), val action: ButtonAction = ButtonAction.VOLUME_UP,
     val appPackage: String = "", val appActivity: String = "", val appLabel: String = "",
     val icon: IconReference = IconReference(),
+    val showVolumePopup: Boolean = false,
+    val iconContainer: IconContainer = IconContainer.DEFAULT,
 )
 data class PanelLayout(
     val mode: PanelMode = PanelMode.FIXED,
@@ -28,10 +41,12 @@ data class PanelLayout(
     val buttonSizeDp: Float = 56f,
     val followHandle: Boolean = true,
     val x: Float = 0.5f, val y: Float = 0.5f,
+    val offsetXDp: Float = 0f, val offsetYDp: Float = 0f,
 ) {
     fun normalized() = copy(crossCount = crossCount.coerceIn(1, 12), maximumLines = maximumLines.coerceIn(1, 20),
         extentFraction = extentFraction.valid(0.6f).coerceIn(0.15f, 1f), buttonSizeDp = buttonSizeDp.valid(56f).coerceIn(48f, 96f),
-        x = x.valid(0.5f).coerceIn(0f, 1f), y = y.valid(0.5f).coerceIn(0f, 1f))
+        x = x.valid(0.5f).coerceIn(0f, 1f), y = y.valid(0.5f).coerceIn(0f, 1f),
+        offsetXDp = offsetXDp.valid(0f).coerceIn(-240f, 240f), offsetYDp = offsetYDp.valid(0f).coerceIn(-240f, 240f))
 }
 data class PanelConfig(
     val buttons: List<PanelButton> = emptyList(),
@@ -45,34 +60,68 @@ data class PanelConfig(
     val iconShape: IconShape = IconShape.ROUNDED_SQUARE,
     val iconCornerFraction: Float = 0.25f,
     val iconPack: String = "",
+    val animation: PanelAnimation = PanelAnimation.NONE,
+    val iconBackground: Boolean = true,
+    val automaticButtonColor: Boolean = true,
+    val buttonColor: Long = 0xFF3C3C3E,
+    val automaticIconColor: Boolean = true,
+    val iconColor: Long = 0xFFFFFFFF,
+    val autoCloseEnabled: Boolean = false,
+    val autoCloseMs: Long = 3_000,
+    val closeAnimation: PanelAnimation = PanelAnimation.NONE,
 ) {
     fun layout(landscape: Boolean) = if (landscape && landscapeOverride) this.landscape else portrait
     fun normalized() = copy(portrait = portrait.normalized(), landscape = landscape.normalized(),
         opacity = opacity.valid(0.98f).coerceIn(0.1f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
-        iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000)
+        iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
+        buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
+        autoCloseMs = autoCloseMs.coerceIn(1_000, 60_000))
 }
 data class HandleConfig(
     val id: String = newId(), val name: String = "", val enabled: Boolean = false,
     val trigger: TriggerSettings = TriggerSettings(),
     val bindings: Map<GestureSlot, GestureTarget> = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME),
     val volumeSequenceMs: Long = 3_000,
-    val panels: List<PanelConfig> = List(3) { PanelConfig() },
 ) {
     fun target(slot: GestureSlot) = bindings[slot] ?: GestureTarget.NONE
     fun normalized() = copy(name = name.take(80), trigger = trigger.normalized().copy(enabled = false, includePrereleases = false, activation = Activation.SWIPE),
-        bindings = GestureSlot.entries.associateWith(::target),
-        volumeSequenceMs = volumeSequenceMs.coerceIn(1_000, 10_000),
-        panels = List(3) { panels.getOrNull(it)?.normalized() ?: PanelConfig() })
-    fun duplicate() = copy(id = newId(), enabled = false,
-        panels = panels.map { p -> p.copy(buttons = p.buttons.map { it.copy(id = newId()) }) })
+        bindings = GestureSlot.entries.associateWith { target(it).normalized() },
+        volumeSequenceMs = volumeSequenceMs.coerceIn(1_000, 10_000))
+    fun duplicate() = copy(id = newId(), enabled = false, bindings = bindings.mapValues { it.value.duplicate() })
+}
+
+data class SavedPanel(val id: String = newId(), val name: String = "", val settings: PanelConfig = PanelConfig()) {
+    fun normalized() = copy(name = name.take(80), settings = settings.normalized())
+    fun duplicate() = copy(id = newId(), settings = settings.copy(buttons = settings.buttons.map { it.copy(id = newId()) }))
 }
 data class AppConfiguration(
     val enabled: Boolean = false, val includePrereleases: Boolean = false,
     val handles: List<HandleConfig> = listOf(HandleConfig(id = "first-handle", enabled = true)),
+    val panels: List<SavedPanel> = emptyList(),
 ) {
-    fun normalized() = copy(handles = handles.map(HandleConfig::normalized))
+    fun normalized(): AppConfiguration {
+        val ids = panels.map { it.id }.toSet()
+        return copy(panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+            h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
+                if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
+            }) }
+        })
+    }
     fun handle(id: String?) = handles.firstOrNull { it.id == id }
+    fun panel(id: String?) = panels.firstOrNull { it.id == id }
     fun editHandle(id: String, edit: (HandleConfig) -> HandleConfig) = copy(handles = handles.map { if (it.id == id) edit(it) else it })
+    fun editPanel(id: String, edit: (SavedPanel) -> SavedPanel) = copy(panels = panels.map { if (it.id == id) edit(it) else it })
+    fun removePanel(id: String) = copy(panels = panels.filterNot { it.id == id }, handles = handles.map { h ->
+        h.copy(bindings = h.bindings.mapValues { (_, target) -> if (target.panelId == id) target.copy(panelId = null) else target })
+    })
+    fun addCopies(imported: AppConfiguration): AppConfiguration {
+        val copies = imported.panels.associate { it.id to it.duplicate() }
+        return copy(panels = panels + imported.panels.map { copies.getValue(it.id) }, handles = handles + imported.handles.map { h ->
+            h.duplicate().let { duplicate -> duplicate.copy(bindings = duplicate.bindings.mapValues { (_, target) ->
+                target.copy(panelId = target.panelId?.let { copies.getValue(it).id })
+            }) }
+        })
+    }
     companion object {
         fun fromLegacy(old: TriggerSettings) = AppConfiguration(old.enabled, old.includePrereleases,
             listOf(HandleConfig(id = "first-handle", enabled = true, trigger = old,

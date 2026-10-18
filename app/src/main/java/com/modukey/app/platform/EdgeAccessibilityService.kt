@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlin.math.roundToInt
 
 private data class HandleSpec(val bounds: Bounds, val settings: TriggerSettings, val edge: Edge, val editing: Boolean)
-private data class OpenPanel(val handleId: String, val index: Int, val testing: Boolean = false)
+private data class OpenPanel(val panelId: String, val handleId: String? = null, val testing: Boolean = false)
 internal data class ScreenSpace(val width: Float, val height: Float, val density: Float, val insets: Insets, val landscape: Boolean) {
     val usable get() = Bounds(insets.left, insets.top, (width-insets.left-insets.right).coerceAtLeast(1f), (height-insets.top-insets.bottom).coerceAtLeast(1f))
 }
@@ -35,6 +35,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var registry: OverlayRegistry<String, HandleSpec>? = null
     private var frames: FrameCoalescer? = null
     private var panelHost: PanelHost? = null
+    private var panelTimeout: PanelTimeout? = null
     private var open: OpenPanel? = null
     private var attachedPanel: Pair<OpenPanel, Boolean>? = null
     private var foreground: String? = null
@@ -46,7 +47,8 @@ class EdgeAccessibilityService : AccessibilityService() {
     private val frame = Choreographer.FrameCallback { frames?.onFrame() }
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            views.values.forEach { it.cancelGesture() }; sessions.clear(); open = null
+            views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel()
+            clearPanelWindows()
             if (intent?.action == Intent.ACTION_SCREEN_OFF) app.unlocks.clear()
             refresh()
         }
@@ -58,8 +60,11 @@ class EdgeAccessibilityService : AccessibilityService() {
         val choreographer = Choreographer.getInstance()
         frames = FrameCoalescer({ choreographer.postFrameCallback(frame) }, { choreographer.removeFrameCallback(frame) }, ::refresh)
         actions = PanelActions(this)
+        panelTimeout = PanelTimeout(requireNotNull(scope)) { dismissPanel(); refresh() }
         panelHost = AccessibilityPanelHost(this, manager, actions!!, { dismissPanel(); refresh() },
-            { x, y -> handleBounds.values.any { it.contains(x, y) } }, ::runButton)
+            { x, y -> handleBounds.values.any { it.contains(x, y) } }, ::runButton, { panelTimeout?.touch(it) }, { error ->
+                app.diagnostics.record("Panel cleanup failed", error); errors["panel"] = getString(R.string.overlay_error); frames?.request()
+            })
         registry = OverlayRegistry { id -> object : OverlayHost<HandleSpec> {
             override fun attach(value: HandleSpec) {
                 val view = HandleTriggerView(this@EdgeAccessibilityService) { activate(id, it) }
@@ -86,9 +91,11 @@ class EdgeAccessibilityService : AccessibilityService() {
             registered = true
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.state.filterNotNull().collect { frames?.request() } }
-            scope?.launch { app.editor.state.collect { views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(); refresh() } }
+            scope?.launch { app.editor.state.collect { views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
-                if (app.editor.state.value?.handleId == request.handleId) { open = OpenPanel(request.handleId, request.panelIndex, testing = true); refresh() }
+                if (app.editor.state.value == EditorSelection(request.handleId, request.panelId) && app.configuration.state.value?.panel(request.panelId) != null) {
+                    dismissPanel(); open = OpenPanel(request.panelId, request.handleId, testing = true); refresh()
+                }
             } }
         } catch (e: RuntimeException) { app.diagnostics.record("Service setup failed", e); stopSession(); app.status.report(ServiceState(connected = true, error = getString(R.string.overlay_error))) }
     }
@@ -127,35 +134,68 @@ class EdgeAccessibilityService : AccessibilityService() {
         val handle = config.handle(id) ?: return
         if (app.editor.state.value != null || reason(config, handle) != HandleAvailability.ACTIVE) { refresh(); return }
         val now = SystemClock.elapsedRealtime(); val (target, stage) = sessions.next(handle, kind, now)
-        if (target == GestureTarget.NONE) return
-        if (target == GestureTarget.VOLUME) {
-            replacePanel(null, id); refresh()
-            when (val result = app.volume.show()) {
-                VolumeResult.Requested -> sessions.submitted(handle, stage, target, now)
-                is VolumeResult.Failed -> { sessions.reset(id); app.diagnostics.record("Volume request failed: ${result.message}"); Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show() }
+        if (target.isNone) return
+        // One gesture can request both windows. Android owns the native popup's lifetime.
+        replacePanel(target.panelId?.takeIf { config.panel(it) != null }?.let { OpenPanel(it, id) }, id)
+        var submitted = target.panelId != null
+        target.action?.let { action ->
+            val slot = when (kind) {
+                GestureKind.SWIPE -> GestureSlot.entries[requireNotNull(stage)]
+                GestureKind.SWIPE_HOLD -> GestureSlot.SWIPE_HOLD
+                GestureKind.TAP -> GestureSlot.TAP
+                GestureKind.HOLD -> GestureSlot.HOLD
             }
-        } else { replacePanel(OpenPanel(id, target.panelIndex!!), id); sessions.submitted(handle, stage, target, now); refresh() }
+            // Remove the previous panel before an app launch or the system lock action.
+            refresh()
+            actions?.execute(id, action, testing = false, gestureSlot = slot)?.let { result ->
+                submitted = result.succeeded
+                result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+            }
+        }
+        if (target.volume) {
+            when (val result = app.volume.show()) {
+                VolumeResult.Requested -> submitted = true
+                is VolumeResult.Failed -> {
+                    app.diagnostics.record("Volume request failed: ${result.message}")
+                    Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        if (submitted) sessions.submitted(handle, stage, target, now) else sessions.reset(id)
+        refresh()
         if (handle.trigger.haptics) views[id]?.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
     }
-    private fun replacePanel(next: OpenPanel?, keepSession: String) { open?.takeIf { it.handleId != keepSession }?.let { sessions.reset(it.handleId) }; open = next }
-    private fun dismissPanel() { open?.let { sessions.reset(it.handleId) }; open = null }
+    private fun replacePanel(next: OpenPanel?, keepSession: String) {
+        panelTimeout?.stop(); open?.handleId?.takeIf { it != keepSession }?.let(sessions::reset); open = next
+    }
+    private fun dismissPanel() { panelTimeout?.stop(); open?.handleId?.let(sessions::reset); open = null }
+    private fun clearPanelWindows() {
+        attachedPanel = null
+        try { panelHost?.hide(animate = false) } catch (e: RuntimeException) {
+            app.diagnostics.record("Panel cleanup failed", e); errors["panel"] = getString(R.string.overlay_error)
+        }
+    }
     private fun runButton(button: PanelButton) {
-        val owner = open ?: return; val config = app.configuration.state.value ?: return; val h = config.handle(owner.handleId) ?: return
-        if (!owner.testing && reason(config, h) != HandleAvailability.ACTIVE) { dismissPanel(); refresh(); return }
-        val p = h.panels[owner.index]; val s = screen()
-        val b = TriggerGeometry.bounds(s.width, s.height, s.density, s.insets, h.trigger, s.landscape)
-        val geometry = PanelGeometry.calculate(s.usable, s.density, p.layout(s.landscape), p.buttons.size, b, h.trigger.placement(s.landscape).edge)
+        val owner = open ?: return
+        val config = app.configuration.state.value ?: return
+        val h = config.handle(owner.handleId)
+        if (!owner.testing && (h == null || reason(config, h) != HandleAvailability.ACTIVE)) { dismissPanel(); refresh(); return }
+        val p = config.panel(owner.panelId)?.settings ?: return
+        val trigger = h?.trigger ?: TriggerSettings()
+        val s = screen()
+        val b = TriggerGeometry.bounds(s.width, s.height, s.density, s.insets, trigger, s.landscape)
+        val geometry = PanelGeometry.calculate(s.usable, s.density, p.layout(s.landscape), p.buttons.size, b, trigger.placement(s.landscape).edge)
         if (button !in p.buttons.take(geometry.visibleCount)) return
-        val result = actions?.execute(h.id, button, owner.testing) ?: return
+        val result = actions?.execute(h?.id.orEmpty(), button, owner.testing) ?: return
         result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
-        if (result.close) { dismissPanel(); refresh() } else panelHost?.refreshSound()
+        if (result.close) { dismissPanel(); refresh() } else { panelTimeout?.restart(); panelHost?.refreshSound() }
     }
     private fun refresh() {
         if (scope == null) return
         try { render() } catch (e: RuntimeException) {
             app.diagnostics.record("Overlay refresh failed", e)
             dismissPanel(); sessions.clear()
-            try { panelHost?.hide() } catch (_: RuntimeException) { }
+            try { panelHost?.hide(animate = false) } catch (_: RuntimeException) { }
             registry?.clear()
             app.status.report(ServiceState(connected = true, error = getString(R.string.overlay_error)))
         }
@@ -177,24 +217,35 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (selected != null) reasons[h.id] = HandleAvailability.EDITING
         }
         var wanted = open
-        if (wanted != null && (config.handle(wanted.handleId) == null || (wanted.testing && (!editing || selected?.handleId != wanted.handleId)) ||
+        if (wanted != null && (config.panel(wanted.panelId) == null ||
+                (wanted.testing && (!editing || selected != EditorSelection(wanted.handleId, wanted.panelId))) ||
                 (!wanted.testing && (selected != null || reasons[wanted.handleId] != HandleAvailability.ACTIVE)))) { dismissPanel(); wanted = null }
         var panelEditing = false
-        if (wanted == null && editing && selected?.panelIndex != null && config.handle(selected.handleId) != null) { wanted = OpenPanel(selected.handleId, selected.panelIndex); panelEditing = true }
+        if (wanted == null && editing && selected?.panelId != null && config.panel(selected.panelId) != null) {
+            wanted = OpenPanel(selected.panelId, selected.handleId); panelEditing = true
+        }
         val identity = wanted?.let { it to panelEditing }; val changed = attachedPanel != identity
         try {
-            if (changed) panelHost?.hide()
+            if (changed) {
+                val previous = attachedPanel?.takeIf { !it.second }?.first
+                val animateExit = if (previous?.testing == true) editing && selected == EditorSelection(previous.handleId, previous.panelId)
+                    else selected == null && config.handle(previous?.handleId)?.let { reason(config, it) == HandleAvailability.ACTIVE } == true
+                panelHost?.hide(animate = animateExit)
+            }
             if (wanted != null) {
-                val h = config.handle(wanted.handleId)!!; val p = h.panels[wanted.index]
-                val b = TriggerGeometry.bounds(s.width, s.height, s.density, s.insets, h.trigger, s.landscape)
-                panelHost?.show(PanelSpec(p, p.layout(s.landscape), PanelGeometry.calculate(s.usable, s.density, p.layout(s.landscape), p.buttons.size, b, h.trigger.placement(s.landscape).edge), panelEditing))
+                val trigger = config.handle(wanted.handleId)?.trigger ?: TriggerSettings()
+                val p = config.panel(wanted.panelId)!!.settings
+                val b = TriggerGeometry.bounds(s.width, s.height, s.density, s.insets, trigger, s.landscape)
+                panelHost?.show(PanelSpec(p, p.layout(s.landscape), PanelGeometry.calculate(s.usable, s.density, p.layout(s.landscape), p.buttons.size, b, trigger.placement(s.landscape).edge), panelEditing, trigger.placement(s.landscape).edge))
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
         } catch (e: RuntimeException) {
             app.diagnostics.record("Panel window failed", e); dismissPanel(); attachedPanel = null
-            try { panelHost?.hide() } catch (_: RuntimeException) { }; errors["panel"] = getString(R.string.overlay_error)
+            try { panelHost?.hide(animate = false) } catch (_: RuntimeException) { }; errors["panel"] = getString(R.string.overlay_error)
         }
+        val timedPanel = open?.let { config.panel(it.panelId)?.settings }
+        panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
         val failures = registry?.reconcile(desired, raise = changed && wanted != null).orEmpty()
         errors.keys.filter { it != "panel" && it !in desired }.toList().forEach(errors::remove)
@@ -203,7 +254,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         errors.keys.filter { it in desired }.forEach { reasons[it] = HandleAvailability.ERROR }
         try { updateEvents(config) } catch (e: RuntimeException) { app.diagnostics.record("Event subscription failed", e) }
         val active = registry?.attached.orEmpty().filterTo(mutableSetOf()) { selected == null }
-        app.status.report(ServiceState(true, active.isNotEmpty(), errors.values.firstOrNull(), active, reasons, open?.handleId))
+        app.status.report(ServiceState(true, active.isNotEmpty(), errors.values.firstOrNull(), active, reasons, open?.handleId, open?.panelId))
     }
     private fun updateEvents(config: AppConfiguration) {
         val need = open != null || (config.enabled && config.handles.any { it.enabled && it.trigger.excludedPackages.isNotEmpty() })
@@ -219,9 +270,10 @@ class EdgeAccessibilityService : AccessibilityService() {
         setFitInsetsTypes(0); layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS; title = "Nudge handle"
     }
     private fun stopSession() {
+        panelTimeout?.stop(); panelTimeout = null
         frames?.stop(); frames = null; scope?.cancel(); scope = null
         open = null; attachedPanel = null; sessions.clear(); app.unlocks.clear(); handleBounds = emptyMap(); foreground = null
-        try { panelHost?.hide() } catch (e: RuntimeException) { app.diagnostics.record("Panel cleanup failed", e) }; panelHost = null
+        try { panelHost?.hide(animate = false) } catch (e: RuntimeException) { app.diagnostics.record("Panel cleanup failed", e) }; panelHost = null
         registry?.clear()?.values?.forEach { app.diagnostics.record("Handle cleanup failed", it) }; registry = null
         views.clear(); layouts.clear(); errors.clear(); actions = null
         if (registered) { registered = false; try { unregisterReceiver(screenReceiver) } catch (_: RuntimeException) { } }
