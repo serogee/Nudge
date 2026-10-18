@@ -51,8 +51,8 @@ import com.modukey.app.platform.*
     val handle = config?.handle(handleId)
     val panel = config?.panel(panelId)
     val previewHandle = config?.handle(previewHandleId)
-    var overlayPreview by rememberSaveable(handle?.id, panel?.id) { mutableStateOf(true) }
-    var handleTab by rememberSaveable(handle?.id) { mutableIntStateOf(0) }
+    var overlayPreview by rememberSaveable(handleId, panelId) { mutableStateOf(true) }
+    var handleTab by rememberSaveable(handleId) { mutableIntStateOf(0) }
     fun back() { if (tab == 2) panelId = null else handleId = null }
     BackHandler(enabled = handle != null || panel != null) { back() }
     LaunchedEffect(vm) { vm.notices.collect { snackbar.showSnackbar(context.getString(it)) } }
