@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.modukey.app.core.Edge
 import com.modukey.app.core.HandleConfig
@@ -17,7 +18,7 @@ import com.modukey.app.core.HandleConfig
     val shape = androidx.compose.runtime.remember(handle.trigger.placement(landscape).edge) { HandleBadgeShape(handle.trigger.placement(landscape).edge) }
     val color = Color(handle.trigger.indicatorColor)
     Surface(modifier.size(44.dp), shape = shape, color = color, contentColor = contrastOn(color)) {
-        Box(contentAlignment = Alignment.Center) { Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium) }
+        Box(contentAlignment = Alignment.Center) { Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold) }
     }
 }
 
