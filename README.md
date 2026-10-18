@@ -143,4 +143,6 @@ Official references: [accessibility overlays](https://developer.android.com/refe
 
 Panel app-change detection now checks activity identity and event timing. The first observation, queued events, and ambiguous popup events keep the panel open. See [panel dismissal findings and device checks](docs/panel-dismissal.md). Use Info > Copy compatibility details to collect bounded dismissal reasons after an incident.
 
+Version 0.3.0, code 7, has reviewed notes prepared on the feature branch. After merging the pull request, update local `main` and run `scripts/Release.ps1 -CreateTag` from its clean checkout. This builds the final signed APK, verifies it, and creates the local release tag. Push that tag before creating the GitHub release. Artifacts use `releases/0.3.0/`.
+
 Version 0.2.1 artifacts remain unchanged. Redmi/HyperOS verification remains pending.
