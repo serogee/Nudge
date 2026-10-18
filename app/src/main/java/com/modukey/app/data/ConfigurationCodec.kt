@@ -90,7 +90,8 @@ object ConfigurationCodec {
         swipeDistanceDp = t.float("swipeDistance", 24f), swipeTimeoutMs = t.optLong("swipeTime", 600), haptics = t.optBoolean("haptics"),
         excludedPackages = t.optJSONArray("excluded")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
         longerTouchLength = t.optBoolean("longerTouchLength"), softHideEnabled = t.optBoolean("softHideEnabled"),
-        softHideDelayMs = t.optLong("softHideDelayMs", 3_000))
+        softHideDelayMs = t.optLong("softHideDelayMs", 3_000),
+        holdTimeMs = t.optLong("holdTimeMs", 500), swipeHoldTimeMs = t.optLong("swipeHoldTimeMs", 500))
     private fun handle(h: HandleConfig): JSONObject {
         val s = h.trigger
         val trigger = JSONObject().put("portrait", placement(s.portrait)).put("landscape", placement(s.landscape))
@@ -101,6 +102,7 @@ object ConfigurationCodec {
             .put("swipeDistance", s.swipeDistanceDp).put("swipeTime", s.swipeTimeoutMs).put("haptics", s.haptics)
             .put("excluded", array(s.excludedPackages.sorted())).put("longerTouchLength", s.longerTouchLength)
             .put("softHideEnabled", s.softHideEnabled).put("softHideDelayMs", s.softHideDelayMs)
+            .put("holdTimeMs", s.holdTimeMs).put("swipeHoldTimeMs", s.swipeHoldTimeMs)
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
             put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume)
