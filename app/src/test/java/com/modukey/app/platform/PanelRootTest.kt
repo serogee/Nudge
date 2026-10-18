@@ -70,4 +70,16 @@ class PanelRootTest {
         assertTrue(root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)))
         assertEquals(1, dismissed)
     }
+    @Test fun `dismissal reports outside and Back separately and ignores cancellation`() {
+        val root = PanelRoot(context) { false to OutsideTouch.BLOCK }
+        val reasons = mutableListOf<PanelDismissReason>()
+        root.dismiss = { reasons += it }; root.layout(0, 0, 100, 100)
+        touch(root, MotionEvent.ACTION_DOWN, -10f, 20f)
+        touch(root, MotionEvent.ACTION_CANCEL, -10f, 20f)
+        assertTrue(reasons.isEmpty())
+        touch(root, MotionEvent.ACTION_DOWN, -10f, 20f)
+        touch(root, MotionEvent.ACTION_UP, -10f, 20f)
+        root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK))
+        assertEquals(listOf(PanelDismissReason.OUTSIDE_TOUCH, PanelDismissReason.BACK), reasons)
+    }
 }

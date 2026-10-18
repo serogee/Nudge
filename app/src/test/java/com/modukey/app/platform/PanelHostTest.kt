@@ -51,7 +51,7 @@ class PanelHostTest {
         }
     }
     private data class Fixture(val host: AccessibilityPanelHost, val windows: Windows, val errors: MutableList<RuntimeException>, val snapshots: () -> Int)
-    private fun fixture(): Fixture {
+    private fun fixture(dismiss: (PanelDismissReason) -> Unit = {}): Fixture {
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
         scale(1f)
         val windows = Windows(app.getSystemService(WindowManager::class.java))
@@ -61,7 +61,7 @@ class PanelHostTest {
             override fun snapshot() = SoundState().also { snapshots++ }
             override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?) = ActionResult()
         }
-        val host = AccessibilityPanelHost(app, windows, actions, {}, { _, _ -> false }, {}, onError = { errors += it })
+        val host = AccessibilityPanelHost(app, windows, actions, dismiss, { _, _ -> false }, {}, onError = { errors += it })
         hosts += host
         return Fixture(host, windows, errors) { snapshots }
     }
@@ -172,5 +172,18 @@ class PanelHostTest {
         assertEquals(resized.geometry.bounds.width / 2, root.pivotX)
         assertEquals(resized.geometry.bounds.height / 2, root.pivotY)
         idle(250); assertTrue(f.windows.attached.isEmpty()); assertTrue(f.errors.isEmpty())
+    }
+    @Test fun `unexpected removal reports once and normal cleanup does not report dismissal`() {
+        val reasons = mutableListOf<PanelDismissReason>()
+        val f = fixture { reasons += it }
+        f.host.show(spec(PanelAnimation.NONE)); idle(32)
+        f.windows.removeViewImmediate(f.windows.attached.single())
+        assertEquals(listOf(PanelDismissReason.WINDOW_DETACHED), reasons)
+        f.host.hide(animate = false)
+        f.host.show(spec(PanelAnimation.NONE)); f.host.hide(animate = false)
+        f.host.show(spec(PanelAnimation.NONE, editing = true)); idle(32)
+        f.windows.removeViewImmediate(f.windows.attached.single())
+        assertEquals(listOf(PanelDismissReason.WINDOW_DETACHED), reasons)
+        assertTrue(f.errors.isEmpty())
     }
 }
