@@ -346,4 +346,9 @@
     <string name="icon_opacity">Icon opacity</string>
     <string name="select_panel">Select panel</string>
     <string name="gesture_popup_help">Show the native volume popup. Select No action for the popup alone.</string>
+    <string name="empty_button">Empty button</string>
+    <string name="empty_no_icon">No icon</string>
+    <string name="empty_no_button">No button</string>
+    <string name="empty_slash">Slash icon</string>
+    <string name="empty_button_help">This button keeps its grid space and performs no action.</string>
 </resources>

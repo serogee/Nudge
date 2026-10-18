@@ -36,6 +36,7 @@ class PanelActions(private val service: AccessibilityService) : ActionExecutor {
 
     override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?): ActionResult = try {
         when (button.action) {
+            ButtonAction.EMPTY -> ActionResult() 
             ButtonAction.PHONE_SETTINGS, ButtonAction.NUDGE_SETTINGS, ButtonAction.OPEN_APP, ButtonAction.INPUT_METHOD_PICKER -> {
                 if (button.action == ButtonAction.INPUT_METHOD_PICKER && !service.packageManager.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS))
                     ActionResult(message = R.string.input_method_picker_failed, succeeded = false)

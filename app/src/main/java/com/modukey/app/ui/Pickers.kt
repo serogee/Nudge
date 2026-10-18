@@ -23,7 +23,7 @@ import com.modukey.app.platform.IconPackInfo
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.button_action)) }, text = {
         LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.heightIn(max = 460.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(ButtonAction.entries) { action ->
+            items(ButtonAction.entries.filter { includeEmpty || it != ButtonAction.EMPTY }) { action ->
                 Surface(onClick = { choose(action) }, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                     Column(Modifier.padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {

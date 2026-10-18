@@ -25,7 +25,7 @@ import com.modukey.app.core.*
         3 -> IconPicker(packs, { page = 0 }, draft.icon) { icon -> draft = draft.copy(icon = icon); page = 0 }
         else -> AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.edit_button)) }, text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Surface(Modifier.fillMaxWidth(), color = androidx.compose.ui.graphics.Color(panel.background), shape = MaterialTheme.shapes.large) {
+                Surface(Modifier.fillMaxWidth(), color = androidx.compose.ui.graphics.Color(panel.background).copy(alpha = panel.opacity), shape = MaterialTheme.shapes.large) {
                     Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         PanelButtonFace(draft, panel, 64.dp)
                         Text(context.buttonLabel(draft), color = contrastOn(androidx.compose.ui.graphics.Color(panel.background)), style = MaterialTheme.typography.titleSmall)
@@ -41,11 +41,16 @@ import com.modukey.app.core.*
                 }
                 if (draft.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN))
                     Toggle(R.string.show_volume_popup, R.string.show_volume_help, draft.showVolumePopup, default = false) { draft = draft.copy(showVolumePopup = it) }
+                if (draft.action == ButtonAction.EMPTY) {
+                    OptionRow(t(R.string.appearance), EmptyAppearance.entries, draft.emptyAppearance, EmptyAppearance.SLASH) { draft = draft.copy(emptyAppearance = it) }
+                    Help(R.string.empty_button_help)
+                } else {
                 SettingTitle(t(R.string.button_icon), reset = if (draft.icon != IconReference()) ({ draft = draft.copy(icon = IconReference()) }) else null)
                 OutlinedButton(onClick = { vm.loadPacks(); page = 3 }, modifier = Modifier.fillMaxWidth()) {
                     ButtonGraphic(draft, panel.iconPack, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)); Text(t(R.string.choose_icon), Modifier.weight(1f)); Icon(AppIcons.Edit, null, Modifier.size(18.dp))
                 }
                 OptionRow(t(R.string.icon_container), IconContainer.entries, draft.iconContainer, IconContainer.DEFAULT) { draft = draft.copy(iconContainer = it) }
+                }
             }
         }, confirmButton = { Button(onClick = { save(draft) }, enabled = draft.action != ButtonAction.OPEN_APP || draft.appPackage.isNotBlank()) { Text(t(R.string.save)) } },
             dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })

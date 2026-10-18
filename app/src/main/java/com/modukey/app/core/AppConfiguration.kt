@@ -18,7 +18,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, EMPTY }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }

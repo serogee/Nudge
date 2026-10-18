@@ -43,7 +43,7 @@ import kotlin.math.roundToInt
                 Row(Modifier.fillMaxWidth().padding(start = 10.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(Modifier.weight(1f).alpha(if (position >= g.visibleCount) .38f else 1f),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PanelButtonFace(b, p, 40.dp)
+                        if (b.action == ButtonAction.EMPTY) Icon(AppIcons.Empty, null, Modifier.size(40.dp)) else PanelButtonFace(b, p, 40.dp)
                         Column { Text(context.buttonLabel(b)); if (position >= g.visibleCount) Text(t(R.string.not_shown), style = MaterialTheme.typography.labelSmall) }
                     }
                     EditIcon(AppIcons.Edit, R.string.edit_button) { draft = b }

@@ -39,6 +39,7 @@ object AppIcons {
     val Home = icon("Home") { moveTo(2f,11f); lineTo(12f,3f); lineTo(22f,11f); moveTo(5f,9f); lineTo(5f,21f); lineTo(10f,21f); lineTo(10f,14f); lineTo(14f,14f); lineTo(14f,21f); lineTo(19f,21f); lineTo(19f,9f) }
     val Favorite = icon("Favorite") { moveTo(12f,3f); lineTo(15f,9f); lineTo(22f,10f); lineTo(17f,15f); lineTo(18f,22f); lineTo(12f,18f); lineTo(6f,22f); lineTo(7f,15f); lineTo(2f,10f); lineTo(9f,9f); close() }
     val Apps = icon("Apps") { for(x in listOf(3f,14f)) for(y in listOf(3f,14f)) { moveTo(x,y); lineTo(x+7,y); lineTo(x+7,y+7); lineTo(x,y+7); close() } }
+    val Empty = icon("Empty button") { moveTo(21f,12f); curveTo(21f,24f,3f,24f,3f,12f); curveTo(3f,0f,21f,0f,21f,12f); moveTo(6f,6f); lineTo(18f,18f) }
     val Keyboard = icon("Keyboard") {
         moveTo(2f,5f); lineTo(22f,5f); lineTo(22f,19f); lineTo(2f,19f); close()
         for (y in listOf(9f,12f)) for (x in listOf(6f,10f,14f,18f)) { moveTo(x,y); lineTo(x+.1f,y) }

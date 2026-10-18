@@ -71,6 +71,9 @@ fun PanelContent(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometr
 
 @Composable
 fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.compose.ui.unit.Dp, state: SoundState = SoundState(), interactive: Boolean = false, action: () -> Unit = {}) {
+    if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_BUTTON) {
+        Box(Modifier.size(cell)); return
+    }
     val context = LocalContext.current
     val title = context.buttonLabel(button)
     val selected = when (button.action) {
@@ -83,7 +86,7 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
     val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND)
     val description = if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
     val shape = iconShape(panel)
-    val container = when (button.iconContainer) {
+    val container = if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_ICON) true else when (button.iconContainer) {
         IconContainer.DEFAULT -> panel.iconBackground
         IconContainer.CONTAINER -> true
         IconContainer.STANDALONE -> false
@@ -96,14 +99,15 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
     val behind = if (container) buttonBackground.compositeOver(panelBackground) else panelBackground
     val tint = if (panel.automaticIconColor) contrastOn(behind) else Color(panel.iconColor)
     Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(buttonBackground) else Modifier)
-        .then(if (interactive) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
-        .semantics { contentDescription = description }, contentAlignment = androidx.compose.ui.Alignment.Center) {
-        ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape).alpha(panel.iconOpacity), tint, cell.value.toInt())
+        .then(if (interactive && button.action != ButtonAction.EMPTY) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
+        .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics { contentDescription = description } else Modifier), contentAlignment = androidx.compose.ui.Alignment.Center) {
+        if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH) ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape).alpha(panel.iconOpacity), tint, cell.value.toInt())
     }
 }
 
 @Composable
 fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifier, tint: Color = MaterialTheme.colorScheme.onSurface, sizeDp: Int = 48) {
+    if (button.action == ButtonAction.EMPTY) { Icon(AppIcons.Empty, null, modifier, tint = tint); return }
     button.icon.builtIn?.let { Icon(AppIcons.library(it), null, modifier, tint = tint); return }
     val app = LocalContext.current.applicationContext as NudgeApplication
     val density = LocalDensity.current.density
