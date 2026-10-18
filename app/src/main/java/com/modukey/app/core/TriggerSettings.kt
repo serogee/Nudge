@@ -64,7 +64,7 @@ object TriggerGeometry {
     fun maximumLengthDp(width: Float, height: Float, density: Float, insets: Insets, longer: Boolean): Float {
         val w = (width - insets.left - insets.right).coerceAtLeast(0f)
         val h = (height - insets.top - insets.bottom).coerceAtLeast(0f)
-        return (if (longer) maxOf(w, h) else minOf(w, h)) / density.coerceAtLeast(.01f)
+        return ((if (longer) maxOf(w, h) else minOf(w, h)) / density.coerceAtLeast(.01f)).coerceAtLeast(48f)
     }
 
     fun bounds(width: Float, height: Float, density: Float, insets: Insets, settings: TriggerSettings, landscape: Boolean): Bounds {
