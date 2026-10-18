@@ -6,13 +6,13 @@ enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null) {
     val isNone get() = panelId == null && !volume && action == null
-    fun normalized() = if (action != null) copy(panelId = null, volume = false) else this
+    fun normalized() = if (action != null) copy(panelId = null, volume = volume || action.showVolumePopup, action = action.copy(showVolumePopup = false)) else this
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
         val NONE = GestureTarget()
         val VOLUME = GestureTarget(volume = true)
         fun panel(id: String, volume: Boolean = false) = GestureTarget(id, volume)
-        fun direct(action: PanelButton) = GestureTarget(action = action)
+        fun direct(action: PanelButton) = GestureTarget(volume = action.showVolumePopup, action = action.copy(showVolumePopup = false))
     }
 }
 enum class PanelMode { FIXED, SCROLLABLE }
@@ -21,6 +21,8 @@ enum class OutsideTouch { BLOCK, PASS_THROUGH }
 enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
+enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
+
 enum class IconContainer { DEFAULT, CONTAINER, STANDALONE }
 enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS }
 
@@ -31,6 +33,7 @@ data class PanelButton(
     val icon: IconReference = IconReference(),
     val showVolumePopup: Boolean = false,
     val iconContainer: IconContainer = IconContainer.DEFAULT,
+    val emptyAppearance: EmptyAppearance = EmptyAppearance.SLASH,
 )
 data class PanelLayout(
     val mode: PanelMode = PanelMode.FIXED,
@@ -69,13 +72,16 @@ data class PanelConfig(
     val autoCloseEnabled: Boolean = false,
     val autoCloseMs: Long = 3_000,
     val closeAnimation: PanelAnimation = PanelAnimation.NONE,
+    val buttonOpacity: Float = 1f,
+    val iconOpacity: Float = 1f,
 ) {
     fun layout(landscape: Boolean) = if (landscape && landscapeOverride) this.landscape else portrait
     fun normalized() = copy(portrait = portrait.normalized(), landscape = landscape.normalized(),
-        opacity = opacity.valid(0.98f).coerceIn(0.1f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
+        opacity = opacity.valid(0.98f).coerceIn(0f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
-        autoCloseMs = autoCloseMs.coerceIn(1_000, 60_000))
+        autoCloseMs = autoCloseMs.coerceIn(1_000, 60_000),
+        buttonOpacity = buttonOpacity.valid(1f).coerceIn(0f, 1f), iconOpacity = iconOpacity.valid(1f).coerceIn(0f, 1f))
 }
 data class HandleConfig(
     val id: String = newId(), val name: String = "", val enabled: Boolean = false,

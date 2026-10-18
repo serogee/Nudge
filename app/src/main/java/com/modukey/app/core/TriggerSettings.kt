@@ -26,13 +26,16 @@ data class TriggerSettings(
     val haptics: Boolean = false,
     val excludedPackages: Set<String> = emptySet(),
     val includePrereleases: Boolean = false,
+    val longerTouchLength: Boolean = false,
+    val softHideEnabled: Boolean = false,
+    val softHideDelayMs: Long = 3_000,
 ) {
     fun placement(isLandscape: Boolean) = if (isLandscape && landscapeOverrideEnabled) landscape else portrait
 
     fun normalized() = copy(
         portrait = portrait.copy(position = portrait.position.finite(0.65f).coerceIn(0f, 1f)),
         landscape = landscape.copy(position = landscape.position.finite(0.65f).coerceIn(0f, 1f)),
-        lengthDp = lengthDp.finite(120f).coerceIn(48f, 200f),
+        lengthDp = lengthDp.finite(120f).coerceAtLeast(48f),
         depthDp = depthDp.finite(16f).coerceIn(8f, 32f),
         indicatorLengthFraction = indicatorLengthFraction.finite(2f / 3f).coerceIn(0f, 1f),
         indicatorThicknessFraction = indicatorThicknessFraction.finite(0.25f).coerceIn(0f, 1f),
@@ -41,6 +44,7 @@ data class TriggerSettings(
         cornerRadiusDp = cornerRadiusDp.finite(2f).coerceIn(0f, 16f),
         swipeDistanceDp = swipeDistanceDp.finite(24f).coerceIn(12f, 80f),
         swipeTimeoutMs = swipeTimeoutMs.coerceIn(200, 1200),
+        softHideDelayMs = softHideDelayMs.coerceIn(1_000, 30_000),
     )
 }
 
@@ -57,13 +61,20 @@ object TriggerGeometry {
     fun draggedPosition(pointer: Float, grabOffset: Float, edgeLength: Float): Float =
         if (edgeLength > 0f) ((pointer - grabOffset) / edgeLength).coerceIn(0f, 1f) else 0f
 
+    fun maximumLengthDp(width: Float, height: Float, density: Float, insets: Insets, longer: Boolean): Float {
+        val w = (width - insets.left - insets.right).coerceAtLeast(0f)
+        val h = (height - insets.top - insets.bottom).coerceAtLeast(0f)
+        return (if (longer) maxOf(w, h) else minOf(w, h)) / density.coerceAtLeast(.01f)
+    }
+
     fun bounds(width: Float, height: Float, density: Float, insets: Insets, settings: TriggerSettings, landscape: Boolean): Bounds {
         val config = settings.normalized()
         val placement = config.placement(landscape)
         val usableWidth = (width - insets.left - insets.right).coerceAtLeast(0f)
         val usableHeight = (height - insets.top - insets.bottom).coerceAtLeast(0f)
         val horizontal = placement.edge == Edge.BOTTOM
-        val length = (config.lengthDp * density).coerceAtMost(if (horizontal) usableWidth else usableHeight)
+        val maximum = maximumLengthDp(width, height, density, insets, config.longerTouchLength)
+        val length = (minOf(config.lengthDp, maximum) * density).coerceAtMost(if (horizontal) usableWidth else usableHeight)
         val depth = (config.depthDp * density).coerceAtMost(if (horizontal) usableHeight else usableWidth)
         return when (placement.edge) {
             Edge.LEFT -> Bounds(insets.left, insets.top + start(placement.position, length, usableHeight), depth, length)

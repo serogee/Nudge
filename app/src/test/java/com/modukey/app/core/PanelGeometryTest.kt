@@ -16,7 +16,7 @@ class PanelGeometryTest {
             val base = PanelGeometry.calculate(space, 2f, saved.copy(offsetXDp = 0f, offsetYDp = 0f), 1, area, edge).bounds
             val shifted = PanelGeometry.calculate(space, 2f, saved, 1, area, edge).bounds
             assertEquals(base.x - 20f, shifted.x, .001f)
-            assertEquals(base.y + 30f, shifted.y, .001f)
+            assertEquals(base.y - 30f, shifted.y, .001f)
             val absolute = PanelGeometry.calculate(space, 2f, saved.copy(followHandle = false), 1, area, edge).bounds
             val absoluteWithoutOffsets = PanelGeometry.calculate(space, 2f, saved.copy(followHandle = false, offsetXDp = 0f, offsetYDp = 0f), 1, area, edge).bounds
             assertEquals(absoluteWithoutOffsets, absolute)

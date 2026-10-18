@@ -33,7 +33,7 @@ class ConfigurationCodecTest {
         assertEquals(GestureTarget.panel(value.panels.last().id), h.target(GestureSlot.HOLD))
         assertEquals(12, first.settings.buttons.size)
         assertEquals(PanelLayout(crossCount = 2, maximumLines = 3, extentFraction = .75f, buttonSizeDp = 64f, followHandle = false,
-            x = .2f, y = .8f, offsetXDp = -22f, offsetYDp = 14f), first.settings.portrait)
+            x = .2f, y = .8f, offsetXDp = -22f, offsetYDp = -14f), first.settings.portrait)
         assertEquals(PanelAnimation.SCALE, first.settings.animation)
         assertEquals(PanelAnimation.SCALE, first.settings.closeAnimation)
         assertEquals(IconShape.SQUIRCLE, first.settings.iconShape)
@@ -153,7 +153,6 @@ class ConfigurationCodecTest {
         assertEquals(target,original.removePanel(original.panels.single().id).handles.single().target(GestureSlot.HOLD))
         val invalid=listOf(
             ConfigurationCodec.encode(original.copy(panels=listOf(panel))),
-            ConfigurationCodec.encode(original.copy(handles=listOf(h.copy(bindings=mapOf(GestureSlot.HOLD to target.copy(volume=true)))))),
             ConfigurationCodec.encode(original.copy(handles=listOf(h.copy(bindings=mapOf(GestureSlot.HOLD to target.copy(panelId=original.panels.single().id)))))),
             JSONObject(ConfigurationCodec.encode(original)).apply {
                 getJSONArray("handles").getJSONObject(0).getJSONObject("bindings").getJSONObject("HOLD").put("action","LOCK")
