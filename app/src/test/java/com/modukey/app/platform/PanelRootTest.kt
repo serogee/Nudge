@@ -47,4 +47,17 @@ class PanelRootTest {
         assertTrue(root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP,KeyEvent.KEYCODE_BACK))); assertEquals(1,dismissed)
         editing=true; assertFalse(touch(root,MotionEvent.ACTION_DOWN,10f,10f)); assertEquals(1,dismissed)
     }
+    @Test fun `panel background receives release and cancel for timeout control but editing does not`() {
+        var editing=false
+        val root=PanelRoot(context) { editing to OutsideTouch.BLOCK }
+        val held=mutableListOf<Boolean>(); root.touchState={ held+=it }; root.layout(0,0,100,100)
+        assertTrue(touch(root,MotionEvent.ACTION_DOWN,10f,10f))
+        touch(root,MotionEvent.ACTION_MOVE,20f,10f)
+        assertTrue(touch(root,MotionEvent.ACTION_UP,20f,10f))
+        touch(root,MotionEvent.ACTION_DOWN,10f,10f); touch(root,MotionEvent.ACTION_CANCEL,10f,10f)
+        assertEquals(listOf(true,false,true,false),held)
+        editing=true
+        assertFalse(touch(root,MotionEvent.ACTION_DOWN,10f,10f)); touch(root,MotionEvent.ACTION_UP,10f,10f)
+        assertEquals(listOf(true,false,true,false),held)
+    }
 }
