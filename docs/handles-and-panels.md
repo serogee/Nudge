@@ -1,12 +1,14 @@
 # Handles and panels
 
-These controls are available in Nudge 0.2.0. Physical Redmi Note 12 / HyperOS checks remain pending.
+These controls describe version 0.2.1. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
 Open **Handles** to add, name, enable, duplicate, move, or delete a handle. New and duplicated handles start disabled. The first handle receives touches where touch areas overlap. The master switch on Home must also be on.
 
-Each handle owns its touch area, visible handle, gestures, exclusions, lock-screen option, and three panels. Duplicating a handle copies these settings with new IDs. Changes to one copy do not affect the other.
+In the development interface, drag a card's left grip to change its priority. Select the pencil to edit or rename it. The handle title and tabs stay visible while the options scroll. A reset icon appears beside a changed setting. It restores only that setting.
+
+Each handle owns its touch area, visible handle, gestures, exclusions, and lock-screen option. Duplicating a handle creates an independent disabled handle. Panel assignments continue to refer to the same panels. Deleting or resetting a handle does not delete any panel.
 
 In Appearance, drag the touch area or use Center along edge. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
 
@@ -14,7 +16,15 @@ While an editor is resumed, its phone guide passes touches through. Normal handl
 
 ## Gestures
 
-Assign No action, Volume popup, or Panel 1–3 to each gesture. All six gesture assignments can coexist.
+Assign No action, Volume popup, any one panel, or any one panel with Volume popup to each gesture. Select a panel and enable Also show volume popup for the combined action. All six gesture assignments can coexist. Save applies the selection; Cancel keeps the existing assignment.
+
+Select **Direct action** to assign Phone settings, Nudge settings, Volume up, Volume down, Media mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, or Open app. No panel is needed. Choose an app for Open app. Volume up and Volume down include the optional Show volume popup switch. Icon appearance controls apply only to panel buttons.
+
+Input method picker is also available for every gesture and as a panel button. It opens Android's native keyboard chooser and closes the Nudge panel. It does not change the keyboard until you select one. Nudge uses its internal activity to obtain input focus because Android can ignore requests from an unfocused service. The activity closes when the chooser returns. If no chooser takes focus within two seconds, it closes and reports an error.
+
+On the lock screen, the picker first requests normal system unlock. Cancelled authentication, changed assignments, disabled handles, and service loss cancel the request. Screen-off cancels it too. The picker adds no idle observer or background service. Its system appearance and keyboard restoration on HyperOS require device testing.
+
+Each assignment owns its action settings. Editing it does not change a panel button or another gesture. Direct actions close the current Nudge panel. App and settings actions use the same normal system unlock step as panel buttons. A removed or changed assignment cannot continue after unlock. Sound-mode actions show required Do Not Disturb access on Home, including when no panel uses them.
 
 - Tap: release within 250 ms without moving beyond touch slop.
 - Hold: hold still for at least 500 ms, then release.
@@ -23,9 +33,17 @@ Assign No action, Volume popup, or Panel 1–3 to each gesture. All six gesture 
 
 Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Hold gestures do not run until release. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
 
-A Nudge panel keeps its owner's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. A volume action closes the Nudge panel and requests the stock popup without changing volume. Android controls the stock popup's appearance and dismissal.
+A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
-After a volume action, the next swipe advances only within the configured sequence period, which defaults to 3 seconds. This uses an expiry timestamp, not an idle timer or popup observation. Tap, Hold, and Swipe and hold reset ordinary swipe progression.
+After Volume popup alone or a direct action, the next swipe advances only within Swipe sequence timeout, which defaults to 3 seconds. The existing saved timeout is retained. A combined assignment keeps the sequence active while its Nudge panel is open. Timing uses an expiry timestamp, not an idle timer or popup observation. Tap, Hold, and Swipe and hold reset ordinary swipe progression. Failed direct actions reset progression.
+
+## Independent panels
+
+Open **Panels** to create, name, order, duplicate, edit, or delete panels. A new configuration has no panels. There are no fixed panel slots. Panels have their own editor and can be shared by several handles.
+
+Deleting a panel requires confirmation. Its gesture links change to No action. Combined panel-and-volume assignments keep Volume popup. Duplicating a panel copies all its settings and buttons with fresh IDs; existing gesture links keep the original panel.
+
+The panel editor retains the same button, appearance, layout, position, animation, outside-touch, and landscape controls. Select a preview handle to check Follow handle placement. This choice affects only the preview. At runtime, the handle that opens the panel sets its anchor and animation direction. Without a handle, previews use the default right-edge placement.
 
 ## Panel layouts
 
@@ -40,7 +58,17 @@ Fixed panels never scroll. For example, two columns and three maximum rows show 
 
 Scrollable panels keep all buttons available. Their length uses a percentage of the usable screen. Use Test panel to check scrolling and actions. Preview buttons do not run actions.
 
-Follow handle places the panel inward from its handle. Turn it off to use center X/Y percentages or drag the panel preview. Optional landscape overrides retain separate mode, direction, counts, sizing, and placement. Buttons, appearance, and outside-touch behavior remain shared.
+Follow handle places the panel inward from the handle that opens it. Turn it off to use center X/Y percentages or drag the panel preview. Optional landscape overrides retain separate mode, direction, counts, sizing, and placement. Buttons, appearance, and outside-touch behavior remain shared.
+
+The development interface adds X/Y offsets while Follow handle is on. Positive X moves right. Positive Y moves down. Turning Follow handle off shows absolute center percentages. Each mode retains its saved values. Dragging the preview edits the active mode.
+
+Open animation and Close animation are separate settings. Each offers No animation, Fade, Slide and fade, and Scale, slide, and fade. New panels default to No animation for both. Older configurations use their saved opening effect as the initial closing effect. Editing or resetting one setting keeps the other unchanged. Both values are included in backups and panel copies.
+
+The handle's logical edge sets the direction. Exit moves toward that edge; scale also shrinks the panel. The animation does not depend on the distance from the handle.
+
+Native View animations run only during transitions: 180 ms on entry and 120 ms on exit at the normal system speed. A closing panel stops receiving input and sound updates immediately. Its rendered content remains until exit completes, then its window and composition are removed. Rapid replacement retains at most one inert closing panel alongside the active panel. Completing an old exit cannot close a newer panel.
+
+None, editing guides, and disabled system animations use no transition. Screen-off, editing-session changes, errors, and service shutdown remove windows immediately and cancel pending animations. There is no idle animation loop.
 
 ## Closing panels
 
@@ -53,6 +81,12 @@ Nudge does not replay or inject touches. A drag that starts inside the panel doe
 
 When a native volume popup is behind the panel, the same outside-touch setting applies. In blocking mode, the first outside tap closes Nudge's panel without changing the native controls.
 
+Enable **Close automatically** in a panel's **Auto-close** section to set an idle timeout from 1–60 seconds. The option defaults off, with a saved duration of 3 seconds. Turning it off retains the duration.
+
+Opening the panel or receiving touch input restarts the timer. The timer pauses while a touch is held, including scrolling. Expiry closes the panel and resets its invoking handle's swipe sequence to the first assigned stage. It also applies to combined panel-and-volume assignments; Android retains control of the native volume popup.
+
+Editing guides have no timeout. **Test panel** uses the saved timeout. Only an open interactive panel has a pending delay. Replacement, dismissal, screen-off, and service cleanup cancel it. Unrelated settings or overlay refreshes do not extend its deadline.
+
 ## Actions and icons
 
 Panels provide Phone settings, Nudge settings, media volume up/down/mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, and Open app. Sound adjustments keep the panel open. App, settings, and lock actions close it. Power controls are excluded.
@@ -61,21 +95,33 @@ Silent ringer and Vibrate select their respective modes. Tapping the active mode
 
 Choose a default icon pack for a panel or a manual static icon for any button. Common appfilter mappings and drawable lists are supported. Missing apps and packs retain their references and use fallback icons. Dynamic clocks and calendars are excluded. Icon shape and corners are independent of panel corners.
 
+The development button editor keeps changes private until Save. Volume up and Volume down have an optional Show volume popup switch. It changes the native UI flag while keeping the media adjustment to one system step. Sound buttons still keep the Nudge panel open.
+
+Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols. MIUI dark palette swatches are available for panel, button, icon, and handle colors.
+
 Each handle can be enabled on the awake lock screen. Apps and settings use Android's normal unlock step. Cancelling authentication cancels the action. Nudge does not wake the screen. Screen-off and always-on-display operation remain disabled.
 
 ## Backups and persistence
 
-Export or import JSON through Settings → Backup. Files contain configuration and icon references, including hidden buttons. They do not contain icon-pack images, permissions, signing material, or transient sessions.
+Export or import JSON through Info → Backup. Files contain handles, panels, gesture links, and icon references, including hidden buttons. They do not contain icon-pack images, permissions, signing material, or transient sessions.
 
-Add handles is the default import mode. It creates independent disabled copies and retains current global settings. Replace configuration requires confirmation and leaves the master switch off for review. Invalid files and files larger than 1 MiB are rejected before configuration changes.
+The development navigation names this destination **Info**. Existing backup and help controls remain there. New display settings and built-in icon references are included in JSON backups. Older configurations use compatible defaults for these fields.
+
+Add handles and panels is the default import mode. It creates disabled handle copies and independent panel copies with fresh IDs. Shared panel links within the imported group remain shared. Current settings stay unchanged. Replace configuration requires confirmation and leaves the master switch off for review. Invalid files and files larger than 1 MiB are rejected before configuration changes.
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
+
+The current configuration uses schema 3 for independent panels and direct gesture actions. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+
+Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
 Field changes apply immediately to the current draft. Disk saves wait for 150 ms of quiet and flush when an adjustment ends or the app backgrounds. Failed saves retain the draft and offer Retry. Delayed writes do not roll back newer edits or restore deleted handles.
 
 ## Battery and verification
 
-All handles share one accessibility service. Static windows schedule no idle frames. Hold recognition and volume sequences use timestamps. Panels own their event observers only while open. Icons load off the main thread with an 8 MiB bitmap cache.
+All handles share one accessibility service. Static windows schedule no idle frames. Hold recognition and swipe sequences use timestamps. Direct actions reuse the existing action executor without an additional service or observer. Panels own their event observers only while open. Icons load off the main thread with an 8 MiB bitmap cache.
+
+Optional panel auto-close uses one cancellable delay while a panel is open. It adds no polling, wake lock, periodic job, or idle frame loop.
 
 There are no wake locks, periodic restart jobs, foreground services, or scheduled update checks. HyperOS Background autostart remains recommended. Use No restrictions only when needed for reliability, then measure battery use.
 
