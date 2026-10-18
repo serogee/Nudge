@@ -1,0 +1,62 @@
+package com.modukey.app.platform
+
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import androidx.test.core.app.ApplicationProvider
+import com.modukey.app.NudgeApplication
+import com.modukey.app.core.*
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 36])
+class HandleWindowHostTest {
+    private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
+    @After fun cleanup() { app.onTerminate() }
+    // Model WindowManager accepting a window before ViewRoot delivers attachment.
+    private class PendingWindows(delegate: WindowManager) : WindowManager by delegate {
+        val registered = linkedMapOf<View, ViewGroup.LayoutParams>()
+        var adds = 0; var removes = 0
+        override fun addView(view: View, params: ViewGroup.LayoutParams) { check(registered.put(view, params) == null); adds++ }
+        override fun updateViewLayout(view: View, params: ViewGroup.LayoutParams) { check(view in registered); registered[view] = params }
+        override fun removeViewImmediate(view: View) { check(registered.remove(view) != null); removes++ }
+    }
+    @Test fun `clearing or reordering pending windows never leaves a second active handle`() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        val views = mutableMapOf<String, HandleTriggerView>()
+        val registry = OverlayRegistry<String, HandleWindowSpec> { id -> HandleWindowHost(app, windows, {}, {}) { v ->
+            if (v == null) views.remove(id) else views[id] = v
+        } }
+        val spec = HandleWindowSpec(Bounds(100f, 380f, 120f, 16f), TriggerSettings(), Edge.BOTTOM, false)
+        repeat(6) { rotation ->
+            assertTrue(registry.reconcile(linkedMapOf("a" to spec, "b" to spec)).isEmpty())
+            assertEquals(2, windows.registered.size)
+            assertTrue(windows.registered.keys.none { it.isAttachedToWindow })
+            assertTrue(registry.reconcile(linkedMapOf("b" to spec, "a" to spec), raise = rotation % 2 == 0).isEmpty())
+            assertEquals(2, windows.registered.size)
+            registry.clear(); registry.clear()
+            assertTrue(windows.registered.isEmpty()); assertTrue(views.isEmpty())
+        }
+        assertEquals(windows.adds, windows.removes)
+    }
+    @Test fun `layout updates retain a single pending window and cleanup is idempotent`() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        val host = HandleWindowHost(app, windows, {}, {}) {}
+        val first = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(), Edge.LEFT, true, 1)
+        host.attach(first)
+        val view = windows.registered.keys.single()
+        host.update(first.copy(bounds = Bounds(0f, 100f, 16f, 250f)))
+        assertSame(view, windows.registered.keys.single())
+        assertEquals(1, windows.adds)
+        val p = windows.registered.getValue(view) as WindowManager.LayoutParams
+        assertEquals(250, p.height)
+        assertTrue(p.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE != 0)
+        host.detach(); host.detach()
+        assertTrue(windows.registered.isEmpty()); assertEquals(1, windows.removes)
+    }
+}
