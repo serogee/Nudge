@@ -354,4 +354,5 @@
     <string name="longer_touch_length">Enable longer touch length</string>
     <string name="longer_touch_help">Use the longer screen edge as the maximum. The saved length stays unchanged when space is limited.</string>
     <string name="touch_length_limited">Saved length: %1$d dp. Available length: %2$d dp.</string>
+    <string name="overlay_preview">On-phone preview</string>
 </resources>

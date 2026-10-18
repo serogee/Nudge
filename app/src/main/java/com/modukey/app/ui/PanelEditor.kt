@@ -17,7 +17,7 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable private fun PanelEditorContent(config: AppConfiguration, entry: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
+@Composable private fun PanelEditorContent(config: AppConfiguration, entry: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean) {
     val context = LocalContext.current
     var landscape by rememberSaveable(entry.id) { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
@@ -63,7 +63,7 @@ import kotlin.math.roundToInt
         PanelPreview(p, l, g, screen, handle, trigger)
         Help(R.string.panel_preview_help)
         Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
-        OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected) { Text(t(R.string.test_panel)) }
+        OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected && previewEnabled) { Text(t(R.string.test_panel)) }
         Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { it.copy(landscapeOverride = value) } }
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
@@ -151,8 +151,9 @@ import kotlin.math.roundToInt
 }
 
 
-@Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
+@Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
     val context = LocalContext.current
+    val service by vm.status.collectAsStateWithLifecycle()
     var renaming by rememberSaveable(panel.id) { mutableStateOf(false) }
     var name by rememberSaveable(panel.id) { mutableStateOf("") }
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -163,8 +164,9 @@ import kotlin.math.roundToInt
                 Text(context.panelLabel(panel), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 EditIcon(AppIcons.Edit, R.string.rename_panel) { name = panel.name; renaming = true }
             }
+            OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                PanelEditorContent(config, panel, previewHandleId, vm, preview)
+                PanelEditorContent(config, panel, previewHandleId, vm, preview, previewEnabled)
             }
         }
     }

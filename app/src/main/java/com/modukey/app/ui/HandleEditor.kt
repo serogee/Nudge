@@ -18,10 +18,9 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel) {
+@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
-    var tab by rememberSaveable(h.id) { mutableIntStateOf(0) }
     var landscape by rememberSaveable(h.id) { mutableStateOf(false) }
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
@@ -44,7 +43,8 @@ import kotlin.math.roundToInt
                     Toggle(R.string.enable_handle, R.string.enable_handle_help, h.enabled, default = false) { value -> vm.editHandle(h.id) { it.copy(enabled = value) } }
                 }
             }
-            BrowserTabs(listOf(t(R.string.appearance), t(R.string.gestures), t(R.string.availability)), tab) { tab = it }
+            BrowserTabs(listOf(t(R.string.appearance), t(R.string.gestures), t(R.string.availability)), tab, selectTab)
+            if (tab == 0) OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(scroll).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 val s = h.trigger
                 when(tab) {

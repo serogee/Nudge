@@ -209,7 +209,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         sessions.retain(reasons.filterValues { it == HandleAvailability.ACTIVE }.keys)
         val desired = linkedMapOf<String, HandleSpec>()
         config.handles.asReversed().forEach { h ->
-            val guide = editing && selected?.handleId == h.id
+            val guide = editing && selected?.preview == true && selected.handleId == h.id
             if (guide || (selected == null && reasons[h.id] == HandleAvailability.ACTIVE)) {
                 val b = TriggerGeometry.bounds(s.width, s.height, s.density, s.insets, h.trigger, s.landscape)
                 desired[h.id] = HandleSpec(b, h.trigger, h.trigger.placement(s.landscape).edge, guide)
@@ -221,7 +221,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 (wanted.testing && (!editing || selected != EditorSelection(wanted.handleId, wanted.panelId))) ||
                 (!wanted.testing && (selected != null || reasons[wanted.handleId] != HandleAvailability.ACTIVE)))) { dismissPanel(); wanted = null }
         var panelEditing = false
-        if (wanted == null && editing && selected?.panelId != null && config.panel(selected.panelId) != null) {
+        if (wanted == null && editing && selected?.preview == true && selected.panelId != null && config.panel(selected.panelId) != null) {
             wanted = OpenPanel(selected.panelId, selected.handleId); panelEditing = true
         }
         val identity = wanted?.let { it to panelEditing }; val changed = attachedPanel != identity
