@@ -256,6 +256,10 @@
     <string name="manage_handles_help">Drag grips to set priority. The first handle receives touches where touch areas overlap.</string>
     <string name="rename_handle">Rename handle</string>
     <string name="save">Save</string>
+    <string name="unsaved_changes">Save changes?</string>
+    <string name="unsaved_changes_help">Save these changes before you leave. Discard restores the saved settings.</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
     <string name="reset_setting">Reset %1$s</string>
     <string name="reorder_item">Drag to reorder %1$s</string>
     <string name="accessibility_on">Accessibility is on</string>

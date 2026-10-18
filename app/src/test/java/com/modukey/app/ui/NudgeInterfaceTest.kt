@@ -37,8 +37,8 @@ class NudgeInterfaceTest {
     @After fun stopApplicationScope() { (rule.activity.application as NudgeApplication).onTerminate() }
     private fun ready():NudgeApplication {
         val app=rule.activity.application as NudgeApplication
-        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!=null || app.configuration.error.value!=null } }
-        rule.runOnIdle { assertNull("Configuration load failed",app.configuration.error.value); assertNotNull(app.configuration.state.value) }
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.preview.value!=null || app.configuration.error.value!=null } }
+        rule.runOnIdle { assertNull("Configuration load failed",app.configuration.error.value); assertNotNull(app.configuration.preview.value) }
         rule.runOnIdle { app.configuration.update { AppConfiguration() } }
         rule.waitForIdle()
         return app
@@ -51,12 +51,12 @@ class NudgeInterfaceTest {
         val app=ready()
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
         rule.onNodeWithText("Add handle").performClick()
-        rule.runOnIdle { assertEquals(2,app.configuration.state.value!!.handles.size) }
+        rule.runOnIdle { assertEquals(2,app.configuration.preview.value!!.handles.size) }
         rule.onNodeWithContentDescription("Rename handle").performClick()
         rule.onNode(hasText("Name") and hasSetTextAction()).performTextInput("Second")
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle {
-            val handles=app.configuration.state.value!!.handles
+            val handles=app.configuration.preview.value!!.handles
             assertEquals("Second",handles.last().name); assertFalse(handles.last().enabled)
             assertNotEquals(handles.first().id,handles.last().id)
         }
@@ -88,13 +88,13 @@ class NudgeInterfaceTest {
         rule.onNodeWithContentDescription("Edit").performClick()
         rule.onNodeWithContentDescription("Reset Touch length").performScrollTo().performClick()
         rule.runOnIdle {
-            val trigger = app.configuration.state.value!!.handles.first().trigger
+            val trigger = app.configuration.preview.value!!.handles.first().trigger
             assertEquals(120f, trigger.lengthDp); assertEquals(22f, trigger.depthDp)
         }
         rule.onNodeWithContentDescription("Reset Touch length").assertDoesNotExist()
         rule.onNodeWithText("Gestures").assertIsDisplayed().performClick()
         rule.onNodeWithText("Swipe 1").assertExists()
-        rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Save").assertIsDisplayed()
     }
     @Test fun `follow controls hide unused coordinates and retain both saved setups`() {
         val app = ready()
@@ -113,7 +113,7 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Follow handle").performClick()
         rule.onNodeWithText("X offset").assertExists()
         rule.runOnIdle {
-            assertEquals(panel.settings.portrait, app.configuration.state.value!!.panels.single().settings.portrait)
+            assertEquals(panel.settings.portrait, app.configuration.preview.value!!.panels.single().settings.portrait)
         }
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Manage Panels").assertExists()
@@ -125,20 +125,21 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Manage Panels").assertExists()
         rule.onNodeWithContentDescription("Edit panel").assertDoesNotExist()
         rule.onNodeWithText("Add panel").performClick()
-        rule.runOnIdle { assertEquals(1,app.configuration.state.value!!.panels.size) }
+        rule.runOnIdle { assertEquals(1,app.configuration.preview.value!!.panels.size) }
         rule.onNodeWithContentDescription("Rename panel").performClick()
         rule.onNode(hasText("Name") and hasSetTextAction()).performTextInput("Tools")
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle {
-            assertEquals("Tools",app.configuration.state.value!!.panels.single().name)
-            assertEquals(1,app.configuration.state.value!!.handles.size)
+            assertEquals("Tools",app.configuration.preview.value!!.panels.single().name)
+            assertEquals(1,app.configuration.preview.value!!.handles.size)
         }
+        rule.onNodeWithContentDescription("Save").performClick()
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Tools").assertExists()
         rule.onNodeWithContentDescription("Delete panel").performScrollTo().assertIsDisplayed().performClick()
-        rule.runOnIdle { assertEquals(1,app.configuration.state.value!!.panels.size) }
+        rule.runOnIdle { assertEquals(1,app.configuration.preview.value!!.panels.size) }
         rule.onNodeWithText("Delete").performClick()
-        rule.runOnIdle { assertTrue(app.configuration.state.value!!.panels.isEmpty()) }
+        rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panels.isEmpty()) }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit").performClick()
         rule.onNodeWithText("Gestures").assertExists()
@@ -157,18 +158,18 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Search panels").assertExists()
         rule.onNodeWithText("Tools").performClick()
         rule.onNodeWithContentDescription("Show Volume Popup").assertIsOn()
-        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Save").performClick()
-        rule.runOnIdle { assertEquals(GestureTarget.panel(panel.id,true),app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.panel(panel.id,true),app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Panel: Tools + volume popup").performClick()
         rule.onNode(hasText("No action") and hasAnyAncestor(isDialog())).performClick()
         rule.onNodeWithText("Show Volume Popup").performClick()
         rule.onNodeWithText("Save").performClick()
-        rule.runOnIdle { assertEquals(GestureTarget.NONE,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.NONE,app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onAllNodesWithText("No action").onFirst().performClick()
         rule.onNodeWithText("Show Volume Popup").performClick()
         rule.onNodeWithText("Save").performClick()
-        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
     }
     @Test fun `panel auto close controls retain their duration while disabled and reset one field`() {
         val app=ready()
@@ -179,13 +180,13 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Close after").assertDoesNotExist()
         rule.onNodeWithText("Close automatically").performScrollTo().performClick()
         rule.onNodeWithText("Close after").assertExists()
-        rule.runOnIdle { assertEquals(panel.settings.copy(autoCloseEnabled=true),app.configuration.state.value!!.panels.single().settings) }
+        rule.runOnIdle { assertEquals(panel.settings.copy(autoCloseEnabled=true),app.configuration.preview.value!!.panels.single().settings) }
         rule.onNodeWithText("Close automatically").performScrollTo().performClick()
         rule.onNodeWithText("Close after").assertDoesNotExist()
-        rule.runOnIdle { assertEquals(panel,app.configuration.state.value!!.panels.single()) }
+        rule.runOnIdle { assertEquals(panel,app.configuration.preview.value!!.panels.single()) }
         rule.onNodeWithText("Close automatically").performClick()
         rule.onNodeWithContentDescription("Reset Close after").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(panel.settings.copy(autoCloseEnabled=true,autoCloseMs=3_000),app.configuration.state.value!!.panels.single().settings) }
+        rule.runOnIdle { assertEquals(panel.settings.copy(autoCloseEnabled=true,autoCloseMs=3_000),app.configuration.preview.value!!.panels.single().settings) }
     }
     @Test fun `direct gesture action stages lock and app choices until save and cancels without changes`() {
         val app=ready()
@@ -203,9 +204,9 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Volume popup").performScrollTo().performClick()
         rule.onNodeWithText("Action: Direct action").performClick()
         chooseAction(ButtonAction.LOCK)
-        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Save").performClick()
-        rule.runOnIdle { assertEquals(ButtonAction.LOCK,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1).action!!.action) }
+        rule.runOnIdle { assertEquals(ButtonAction.LOCK,app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1).action!!.action) }
         rule.onNodeWithText("Action: Lock screen + volume popup").performClick()
         rule.onNode(hasText("Action: Lock screen") and hasAnyAncestor(isDialog())).performClick()
         chooseAction(ButtonAction.OPEN_APP)
@@ -216,7 +217,7 @@ class NudgeInterfaceTest {
         rule.waitUntil(10_000) { rule.onAllNodesWithText("Test camera").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Test camera").performClick()
         rule.onNodeWithText("Save").performClick()
-        val saved=rule.runOnIdle { app.configuration.state.value!!.handles.single() }
+        val saved=rule.runOnIdle { app.configuration.preview.value!!.handles.single() }
         assertEquals(ButtonAction.OPEN_APP,saved.target(GestureSlot.SWIPE_1).action!!.action)
         assertEquals("test.camera",saved.target(GestureSlot.SWIPE_1).action!!.appPackage)
         assertEquals("test.camera.Main",saved.target(GestureSlot.SWIPE_1).action!!.appActivity)
@@ -224,7 +225,7 @@ class NudgeInterfaceTest {
         rule.onNode(hasText("Action: Test camera") and hasAnyAncestor(isDialog())).performClick()
         chooseAction(ButtonAction.LOCK)
         rule.onNodeWithText("Cancel").performClick()
-        rule.runOnIdle { assertEquals(saved,app.configuration.state.value!!.handles.single()) }
+        rule.runOnIdle { assertEquals(saved,app.configuration.preview.value!!.handles.single()) }
     }
     @Test fun `direct volume action saves popup option without changing another binding and home shows required policy access`() {
         val app=ready()
@@ -240,7 +241,7 @@ class NudgeInterfaceTest {
         rule.onNodeWithContentDescription("Show Volume Popup").assertIsOn()
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle {
-            val handle=app.configuration.state.value!!.handles.single()
+            val handle=app.configuration.preview.value!!.handles.single()
             assertEquals(ButtonAction.VOLUME_UP,handle.target(GestureSlot.SWIPE_1).action!!.action)
             assertTrue(handle.target(GestureSlot.SWIPE_1).volume)
             assertEquals(other,handle.target(GestureSlot.HOLD))
@@ -255,11 +256,11 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Slide and fade").performScrollTo().performClick()
         rule.onNodeWithText("No animation").assertExists()
         rule.onNodeWithText("Scale, slide, and fade").performClick()
-        rule.runOnIdle { assertEquals(panel.settings.copy(closeAnimation=PanelAnimation.SCALE),app.configuration.state.value!!.panels.single().settings) }
+        rule.runOnIdle { assertEquals(panel.settings.copy(closeAnimation=PanelAnimation.SCALE),app.configuration.preview.value!!.panels.single().settings) }
         rule.onNodeWithContentDescription("Reset Close animation").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(panel.settings.copy(closeAnimation=PanelAnimation.NONE),app.configuration.state.value!!.panels.single().settings) }
+        rule.runOnIdle { assertEquals(panel.settings.copy(closeAnimation=PanelAnimation.NONE),app.configuration.preview.value!!.panels.single().settings) }
         rule.onNodeWithContentDescription("Reset Open animation").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(panel.settings.copy(animation=PanelAnimation.NONE,closeAnimation=PanelAnimation.NONE),app.configuration.state.value!!.panels.single().settings) }
+        rule.runOnIdle { assertEquals(panel.settings.copy(animation=PanelAnimation.NONE,closeAnimation=PanelAnimation.NONE),app.configuration.preview.value!!.panels.single().settings) }
     }
     @Test fun `left grip reorders handles without changing their settings`() {
         val app = ready()
@@ -277,13 +278,13 @@ class NudgeInterfaceTest {
         val a = grip.fetchSemanticsNode().boundsInRoot.center.y
         val b = rule.onNodeWithContentDescription("Drag to reorder Two").fetchSemanticsNode().boundsInRoot.center.y
         grip.performTouchInput { swipe(center, center + Offset(0f, b - a), durationMillis = 500) }
-        rule.runOnIdle { assertEquals(listOf(two.normalized(), one.normalized()), app.configuration.state.value!!.handles) }
+        rule.runOnIdle { assertEquals(listOf(two.normalized(), one.normalized()), app.configuration.preview.value!!.handles) }
         val third = HandleConfig(name = "Three")
         rule.runOnIdle {
             app.configuration.update { it.copy(handles = it.handles + third) }
             vm.reorderHandle(third.id, 1)
             vm.reorderHandle(third.id, 1)
-            assertEquals(listOf(two.normalized(), third.normalized(), one.normalized()), app.configuration.state.value!!.handles)
+            assertEquals(listOf(two.normalized(), third.normalized(), one.normalized()), app.configuration.preview.value!!.handles)
         }
     }
     @Test fun `icon library works without an icon pack`() {
@@ -357,11 +358,11 @@ class NudgeInterfaceTest {
             app.configuration.update { it.copy(panels = listOf(panel)) }
             app.status.report(com.modukey.app.platform.ServiceState(connected = true))
         }
-        val original = rule.runOnIdle { app.configuration.state.value }
+        val original = rule.runOnIdle { app.configuration.preview.value }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit").performClick()
         rule.onNodeWithContentDescription("On-phone preview").assertIsOn().performClick()
-        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.state.value) }
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.preview.value) }
         rule.activityRule.scenario.recreate()
         rule.waitForIdle()
         rule.onNodeWithContentDescription("On-phone preview").assertIsOff()
@@ -375,7 +376,7 @@ class NudgeInterfaceTest {
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
         rule.onNodeWithText("Follow handle").performScrollTo()
         rule.onNodeWithContentDescription("On-phone preview").assertIsDisplayed().performClick()
-        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.state.value) }
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.preview.value) }
     }
 
     @Test fun `empty button editor saves only its own appearance`() {

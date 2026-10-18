@@ -28,7 +28,7 @@ class GestureControlsInterfaceTest {
 
     private fun ready(): NudgeApplication {
         val app = rule.activity.application as NudgeApplication
-        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value != null || app.configuration.error.value != null } }
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.preview.value != null || app.configuration.error.value != null } }
         rule.runOnIdle {
             assertNull(app.configuration.error.value)
             app.configuration.update { AppConfiguration() }
@@ -63,10 +63,10 @@ class GestureControlsInterfaceTest {
         rule.onNodeWithText("Tools").assertDoesNotExist()
         rule.onNode(hasText("Media") and hasClickAction() and !hasSetTextAction()).performClick()
         rule.onNodeWithText("Panel: Media").assertExists()
-        rule.runOnIdle { assertEquals(GestureTarget.VOLUME, app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.VOLUME, app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Save").performClick()
         rule.onNodeWithText("Panel: Media + volume popup").assertExists()
-        rule.runOnIdle { assertEquals(GestureTarget.panel(media.id, true), app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
+        rule.runOnIdle { assertEquals(GestureTarget.panel(media.id, true), app.configuration.preview.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
     }
 
     @Test fun `hold controls change and reset only their own delay`() {
@@ -76,14 +76,14 @@ class GestureControlsInterfaceTest {
         editGestures()
         rule.onNodeWithContentDescription("Hold time").performScrollTo()
             .performSemanticsAction(SemanticsActions.SetProgress) { it(1_500f) }
-        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500), app.configuration.state.value!!.handles.single().trigger) }
+        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Swipe and hold time").performScrollTo()
             .performSemanticsAction(SemanticsActions.SetProgress) { it(1_700f) }
-        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500, swipeHoldTimeMs = 1_700), app.configuration.state.value!!.handles.single().trigger) }
+        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Hold time").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 1_700), app.configuration.state.value!!.handles.single().trigger) }
+        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Swipe and hold time").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 500), app.configuration.state.value!!.handles.single().trigger) }
+        rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 500), app.configuration.preview.value!!.handles.single().trigger) }
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -141,6 +141,7 @@ class GestureControlsInterfaceTest {
         rule.onNode(hasScrollToIndexAction()).performScrollToIndex(ButtonAction.SCREENSHOT.ordinal)
         rule.onNodeWithText("Screenshot").performClick()
         rule.onNodeWithText("Save").performClick()
+        rule.onNodeWithContentDescription("Save").performClick()
         rule.runOnIdle {
             val saved = app.configuration.state.value!!
             assertEquals(ButtonAction.SCREENSHOT, saved.handles.single().target(GestureSlot.SWIPE_1).action!!.action)
@@ -154,19 +155,19 @@ class GestureControlsInterfaceTest {
             app.configuration.update { it.copy(panels = listOf(SavedPanel(name = "Tools"))) }
             app.status.report(com.modukey.app.platform.ServiceState(connected = true))
         }
-        val saved = rule.runOnIdle { app.configuration.state.value }
+        val saved = rule.runOnIdle { app.configuration.preview.value }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit").performClick()
         rule.onNodeWithText("Landscape").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.preview.value) }
         rule.activityRule.scenario.recreate(); rule.waitForIdle()
         rule.onNodeWithText("Landscape").assertIsSelected()
         rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape) }
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
         rule.onNodeWithText("Landscape").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.preview.value) }
         rule.onNodeWithText("Portrait").performClick()
-        rule.runOnIdle { assertEquals(false, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.preview.value) }
     }
 }

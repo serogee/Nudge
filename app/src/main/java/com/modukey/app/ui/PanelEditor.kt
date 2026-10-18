@@ -3,7 +3,6 @@ package com.modukey.app.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -152,16 +151,15 @@ import kotlin.math.roundToInt
 
 @Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit, landscape: Boolean, selectOrientation: (Boolean) -> Unit) {
     val context = LocalContext.current
+    val draft by vm.draft.collectAsStateWithLifecycle()
     val service by vm.status.collectAsStateWithLifecycle()
     var renaming by rememberSaveable(panel.id) { mutableStateOf(false) }
     var name by rememberSaveable(panel.id) { mutableStateOf("") }
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            EditorHeader(context.panelLabel(panel), draft?.changed == true, R.string.rename_panel,
+                rename = { name = panel.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing) {
                 Icon(AppIcons.Apps, null, Modifier.size(28.dp))
-                Text(context.panelLabel(panel), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                EditIcon(AppIcons.Edit, R.string.rename_panel) { name = panel.name; renaming = true }
             }
             OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {

@@ -5,8 +5,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,6 +19,7 @@ import kotlin.math.roundToInt
 @Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit, landscape: Boolean, selectOrientation: (Boolean) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
+    val draft by vm.draft.collectAsStateWithLifecycle()
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -30,12 +29,9 @@ import kotlin.math.roundToInt
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            EditorHeader(context.handleLabel(config, h), draft?.changed == true, R.string.rename_handle,
+                rename = { name = h.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing) {
                 HandleBadge(h, context.handleLabel(config, h))
-                Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                EditIcon(AppIcons.Edit, R.string.rename_handle) { name = h.name; renaming = true }
             }
             AnimatedVisibility(!collapsed) {
                 Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
