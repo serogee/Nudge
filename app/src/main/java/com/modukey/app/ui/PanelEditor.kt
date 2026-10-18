@@ -112,7 +112,7 @@ import kotlin.math.roundToInt
     }
     Section(R.string.appearance) {
         ColorPicker(p.background, title = R.string.panel_background, default = panelDefaults.background) { value -> vm.editPanel(entry.id) { it.copy(background = value) } }
-        SettingSlider(R.string.opacity, p.opacity, .1f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
+        SettingSlider(R.string.opacity, p.opacity, 0f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
         SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
         OptionRow(t(R.string.icon_shape), IconShape.entries, p.iconShape, IconShape.ROUNDED_SQUARE) { value -> vm.editPanel(entry.id) { it.copy(iconShape = value) } }
         if (p.iconShape != IconShape.CIRCLE) SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
@@ -120,8 +120,10 @@ import kotlin.math.roundToInt
         Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
         Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
         if (!p.automaticButtonColor) ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
+        PercentSlider(R.string.button_opacity, p.buttonOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(buttonOpacity = value) } }
         Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
         if (!p.automaticIconColor) ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
+        PercentSlider(R.string.icon_opacity, p.iconOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(iconOpacity = value) } }
         SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
         OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {
             Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack)

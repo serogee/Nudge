@@ -342,4 +342,6 @@
     <string name="close_after">Close after</string>
     <string name="panel_timeout_help">The timer restarts when you open or touch the panel. It pauses while you touch the panel.</string>
     <string name="outside_keep">Pass touch through and keep open</string>
+    <string name="button_opacity">Button background opacity</string>
+    <string name="icon_opacity">Icon opacity</string>
 </resources>
