@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add sticky controls for real handle and panel editing previews.
+- Extend touch length to the usable short screen edge, with an option for the longer edge. Preserve saved values when rendering is limited.
+- Add full-screen soft hide with a reveal-only gesture, a finite bounce, and adjustable inactivity delay.
+- Add independent empty panel buttons with container-only, blank, and slash appearances.
+- Add an outside-touch option that passes touches through and keeps the panel open.
+- Add independent button-background and icon opacity controls, including automatic colors.
+
+### Changed
+
+- Move panel search into a separate gesture selection dialog. Allow Show Volume Popup with panels and every direct action.
+- Keep handle badges visible beside bold titles. Use notched rounded-square badges, an edge-handle navigation icon, and the shared N app mark.
+- Combine color swatches into one palette and calculate symbol contrast against the effective background.
+- Migrate schema-3 configuration to schema 4 while retaining assignments and physical panel placement.
+
+### Fixed
+
+- Allow page scrolling over display-only mini previews. Cancel panel button clicks after drag movement.
+- Make positive Follow handle Y offsets move panels upward.
+- Preserve temporary editor choices during activity recreation and configuration loading.
+- Keep legacy popup flags limited to volume adjustments. Reject empty buttons as direct gesture actions.
+
+### Pending verification
+
+- Physical Redmi/HyperOS checks for full-screen detection, Back after pass-through touches, popup coexistence, and battery use remain pending.
+- Unexpected panel dismissal investigation is deferred to a separate task. App-change detection remains unchanged.
+
 ## 0.2.1 - 2026-10-18
 
 ### Release highlights
