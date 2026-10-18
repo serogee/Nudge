@@ -26,6 +26,16 @@ object AppIcons {
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
     val Add = icon("Add") { moveTo(4f,12f); lineTo(20f,12f); moveTo(12f,4f); lineTo(12f,20f) }
     val Minus = icon("Minus") { moveTo(5f,12f); lineTo(19f,12f) }
+    val ClosePanels = icon("Close panels") {
+        moveTo(6f,3f); lineTo(21f,3f); lineTo(21f,18f)
+        moveTo(3f,6f); lineTo(18f,6f); lineTo(18f,21f); lineTo(3f,21f); close()
+        moveTo(7f,10f); lineTo(14f,17f); moveTo(14f,10f); lineTo(7f,17f)
+    }
+    val Screenshot = icon("Screenshot") {
+        moveTo(3f,8f); lineTo(3f,3f); lineTo(8f,3f); moveTo(16f,3f); lineTo(21f,3f); lineTo(21f,8f)
+        moveTo(21f,16f); lineTo(21f,21f); lineTo(16f,21f); moveTo(8f,21f); lineTo(3f,21f); lineTo(3f,16f)
+        moveTo(7f,8f); lineTo(17f,8f); lineTo(17f,16f); lineTo(7f,16f); close()
+    }
     val Check = icon("Check") { moveTo(4f,12f); lineTo(9f,17f); lineTo(20f,6f) }
     val Open = icon("Open") { moveTo(10f,4f); lineTo(20f,4f); lineTo(20f,14f); moveTo(20f,4f); lineTo(9f,15f); moveTo(5f,7f); lineTo(3f,7f); lineTo(3f,21f); lineTo(17f,21f); lineTo(17f,19f) }
     val Camera = icon("Camera") { moveTo(3f,7f); lineTo(7f,7f); lineTo(9f,4f); lineTo(15f,4f); lineTo(17f,7f); lineTo(21f,7f); lineTo(21f,20f); lineTo(3f,20f); close(); moveTo(16f,13f); curveTo(16f,18f,8f,18f,8f,13f); curveTo(8f,8f,16f,8f,16f,13f) }
