@@ -141,4 +141,6 @@ Official references: [accessibility overlays](https://developer.android.com/refe
 - Empty panel buttons retain independent container-only, blank, or slash appearances.
 - Color opacity, combined popup assignments, notched handle badges, and the shared N app mark are included in development.
 
-Version 0.2.1 artifacts remain unchanged. Device checks and unexpected panel dismissal investigation remain pending.
+Panel app-change detection now checks activity identity and event timing. The first observation, queued events, and ambiguous popup events keep the panel open. See [panel dismissal findings and device checks](docs/panel-dismissal.md). Use Info > Copy compatibility details to collect bounded dismissal reasons after an incident.
+
+Version 0.2.1 artifacts remain unchanged. Redmi/HyperOS verification remains pending.
