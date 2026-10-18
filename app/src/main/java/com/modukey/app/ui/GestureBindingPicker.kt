@@ -29,54 +29,42 @@ import com.modukey.app.core.*
 @Composable private fun GestureBindingPicker(config: AppConfiguration, original: GestureTarget, vm: NudgeViewModel, dismiss: () -> Unit, choose: (GestureTarget) -> Unit) {
     val context = LocalContext.current
     var draft by remember { mutableStateOf(original) }
-    var query by remember { mutableStateOf("") }
-    var action by remember { mutableStateOf(original.action ?: PanelButton()) }
+    var pendingApp by remember { mutableStateOf<PanelButton?>(null) }
     var page by remember { mutableIntStateOf(0) }
     when (page) {
         1 -> {
-            ActionPicker({ page = 0 }) { selected ->
-                action = action.copy(action = selected)
-                draft = GestureTarget.direct(action)
-                page = if (selected == ButtonAction.OPEN_APP) 2 else 0
+            ActionPicker({ page = 0 }, includeEmpty = false) { selected ->
+                val action = (draft.action ?: PanelButton()).copy(action = selected, showVolumePopup = false)
+                if (selected == ButtonAction.OPEN_APP) { pendingApp = action; vm.loadApps(); page = 2 }
+                else { draft = GestureTarget(volume = draft.volume, action = action); page = 0 }
             }
             return
         }
         2 -> {
-            AppPicker(vm, { page = 0 }) { app ->
-                action = action.copy(appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label)
-                draft = GestureTarget.direct(action); page = 0
+            AppPicker(vm, { pendingApp = null; page = 0 }) { app ->
+                val action = (pendingApp ?: draft.action ?: PanelButton(action = ButtonAction.OPEN_APP)).copy(
+                    appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label)
+                draft = GestureTarget(volume = draft.volume, action = action)
+                pendingApp = null; page = 0
             }
+            return
+        }
+        3 -> {
+            PanelTargetPicker(config, { page = 0 }) { id -> draft = GestureTarget.panel(id, draft.volume); page = 0 }
             return
         }
     }
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.gesture_action)) }, text = {
-        LazyColumn(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (config.panels.isNotEmpty()) item {
-                OutlinedTextField(query, { query = it }, label = { Text(t(R.string.search_panels)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            }
-            item { TargetChoice(t(R.string.no_action), draft.isNone) { draft = GestureTarget.NONE } }
-            item { TargetChoice(t(R.string.volume_popup), draft == GestureTarget.VOLUME) { draft = GestureTarget.VOLUME } }
-            item {
-                TargetChoice(if (draft.action != null) context.buttonLabel(action) else t(R.string.direct_action), draft.action != null, action) { page = 1 }
-            }
-            items(config.panels.filter { context.panelLabel(it).contains(query, true) }, key = { it.id }) { panel ->
-                TargetChoice(context.panelLabel(panel), draft.panelId == panel.id) { draft = GestureTarget.panel(panel.id, draft.volume && draft.panelId != null) }
-            }
-            if (config.panels.isEmpty() && draft.action == null) item { Help(R.string.create_panel_help) }
-            if (draft.panelId != null) item { Toggle(R.string.also_volume, R.string.also_volume_help, draft.volume) { draft = draft.copy(volume = it) } }
-            if (draft.action != null) {
-                item { Help(R.string.direct_action_help) }
-                if (action.action == ButtonAction.OPEN_APP) item {
-                    OutlinedButton(onClick = { page = 2 }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
-                        Text(if (action.appPackage.isBlank()) t(R.string.choose_app) else context.buttonLabel(action), Modifier.weight(1f))
-                        Icon(AppIcons.Edit, null, Modifier.size(18.dp))
-                    }
-                }
-                if (action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) item {
-                    Toggle(R.string.show_volume_popup, R.string.show_volume_help, action.showVolumePopup, default = false) {
-                        action = action.copy(showVolumePopup = it); draft = GestureTarget.direct(action)
-                    }
+        LazyColumn(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(volume = draft.volume) } }
+            item { TargetChoice(config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel), draft.panelId != null) { page = 3 } }
+            item { TargetChoice(draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action), draft.action != null, draft.action) { page = 1 } }
+            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it) } }
+            if (draft.action?.action == ButtonAction.OPEN_APP) item {
+                OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
+                    Text(context.buttonLabel(requireNotNull(draft.action)), Modifier.weight(1f))
+                    Icon(AppIcons.Edit, null, Modifier.size(18.dp))
                 }
             }
         }
@@ -85,11 +73,29 @@ import com.modukey.app.core.*
         dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })
 }
 
+@Composable private fun PanelTargetPicker(config: AppConfiguration, dismiss: () -> Unit, choose: (String) -> Unit) {
+    val context = LocalContext.current
+    var query by remember { mutableStateOf("") }
+    AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.select_panel)) }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(query, { query = it }, label = { Text(t(R.string.search_panels)) }, singleLine = true)
+            if (config.panels.isEmpty()) Help(R.string.create_panel_help)
+            LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                items(config.panels.filter { context.panelLabel(it).contains(query, true) }, key = { it.id }) { panel ->
+                    ListItem(headlineContent = { Text(context.panelLabel(panel)) }, leadingContent = { Icon(AppIcons.Apps, null) },
+                        modifier = Modifier.clickable { choose(panel.id) })
+                }
+            }
+        }
+    }, confirmButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })
+}
+
 @Composable private fun TargetChoice(title: String, selected: Boolean, graphic: PanelButton? = null, select: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = select).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         RadioButton(selected, null)
+        Spacer(Modifier.width(12.dp))
         if (graphic != null) { ButtonGraphic(graphic, "", Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)) }
         Text(title, Modifier.weight(1f))
-        if (graphic != null) Icon(AppIcons.Edit, null, Modifier.size(18.dp))
+        if (graphic != null) { Spacer(Modifier.width(8.dp)); Icon(AppIcons.Edit, null, Modifier.size(18.dp)) }
     }
 }

@@ -26,7 +26,8 @@
 - Make a release only when the user explicitly requests one. A feature or fix request does not authorize version bumps, versioned release notes, release APK builds, tags, or publishing.
 - During development, keep changes under Unreleased and use tests, lint, or debug builds for verification. Do not invoke `scripts/Release.ps1` automatically.
 - Store each version's APK, checksum, exported notes, and build metadata in `releases/<version>/`. Keep archived builds under `releases/archive/`.
-- Use the latest user-confirmed published release as the changelog baseline. As of 2026-10-18, only 0.1.1 is confirmed published. Versions 0.1.2, code 4, and 0.2.0, code 5, were prepared locally; their tags do not establish publication. The current authorized release preparation is 0.2.1, code 6. Use `-FromTag v0.1.1` when generating its notes.
+- Use the latest user-confirmed published release as the changelog baseline. As of 2026-10-18, only 0.1.1 is confirmed published. Versions 0.1.2, code 4, 0.2.0, code 5, and 0.2.1, code 6, were prepared locally; their tags do not establish publication. The current authorized release preparation is 0.3.0, code 7. Use `-FromTag v0.1.1` when generating its notes.
+- Prepare the version and reviewed notes on the feature branch. Build the final signed APK and create its tag from clean `main` after the pull request is merged. Do not merge, push, or publish without the user's instruction.
 - Preserve the earlier unpublished code-3 APK and exact tag object under `releases/archive/0.1.2-build.3/` and `archive/v0.1.2-build.3`. The old tag was never pushed. The 0.1.3 build was canceled before export or tagging.
 - Commit completed features and fixes before preparing release notes. Increase both version values in `version.properties` for a new distributed APK.
 - Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Write` to prepare the new version's changelog and release notes from commit titles.

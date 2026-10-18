@@ -18,10 +18,9 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel) {
+@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
-    var tab by rememberSaveable(h.id) { mutableIntStateOf(0) }
     var landscape by rememberSaveable(h.id) { mutableStateOf(false) }
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
@@ -34,9 +33,9 @@ import kotlin.math.roundToInt
         Column {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedVisibility(!collapsed) { HandleBadge(h, context.handleLabel(config, h)) }
+                HandleBadge(h, context.handleLabel(config, h))
                 Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 EditIcon(AppIcons.Edit, R.string.rename_handle) { name = h.name; renaming = true }
             }
             AnimatedVisibility(!collapsed) {
@@ -44,7 +43,8 @@ import kotlin.math.roundToInt
                     Toggle(R.string.enable_handle, R.string.enable_handle_help, h.enabled, default = false) { value -> vm.editHandle(h.id) { it.copy(enabled = value) } }
                 }
             }
-            BrowserTabs(listOf(t(R.string.appearance), t(R.string.gestures), t(R.string.availability)), tab) { tab = it }
+            BrowserTabs(listOf(t(R.string.appearance), t(R.string.gestures), t(R.string.availability)), tab, selectTab)
+            if (tab == 0) OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(scroll).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 val s = h.trigger
                 when(tab) {
@@ -54,10 +54,7 @@ import kotlin.math.roundToInt
                         val others = config.handles.filter { it.id != h.id && it.enabled }.map { it.trigger }
                         Section(R.string.preview) {
                             OrientationChoices(landscape) { landscape = it }
-                            PhonePreview(s, landscape, vm::flush, others) { value -> vm.editTrigger(h.id) { current ->
-                                if (landscape && current.landscapeOverrideEnabled) current.copy(landscape = current.landscape.copy(position = value))
-                                else current.copy(portrait = current.portrait.copy(position = value))
-                            } }
+                            PhonePreview(s, landscape, others)
                             Help(R.string.preview_help)
                             Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
                             if (others.any { bounds.overlaps(TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, it, landscape)) }) Notice(t(R.string.overlap_help))
@@ -79,7 +76,11 @@ import kotlin.math.roundToInt
                             PercentSlider(R.string.center_position, placement.position, default = .65f) { value -> vm.editTrigger(h.id) { current ->
                                 if (landscape && current.landscapeOverrideEnabled) current.copy(landscape = current.landscape.copy(position = value)) else current.copy(portrait = current.portrait.copy(position = value))
                             } }
-                            SettingSlider(R.string.touch_length, s.lengthDp, 48f..200f, t(R.string.dp_value, s.lengthDp.roundToInt()), default = 120f) { value -> vm.editTrigger(h.id) { it.copy(lengthDp = value) } }
+                            val maximumLength = TriggerGeometry.maximumLengthDp(screen.width, screen.height, screen.density, screen.insets, s.longerTouchLength).coerceAtLeast(48f)
+                            SettingSlider(R.string.touch_length, s.lengthDp, 48f..maximumLength, t(R.string.dp_value, s.lengthDp.roundToInt()), default = 120f) { value -> vm.editTrigger(h.id) { it.copy(lengthDp = value) } }
+                            Toggle(R.string.longer_touch_length, R.string.longer_touch_help, s.longerTouchLength, default = false) { value -> vm.editTrigger(h.id) { it.copy(longerTouchLength = value) } }
+                            val effectiveLength = (if (s.placement(landscape).edge == Edge.BOTTOM) bounds.width else bounds.height) / screen.density
+                            if (s.lengthDp > effectiveLength + .5f) Notice(t(R.string.touch_length_limited, s.lengthDp.roundToInt(), effectiveLength.roundToInt()))
                             SettingSlider(R.string.touch_depth, s.depthDp, 8f..32f, t(R.string.dp_value, s.depthDp.roundToInt()), default = 16f) { value -> vm.editTrigger(h.id) { it.copy(depthDp = value) } }
                         }
                         Section(R.string.visible_handle) {
@@ -108,6 +109,11 @@ import kotlin.math.roundToInt
                     else -> Section(R.string.availability) {
                         Text(t(availabilityLabel(service.handles[h.id], h.enabled)), style = MaterialTheme.typography.bodyMedium)
                         Toggle(R.string.lock_available, R.string.lock_help, s.lockScreenEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(lockScreenEnabled = value) } }
+                        Toggle(R.string.soft_hide, R.string.soft_hide_help, s.softHideEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(softHideEnabled = value) } }
+                        if (s.softHideEnabled) {
+                            SettingSlider(R.string.hide_after, s.softHideDelayMs.toFloat(), 1000f..30000f, t(R.string.seconds_value, s.softHideDelayMs / 1000f), default = 3000f) { value -> vm.editTrigger(h.id) { it.copy(softHideDelayMs = value.toLong()) } }
+                            Help(R.string.soft_hide_detection)
+                        }
                         Help(R.string.screen_off_help)
                         SettingTitle(t(R.string.excluded_apps), reset = if (s.excludedPackages.isNotEmpty()) ({ vm.editTrigger(h.id) { it.copy(excludedPackages = emptySet()) } }) else null)
                         OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text(t(R.string.excluded_apps)) }

@@ -3,7 +3,6 @@ package com.modukey.app.ui
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,8 +12,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -26,7 +23,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Composable
-fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -> Unit, others: List<TriggerSettings> = emptyList(), onPosition: (Float) -> Unit) {
+fun PhonePreview(settings: TriggerSettings, landscape: Boolean, others: List<TriggerSettings> = emptyList()) {
     val context = LocalContext.current
     val config = androidx.compose.ui.platform.LocalConfiguration.current
     val metrics = remember(config) { context.getSystemService(WindowManager::class.java).currentWindowMetrics }
@@ -45,44 +42,10 @@ fun PhonePreview(settings: TriggerSettings, landscape: Boolean, onFinished: () -
     val highlightPath = remember(bounds.width, bounds.height, placement.edge) {
         EdgeHighlightShape.path(bounds.width, bounds.height, placement.edge).asComposePath()
     }
-    val currentPosition by rememberUpdatedState(onPosition)
-    val currentSettings by rememberUpdatedState(settings)
-    val finish by rememberUpdatedState(onFinished)
-    var gestureSize by remember { mutableStateOf(Size.Zero) }
-
     Canvas(
         Modifier.fillMaxWidth().height(if (landscape) 175.dp else 280.dp)
-            .onSizeChanged { gestureSize = Size(it.width.toFloat(), it.height.toFloat()) }
             .semantics { contentDescription = context.getString(com.modukey.app.R.string.handle_preview_description) }
-            .pointerInput(landscape, placement.edge, screenW, screenH, insets) {
-                var grabOffset = 0f
-                var dragging = false
-                fun along(point: Offset): Float {
-                    val scale = min(gestureSize.width / screenW, gestureSize.height / screenH) * 0.92f
-                    if (scale <= 0f) return 0f
-                    val origin = Offset((gestureSize.width - screenW * scale) / 2, (gestureSize.height - screenH * scale) / 2)
-                    return if (placement.edge == Edge.BOTTOM) (point.x - origin.x) / scale - insets.left else (point.y - origin.y) / scale - insets.top
-                }
-                val available = if (placement.edge == Edge.BOTTOM) screenW - insets.left - insets.right else screenH - insets.top - insets.bottom
-                detectDragGestures(
-                    onDragStart = { point ->
-                        val scale = min(gestureSize.width / screenW, gestureSize.height / screenH) * 0.92f
-                        val origin = Offset((gestureSize.width - screenW * scale) / 2, (gestureSize.height - screenH * scale) / 2)
-                        val rect = TriggerGeometry.bounds(screenW, screenH, density, insets, currentSettings, landscape)
-                        val margin = 14 * density
-                        dragging = point.x >= origin.x + rect.x * scale - margin && point.x <= origin.x + (rect.x + rect.width) * scale + margin &&
-                            point.y >= origin.y + rect.y * scale - margin && point.y <= origin.y + (rect.y + rect.height) * scale + margin
-                        grabOffset = along(point) - currentSettings.placement(landscape).position * available
-                    },
-                    onDragEnd = { if (dragging) finish(); dragging = false },
-                    onDragCancel = { if (dragging) finish(); dragging = false },
-                ) { change, _ ->
-                    if (dragging) {
-                        change.consume()
-                        currentPosition(TriggerGeometry.draggedPosition(along(change.position), grabOffset, available))
-                    }
-                }
-            },
+
     ) {
         val scale = min(size.width / screenW, size.height / screenH) * 0.92f
         val origin = Offset((size.width - screenW * scale) / 2, (size.height - screenH * scale) / 2)

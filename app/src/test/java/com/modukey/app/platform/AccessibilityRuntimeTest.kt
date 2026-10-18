@@ -1,9 +1,14 @@
 package com.modukey.app.platform
 
 import android.app.KeyguardManager
+import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
+import android.content.pm.ResolveInfo
 import android.media.AudioManager
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
@@ -51,11 +56,19 @@ class AccessibilityRuntimeTest {
             assertNull(app.diagnostics.details.value,app.status.state.value.error); assertTrue(app.status.state.value.connected)
         }
         app.configuration.update { it.editHandle("runtime-0") { h -> h.copy(trigger=h.trigger.copy(excludedPackages=setOf("test.game"))) } }
+        val game = ActivityInfo().apply {
+            packageName="test.game"; name="test.game.GameActivity"; enabled=true
+            applicationInfo=ApplicationInfo().apply { packageName="test.game"; enabled=true }
+        }
+        shadowOf(app.packageManager).addOrUpdateActivity(game)
+        shadowOf(app.packageManager).addResolveInfoForIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage("test.game"),
+            ResolveInfo().apply { activityInfo=game })
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(32))
         fun window(pkg:String,activity:String) {
-            val event=AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED).apply { packageName=pkg; className=activity }
+            val event=AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED).apply { packageName=pkg; className=activity; eventTime=SystemClock.uptimeMillis() }
             service.onAccessibilityEvent(event); event.recycle()
         }
-        window("test.game","GameActivity")
+        window("test.game","test.game.GameActivity")
         await { app.status.state.value.attachedHandleIds.size==11 }
         window(app.packageName,MainActivity::class.java.name)
         await { app.status.state.value.attachedHandleIds.size==12 }
@@ -202,7 +215,7 @@ class AccessibilityRuntimeTest {
         val panel=SavedPanel()
         val slots=listOf(GestureSlot.SWIPE_1,GestureSlot.SWIPE_2,GestureSlot.SWIPE_3,GestureSlot.SWIPE_HOLD,GestureSlot.TAP,GestureSlot.HOLD)
         val buttons=listOf(ButtonAction.VOLUME_UP,ButtonAction.VOLUME_DOWN,ButtonAction.MEDIA_MUTE,ButtonAction.SILENT,ButtonAction.OPEN_APP,ButtonAction.LOCK)
-            .map { PanelButton(action=it,appPackage="test.camera",appActivity="test.camera.Main",showVolumePopup=true) }
+            .map { PanelButton(action=it,appPackage="test.camera",appActivity="test.camera.Main",showVolumePopup=it in listOf(ButtonAction.VOLUME_UP,ButtonAction.VOLUME_DOWN)) }
         val direct=slots.zip(buttons).associate { (slot,button) -> slot to GestureTarget.direct(button) }
         val h=HandleConfig(enabled=true,trigger=TriggerSettings(landscapeEnabled=true),bindings=direct+(GestureSlot.SWIPE_1 to GestureTarget.panel(panel.id)))
         app.configuration.update { AppConfiguration(enabled=true,handles=listOf(h),panels=listOf(panel)) }

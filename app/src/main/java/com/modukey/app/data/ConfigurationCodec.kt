@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 3 adds direct gesture actions. Older documents migrate without changing assignments. */
+/** Schema 4 adds control appearance and preserves placement when Y becomes positive upward. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 3
+    const val SCHEMA = 4
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
@@ -26,12 +26,12 @@ object ConfigurationCodec {
             val root = JSONObject(text)
             val schema = root.getInt("schema")
             if (schema !in 1..SCHEMA) throw IOException("configuration_version")
-            val panels = if (schema >= 2) root.getJSONArray("panels").objects().map { SavedPanel(it.getString("id"), it.optString("name"), panel(it)) }.toMutableList()
+            val panels = if (schema >= 2) root.getJSONArray("panels").objects().map { SavedPanel(it.getString("id"), it.optString("name"), panel(it, schema)) }.toMutableList()
                 else mutableListOf()
             val handles = root.getJSONArray("handles").objects().mapIndexed { handleIndex, h ->
                 val id = h.getString("id")
                 val bindings = h.getJSONObject("bindings")
-                val oldPanels = if (schema == 1) h.getJSONArray("panels").objects().map(::panel).also { require(it.size == 3) } else emptyList()
+                val oldPanels = if (schema == 1) h.getJSONArray("panels").objects().map { panel(it, schema) }.also { require(it.size == 3) } else emptyList()
                 val oldTargets = if (schema == 1) GestureSlot.entries.associateWith { slot ->
                     bindings.optString(slot.name, "NONE").also { require(it in listOf("NONE", "VOLUME", "PANEL_1", "PANEL_2", "PANEL_3")) }
                 } else emptyMap()
@@ -49,7 +49,8 @@ object ConfigurationCodec {
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
                             if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null).also { target ->
-                            require(target.action == null || (target.panelId == null && !target.volume))
+                            require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
+                            require(target.action?.action != ButtonAction.EMPTY)
                         }
                     }
                 }
@@ -72,9 +73,9 @@ object ConfigurationCodec {
     private fun JSONObject.float(name: String, default: Float) = optDouble(name, default.toDouble()).toFloat()
     private fun placement(p: JSONObject) = Placement(enumValueOf(p.getString("edge")), p.float("position", .65f))
     private fun placement(p: Placement) = JSONObject().put("edge", p.edge.name).put("position", p.position)
-    private fun layout(p: JSONObject) = PanelLayout(enumValueOf(p.optString("mode", "FIXED")), enumValueOf(p.optString("direction", "VERTICAL")),
+    private fun layout(p: JSONObject, schema: Int) = PanelLayout(enumValueOf(p.optString("mode", "FIXED")), enumValueOf(p.optString("direction", "VERTICAL")),
         p.optInt("crossCount", 1), p.optInt("maximumLines", 5), p.float("extent", .6f), p.float("buttonSize", 56f),
-        p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f))
+        p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it })
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
@@ -87,7 +88,9 @@ object ConfigurationCodec {
         indicatorThicknessFraction = t.float("indicatorThickness", .25f), indicatorColor = t.optLong("color", 0xFFB8D982),
         indicatorOpacity = t.float("opacity", .65f), cornerRadiusDp = t.float("corner", 2f),
         swipeDistanceDp = t.float("swipeDistance", 24f), swipeTimeoutMs = t.optLong("swipeTime", 600), haptics = t.optBoolean("haptics"),
-        excludedPackages = t.optJSONArray("excluded")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet())
+        excludedPackages = t.optJSONArray("excluded")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
+        longerTouchLength = t.optBoolean("longerTouchLength"), softHideEnabled = t.optBoolean("softHideEnabled"),
+        softHideDelayMs = t.optLong("softHideDelayMs", 3_000))
     private fun handle(h: HandleConfig): JSONObject {
         val s = h.trigger
         val trigger = JSONObject().put("portrait", placement(s.portrait)).put("landscape", placement(s.landscape))
@@ -96,7 +99,8 @@ object ConfigurationCodec {
             .put("indicatorLength", s.indicatorLengthFraction).put("indicatorThickness", s.indicatorThicknessFraction)
             .put("color", s.indicatorColor).put("opacity", s.indicatorOpacity).put("corner", s.cornerRadiusDp)
             .put("swipeDistance", s.swipeDistanceDp).put("swipeTime", s.swipeTimeoutMs).put("haptics", s.haptics)
-            .put("excluded", array(s.excludedPackages.sorted()))
+            .put("excluded", array(s.excludedPackages.sorted())).put("longerTouchLength", s.longerTouchLength)
+            .put("softHideEnabled", s.softHideEnabled).put("softHideDelayMs", s.softHideDelayMs)
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
             put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume)
@@ -108,13 +112,13 @@ object ConfigurationCodec {
     private fun button(b: JSONObject) = PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),
-        b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")))
+        b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")))
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
-        .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name)
-    private fun panel(p: JSONObject) = PanelConfig(
-        buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait")), landscape = layout(p.getJSONObject("landscape")),
+        .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name).put("emptyAppearance", b.emptyAppearance.name)
+    private fun panel(p: JSONObject, schema: Int) = PanelConfig(
+        buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),
         background = p.optLong("background", 0xFF252A21), opacity = p.float("opacity", .98f), cornerDp = p.float("corner", 24f),
         iconShape = enumValueOf(p.optString("shape", "ROUNDED_SQUARE")), iconCornerFraction = p.float("iconCorner", .25f), iconPack = p.optString("iconPack"),
@@ -122,7 +126,8 @@ object ConfigurationCodec {
         automaticButtonColor = p.optBoolean("automaticButtonColor", true), buttonColor = p.optLong("buttonColor", 0xFF3C3C3E),
         automaticIconColor = p.optBoolean("automaticIconColor", true), iconColor = p.optLong("iconColor", 0xFFFFFFFF),
         autoCloseEnabled = p.optBoolean("autoCloseEnabled"), autoCloseMs = p.optLong("autoCloseMs", 3_000),
-        closeAnimation = enumValueOf(p.optString("closeAnimation", p.optString("animation", "NONE"))))
+        closeAnimation = enumValueOf(p.optString("closeAnimation", p.optString("animation", "NONE"))),
+        buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f))
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
         .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
@@ -130,6 +135,6 @@ object ConfigurationCodec {
         .put("automaticButtonColor", p.automaticButtonColor).put("buttonColor", p.buttonColor)
         .put("automaticIconColor", p.automaticIconColor).put("iconColor", p.iconColor)
         .put("autoCloseEnabled", p.autoCloseEnabled).put("autoCloseMs", p.autoCloseMs)
-        .put("closeAnimation", p.closeAnimation.name)
+        .put("closeAnimation", p.closeAnimation.name).put("buttonOpacity", p.buttonOpacity).put("iconOpacity", p.iconOpacity)
         .put("buttons", array(p.buttons.map(::button)))
 }

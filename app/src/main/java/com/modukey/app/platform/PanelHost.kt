@@ -24,17 +24,18 @@ import kotlin.math.roundToInt
 
 data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT)
 interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound() }
+enum class PanelDismissReason { BACK, OUTSIDE_TOUCH, WINDOW_DETACHED }
 
 /** At most one active window and one inert window completing its finite exit. */
 class AccessibilityPanelHost(private val context: Context, private val manager: WindowManager, private val actions: ActionExecutor,
-    private val onDismiss: () -> Unit, private val handleAt: (Float, Float) -> Boolean, private val onAction: (PanelButton) -> Unit,
+    private val onDismiss: (PanelDismissReason) -> Unit, private val handleAt: (Float, Float) -> Boolean, private val onAction: (PanelButton) -> Unit,
     private val onTouchState: (Boolean) -> Unit = {}, private val onError: (RuntimeException) -> Unit = {}) : PanelHost {
     private var active: AttachedPanel? = null
     private var closing: AttachedPanel? = null
     private var registered = false
     private var observing = false
     private var backDispatcher: android.window.OnBackInvokedDispatcher? = null
-    private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { onDismiss() } else null
+    private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { onDismiss(PanelDismissReason.BACK) } else null
     private val receiver = object : BroadcastReceiver() { override fun onReceive(context: Context?, intent: Intent?) { refreshSound() } }
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) { refreshSound() } }
 
@@ -72,7 +73,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         var added = false
         private var disposed = false
         val root = PanelRoot(context) { (spec.editing || exiting) to spec.panel.outsideTouch }.apply {
-            dismiss = { if (active === this@AttachedPanel) onDismiss() }
+            dismiss = { reason -> if (active === this@AttachedPanel) onDismiss(reason) }
             isHandle = handleAt
             touchState = { if (active === this@AttachedPanel) onTouchState(it) }
             setViewTreeLifecycleOwner(owners); setViewTreeSavedStateRegistryOwner(owners)
@@ -141,7 +142,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         spec.geometry.bounds.height.roundToInt().coerceAtLeast(1), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
             (if (spec.editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
-            (if (spec.panel.outsideTouch == OutsideTouch.PASS_THROUGH) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
+            (if (spec.panel.outsideTouch != OutsideTouch.BLOCK) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
         PixelFormat.TRANSLUCENT).apply {
         gravity = Gravity.TOP or Gravity.LEFT; x = spec.geometry.bounds.x.roundToInt(); y = spec.geometry.bounds.y.roundToInt()
         setFitInsetsTypes(0); layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
@@ -154,9 +155,11 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         if (Build.VERSION.SDK_INT >= 33) { try { back?.let { backDispatcher?.unregisterOnBackInvokedCallback(it) } } catch (_: RuntimeException) { }; backDispatcher = null }
     }
     private fun complete(window: AttachedPanel, detached: Boolean = false) {
+        val unexpected = detached && active === window && !window.spec.editing
         if (active === window) { active = null; stopObservers() }
         if (closing === window) closing = null
         try { window.dispose(removeWindow = !detached) } catch (e: RuntimeException) { onError(e) }
+        if (unexpected) onDismiss(PanelDismissReason.WINDOW_DETACHED)
     }
     override fun hide(animate: Boolean) {
         val window = active
@@ -190,7 +193,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
 internal class PanelRoot(context: Context, private val policy: () -> Pair<Boolean, OutsideTouch>?) : FrameLayout(context) {
     constructor(context: Context) : this(context, { false to OutsideTouch.BLOCK })
     init { isClickable = true }
-    var dismiss: () -> Unit = {}
+    var dismiss: (PanelDismissReason) -> Unit = {}
     var isHandle: (Float, Float) -> Boolean = { _, _ -> false }
     var touchState: (Boolean) -> Unit = {}
     private var outside = false
@@ -198,7 +201,7 @@ internal class PanelRoot(context: Context, private val policy: () -> Pair<Boolea
         val p = policy() ?: return false
         if (p.first) return false
         if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) {
-            if (p.second == OutsideTouch.PASS_THROUGH && !isHandle(event.rawX, event.rawY)) dismiss()
+            if (p.second == OutsideTouch.PASS_THROUGH && !isHandle(event.rawX, event.rawY)) dismiss(PanelDismissReason.OUTSIDE_TOUCH)
             return false
         }
         when (event.actionMasked) {
@@ -207,7 +210,7 @@ internal class PanelRoot(context: Context, private val policy: () -> Pair<Boolea
         }
         if (event.actionMasked == MotionEvent.ACTION_DOWN) outside = event.x < 0 || event.x >= width || event.y < 0 || event.y >= height
         if (outside) {
-            if (event.actionMasked == MotionEvent.ACTION_UP) { outside = false; dismiss() }
+            if (event.actionMasked == MotionEvent.ACTION_UP) { outside = false; dismiss(PanelDismissReason.OUTSIDE_TOUCH) }
             else if (event.actionMasked == MotionEvent.ACTION_CANCEL) outside = false
             return true
         }
@@ -215,7 +218,7 @@ internal class PanelRoot(context: Context, private val policy: () -> Pair<Boolea
     }
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (policy()?.first == false && event.keyCode == KeyEvent.KEYCODE_BACK) {
-            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) dismiss()
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) dismiss(PanelDismissReason.BACK)
             return true
         }
         return super.dispatchKeyEvent(event)

@@ -1,6 +1,6 @@
 # Handles and panels
 
-These controls describe version 0.2.1. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
+This guide includes Unreleased controls after version 0.2.1. Existing release artifacts remain unchanged. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
@@ -10,15 +10,15 @@ In the development interface, drag a card's left grip to change its priority. Se
 
 Each handle owns its touch area, visible handle, gestures, exclusions, and lock-screen option. Duplicating a handle creates an independent disabled handle. Panel assignments continue to refer to the same panels. Deleting or resetting a handle does not delete any panel.
 
-In Appearance, drag the touch area or use Center along edge. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
+In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
 
-While an editor is resumed, its phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability. The phone guide follows the actual orientation; rotate the phone to check landscape. The in-app opposite-orientation preview estimates its system insets.
+The sticky Preview switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability. The phone guide follows the actual orientation; rotate the phone to check landscape. The in-app opposite-orientation preview estimates its system insets.
 
 ## Gestures
 
-Assign No action, Volume popup, any one panel, or any one panel with Volume popup to each gesture. Select a panel and enable Also show volume popup for the combined action. All six gesture assignments can coexist. Save applies the selection; Cancel keeps the existing assignment.
+Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. Save applies the selection; Cancel keeps the existing assignment.
 
-Select **Direct action** to assign Phone settings, Nudge settings, Volume up, Volume down, Media mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, or Open app. No panel is needed. Choose an app for Open app. Volume up and Volume down include the optional Show volume popup switch. Icon appearance controls apply only to panel buttons.
+Select **Direct action** to assign Phone settings, Nudge settings, Volume up, Volume down, Media mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, or Open app. No panel is needed. Choose an app for Open app. Volume up and Volume down request the popup through their existing adjustment, without a second request. Icon appearance controls apply only to panel buttons.
 
 Input method picker is also available for every gesture and as a panel button. It opens Android's native keyboard chooser and closes the Nudge panel. It does not change the keyboard until you select one. Nudge uses its internal activity to obtain input focus because Android can ignore requests from an unfocused service. The activity closes when the chooser returns. If no chooser takes focus within two seconds, it closes and reports an error.
 
@@ -58,9 +58,9 @@ Fixed panels never scroll. For example, two columns and three maximum rows show 
 
 Scrollable panels keep all buttons available. Their length uses a percentage of the usable screen. Use Test panel to check scrolling and actions. Preview buttons do not run actions.
 
-Follow handle places the panel inward from the handle that opens it. Turn it off to use center X/Y percentages or drag the panel preview. Optional landscape overrides retain separate mode, direction, counts, sizing, and placement. Buttons, appearance, and outside-touch behavior remain shared.
+Follow handle places the panel inward from the handle that opens it. Turn it off to use center X/Y percentages. Optional landscape overrides retain separate mode, direction, counts, sizing, and placement. Buttons, appearance, and outside-touch behavior remain shared.
 
-The development interface adds X/Y offsets while Follow handle is on. Positive X moves right. Positive Y moves down. Turning Follow handle off shows absolute center percentages. Each mode retains its saved values. Dragging the preview edits the active mode.
+The development interface adds X/Y offsets while Follow handle is on. Positive X moves right. Positive Y moves up. Turning Follow handle off shows absolute center percentages. Each mode retains its saved values. Mini previews do not capture gestures. Legacy Y offsets migrate once to retain physical placement.
 
 Open animation and Close animation are separate settings. Each offers No animation, Fade, Slide and fade, and Scale, slide, and fade. New panels default to No animation for both. Older configurations use their saved opening effect as the initial closing effect. Editing or resetting one setting keeps the other unchanged. Both values are included in backups and panel copies.
 
@@ -76,6 +76,7 @@ Each panel has an Outside touch setting:
 
 - Close and block touch consumes the complete outside gesture and closes on release. Nothing beneath is activated. This is the default.
 - Close and pass touch through closes the panel and lets Android deliver the original touch to the window beneath.
+- Pass touch through and keep open delivers the original touch beneath the panel and retains the panel.
 
 Nudge does not replay or inject touches. A drag that starts inside the panel does not become an outside dismissal. Handle gestures remain available above the panel. Back closes the panel without navigating the app beneath. Panels have no Close button.
 
@@ -97,7 +98,7 @@ Choose a default icon pack for a panel or a manual static icon for any button. C
 
 The development button editor keeps changes private until Save. Volume up and Volume down have an optional Show volume popup switch. It changes the native UI flag while keeping the media adjustment to one system step. Sound buttons still keep the Nudge panel open.
 
-Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols. MIUI dark palette swatches are available for panel, button, icon, and handle colors.
+Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
 Each handle can be enabled on the awake lock screen. Apps and settings use Android's normal unlock step. Cancelling authentication cancels the action. Nudge does not wake the screen. Screen-off and always-on-display operation remain disabled.
 
@@ -111,7 +112,7 @@ Add handles and panels is the default import mode. It creates disabled handle co
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
 
-The current configuration uses schema 3 for independent panels and direct gesture actions. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+The current configuration uses schema 4 for expanded appearance and handle controls. Schemas 1 through 3 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
 
 Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
@@ -126,3 +127,17 @@ Optional panel auto-close uses one cancellable delay while a panel is open. It a
 There are no wake locks, periodic restart jobs, foreground services, or scheduled update checks. HyperOS Background autostart remains recommended. Use No restrictions only when needed for reliability, then measure battery use.
 
 Automated tests cover models, persistence, gestures, layout, window ordering, and panel touch handling. They cannot establish HyperOS behavior, native-popup coexistence, Recents survival, or battery drain. Record those checks in the ignored `plans/compatibility.md` on the actual phone. A signed upgrade check waits for the next authorized release.
+
+## Unreleased handle controls
+
+Touch length normally reaches the usable shorter screen edge. Enable longer touch length extends its maximum to the longer edge. The active edge and screen constraints limit rendering without reducing the saved length. Turning the option off retains the saved value. Re-enable it to restore the longer size.
+
+Soft hide in full screen starts off. When enabled, the first valid gesture reveals the handle with one brief bounce and runs no action. Later gestures execute normally. Hide after defaults to three seconds and accepts 1 to 30 seconds. Contact and an owned panel suspend expiry. Hidden touch areas still receive touches. Detection uses status-bar visibility; unknown visibility retains normal behavior. HyperOS detection remains pending device verification.
+
+## Unreleased panel controls
+
+Pass touch through and keep open adds a third outside-touch policy. The panel and swipe sequence remain active until dismissal, including Back or timeout. Verify Back consumption after pass-through touches on the actual phone.
+
+Empty button adds a grid cell with no action. Its Appearance dropdown selects No icon (container only), No button (blank space), or Slash icon. Each cell owns its appearance. Blank spaces retain capacity and remain inside the panel touch area. Empty cells do not become runtime click targets.
+
+Button drags beyond touch slop cancel clicking until the next press, including when the pointer returns to the same button. Scrolling remains available. The unexpected panel dismissal investigation is deferred to a separate task; app-change detection is unchanged.

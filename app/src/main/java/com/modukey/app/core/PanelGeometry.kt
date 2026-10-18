@@ -41,7 +41,7 @@ object PanelGeometry {
                 Edge.BOTTOM -> { x = handle.x + handle.width / 2 - width / 2; y = handle.y - height - 8 * density }
             }
             x += s.offsetXDp * density
-            y += s.offsetYDp * density
+            y -= s.offsetYDp * density
         }
         x = x.coerceIn(screen.x, screen.x + max(0f, screen.width - width))
         y = y.coerceIn(screen.y, screen.y + max(0f, screen.height - height))

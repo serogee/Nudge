@@ -11,7 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.time.Instant
 
-/** Bounded app-private diagnostics; no screen contents, app-switch history or periodic work. */
+/** Bounded app-private errors and dismissal context; no screen contents, continuous app history or periodic work. */
 class LocalDiagnostics(private val context: Context, private val scope: CoroutineScope) {
     private val writes = Channel<Unit>(Channel.CONFLATED)
     private val lock = Any()

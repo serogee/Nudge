@@ -46,7 +46,7 @@
     <string name="preview">Preview</string>
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
-    <string name="preview_help">Drag the touch area to move it. The phone guide passes touches through while you edit.</string>
+    <string name="preview_help">Use the position controls to move the handle. The phone guide passes touches through while you edit.</string>
     <string name="preview_unavailable">Connect Accessibility to show the guide on your phone.</string>
     <string name="preview_orientation">The phone guide uses the current screen orientation. Rotate the phone to check landscape.</string>
     <string name="landscape_enabled">Enable in landscape</string>
@@ -234,7 +234,7 @@
     <string name="diagnostics_copied">Diagnostics copied. Add the HyperOS version and observed test results.</string>
     <string name="device_version">%1$s %2$s · Android %3$s · Nudge %4$s</string>
     <string name="overlay_error">A handle or panel could not be shown. Re-enable Accessibility and check diagnostics.</string>
-    <string name="handle_preview_description">Phone preview. Drag the touch area or use Center along edge to move it.</string>
+    <string name="handle_preview_description">Phone preview. Use Center along edge to move the handle.</string>
     <string name="handle_description">Nudge handle</string>
     <string name="pending">Unavailable in the current screen state</string>
     <string name="active">Active</string>
@@ -247,7 +247,6 @@
     <string name="icon_shape">Icon shape</string>
     <string name="decrease">Decrease %1$s</string>
     <string name="increase">Increase %1$s</string>
-    <string name="panel_drag_help">Drag the panel to move it. Follow handle uses offsets. Other positions use screen percentages.</string>
     <string name="info">Info</string>
     <string name="app_settings">App Settings</string>
     <string name="enable_gestures">Enable Gestures</string>
@@ -269,13 +268,13 @@
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>
     <string name="offset_y">Y offset</string>
-    <string name="offset_help">Offsets move the panel from the handle. Positive X moves right. Positive Y moves down.</string>
+    <string name="offset_help">Positive X moves right. Positive Y moves up. Screen edges can limit movement.</string>
     <string name="no_buttons_setup">No buttons set up</string>
     <string name="edit_panel">Edit panel</string>
     <string name="edit_button">Edit button</string>
     <string name="button_action">Action</string>
     <string name="button_icon">Icon</string>
-    <string name="show_volume_popup">Show volume popup</string>
+    <string name="show_volume_popup">Show Volume Popup</string>
     <string name="show_volume_help">Show the native volume popup when this button changes volume.</string>
     <string name="icon_container">Icon container</string>
     <string name="container_default">Panel default</string>
@@ -290,7 +289,6 @@
     <string name="automatic_icon_color">Automatic icon color</string>
     <string name="auto_icon_help">Keep built-in icons readable. App and pack icons keep their colors.</string>
     <string name="panel_background">Panel background</string>
-    <string name="miui_palette">MIUI dark palette</string>
     <string name="panel_animation">Panel animations</string>
     <string name="open_animation">Open animation</string>
     <string name="close_animation">Close animation</string>
@@ -328,11 +326,8 @@
     <string name="direct_action">Direct action</string>
     <string name="input_method_picker">Input method picker</string>
     <string name="input_method_picker_failed">Cannot open the input method picker. Try again.</string>
-    <string name="direct_action_help">Run this action without opening a panel. App and settings actions require unlock on the lock screen.</string>
     <string name="search_panels">Search panels</string>
     <string name="create_panel_help">Create a panel in the Panels tab to assign it here.</string>
-    <string name="also_volume">Also show volume popup</string>
-    <string name="also_volume_help">Open this panel and request the native volume popup.</string>
     <string name="preview_handle">Preview handle</string>
     <string name="default_preview_handle">Default right edge</string>
     <string name="preview_handle_help">This choice affects the preview only. During use, the handle that opens the panel sets its placement.</string>
@@ -341,4 +336,22 @@
     <string name="auto_close_help">Close the panel after no touch input. Reset the swipe sequence.</string>
     <string name="close_after">Close after</string>
     <string name="panel_timeout_help">The timer restarts when you open or touch the panel. It pauses while you touch the panel.</string>
+    <string name="outside_keep">Pass touch through and keep open</string>
+    <string name="button_opacity">Button background opacity</string>
+    <string name="icon_opacity">Icon opacity</string>
+    <string name="select_panel">Select panel</string>
+    <string name="gesture_popup_help">Show the native volume popup. Select No action for the popup alone.</string>
+    <string name="empty_button">Empty button</string>
+    <string name="empty_no_icon">No icon</string>
+    <string name="empty_no_button">No button</string>
+    <string name="empty_slash">Slash icon</string>
+    <string name="empty_button_help">This button keeps its grid space and performs no action.</string>
+    <string name="longer_touch_length">Enable longer touch length</string>
+    <string name="longer_touch_help">Use the longer screen edge as the maximum. The saved length stays unchanged when space is limited.</string>
+    <string name="touch_length_limited">Saved length: %1$d dp. Available length: %2$d dp.</string>
+    <string name="overlay_preview">On-phone preview</string>
+    <string name="soft_hide">Soft hide in full screen</string>
+    <string name="soft_hide_help">The first gesture reveals the handle. The next gesture runs its action. The hidden touch area still receives touches.</string>
+    <string name="hide_after">Hide after</string>
+    <string name="soft_hide_detection">Full screen uses hidden status bars. If the phone does not report visibility, the handle keeps its normal behavior.</string>
 </resources>

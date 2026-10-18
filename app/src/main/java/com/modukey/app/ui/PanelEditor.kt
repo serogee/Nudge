@@ -17,7 +17,7 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable private fun PanelEditorContent(config: AppConfiguration, entry: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
+@Composable private fun PanelEditorContent(config: AppConfiguration, entry: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean) {
     val context = LocalContext.current
     var landscape by rememberSaveable(entry.id) { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
@@ -43,7 +43,7 @@ import kotlin.math.roundToInt
                 Row(Modifier.fillMaxWidth().padding(start = 10.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(Modifier.weight(1f).alpha(if (position >= g.visibleCount) .38f else 1f),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PanelButtonFace(b, p, 40.dp)
+                        if (b.action == ButtonAction.EMPTY) Icon(AppIcons.Empty, null, Modifier.size(40.dp)) else PanelButtonFace(b, p, 40.dp)
                         Column { Text(context.buttonLabel(b)); if (position >= g.visibleCount) Text(t(R.string.not_shown), style = MaterialTheme.typography.labelSmall) }
                     }
                     EditIcon(AppIcons.Edit, R.string.edit_button) { draft = b }
@@ -60,13 +60,10 @@ import kotlin.math.roundToInt
         PreviewHandleChoice(config, previewHandleId, preview)
         Help(R.string.preview_handle_help)
         OrientationChoices(landscape) { landscape = it }
-        PanelPreview(p, l, g, screen, handle, trigger, vm::flush) { x, y ->
-            layout { if (it.followHandle) it.copy(offsetXDp = x, offsetYDp = y) else it.copy(x = x, y = y) }
-        }
+        PanelPreview(p, l, g, screen, handle, trigger)
         Help(R.string.panel_preview_help)
-        Help(R.string.panel_drag_help)
         Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
-        OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected) { Text(t(R.string.test_panel)) }
+        OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected && previewEnabled) { Text(t(R.string.test_panel)) }
         Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { it.copy(landscapeOverride = value) } }
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
@@ -115,7 +112,7 @@ import kotlin.math.roundToInt
     }
     Section(R.string.appearance) {
         ColorPicker(p.background, title = R.string.panel_background, default = panelDefaults.background) { value -> vm.editPanel(entry.id) { it.copy(background = value) } }
-        SettingSlider(R.string.opacity, p.opacity, .1f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
+        SettingSlider(R.string.opacity, p.opacity, 0f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
         SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
         OptionRow(t(R.string.icon_shape), IconShape.entries, p.iconShape, IconShape.ROUNDED_SQUARE) { value -> vm.editPanel(entry.id) { it.copy(iconShape = value) } }
         if (p.iconShape != IconShape.CIRCLE) SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
@@ -123,8 +120,10 @@ import kotlin.math.roundToInt
         Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
         Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
         if (!p.automaticButtonColor) ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
+        PercentSlider(R.string.button_opacity, p.buttonOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(buttonOpacity = value) } }
         Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
         if (!p.automaticIconColor) ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
+        PercentSlider(R.string.icon_opacity, p.iconOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(iconOpacity = value) } }
         SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
         OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {
             Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack)
@@ -152,8 +151,9 @@ import kotlin.math.roundToInt
 }
 
 
-@Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit) {
+@Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
     val context = LocalContext.current
+    val service by vm.status.collectAsStateWithLifecycle()
     var renaming by rememberSaveable(panel.id) { mutableStateOf(false) }
     var name by rememberSaveable(panel.id) { mutableStateOf("") }
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -164,8 +164,9 @@ import kotlin.math.roundToInt
                 Text(context.panelLabel(panel), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 EditIcon(AppIcons.Edit, R.string.rename_panel) { name = panel.name; renaming = true }
             }
+            OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                PanelEditorContent(config, panel, previewHandleId, vm, preview)
+                PanelEditorContent(config, panel, previewHandleId, vm, preview, previewEnabled)
             }
         }
     }
