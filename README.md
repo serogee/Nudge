@@ -35,13 +35,17 @@ Do Not Disturb access is needed for DND and certain ringtone changes. Lock scree
 
 ## Customization and panels
 
-Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Sticky Preview switches control non-touchable phone guides, even with the master off. Mini previews are display-only and allow page scrolling. Normal activation resumes when editing ends.
+Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Sticky Visual Preview (Non-interactive) switches control non-touchable phone guides, even with the master off. Mini previews are display-only and allow page scrolling. Normal activation resumes when editing ends.
 
 Open Panels to create, name, order, duplicate, edit, or delete panels. A fresh configuration has no panels. Choose No action, Select panel, or Direct action for each gesture. Show Volume Popup can accompany any selection. No action with the switch on opens only the volume popup. Existing configured or assigned panels migrate automatically; unused empty slots are omitted.
 
 Select Direct action in a gesture assignment to use Lock screen, Open app, settings, or any sound control without a panel. Open app includes an app picker. Volume up and Volume down can also show the volume popup. Save applies the complete assignment; Cancel keeps the previous one. Swipe sequence timeout applies to actions without an open panel and uses an expiry timestamp without background work.
 
-Add Input method picker as a panel button or a direct gesture action to open Android's native keyboard chooser. Nudge uses a short-lived internal activity to obtain input focus. It does not enable a keyboard or choose one for you. Locked use requires normal system unlock. A failed request closes the internal activity and reports an error.
+Hold time and Swipe and hold time are separate controls in each handle's Gestures tab. Each accepts 300 to 3000 ms and defaults to 500 ms. Actions run on release. Existing settings and older backups retain the default delays.
+
+Add Input Method as a panel button or a direct gesture action to open Android's native keyboard chooser. Nudge uses a short-lived internal activity to obtain input focus. It does not enable a keyboard or choose one for you. Locked use requires normal system unlock. A failed request closes the internal activity and reports an error.
+
+Choose Nudge in the built-in icon library to use the app mark without its background. The mark follows the panel's icon color. Select Standalone to remove the button container too.
 
 Panels keep their own buttons, appearance, layouts, placement, and landscape settings. Follow handle uses the handle that opens the panel. Select a preview handle in the panel editor to check placement. Deleting a panel clears its gesture links and keeps the volume part of combined assignments. Deleting a handle keeps its panels available.
 
