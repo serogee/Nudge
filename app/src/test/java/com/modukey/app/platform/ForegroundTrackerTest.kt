@@ -90,7 +90,10 @@ class ForegroundTrackerTest {
     }
     @Test fun `unknown metadata cache stays bounded`() {
         val tracker = tracker()
-        repeat(100) { assertNull(observe(tracker, "unknown.$it")) }
+        repeat(100) {
+            activity("unknown.$it", launchable = false)
+            assertNull(observe(tracker, "unknown.$it"))
+        }
         assertTrue(ReflectionHelpers.getField<Map<*, *>>(tracker, "activities").size <= 64)
         assertTrue(ReflectionHelpers.getField<Map<*, *>>(tracker, "applications").size <= 32)
     }
