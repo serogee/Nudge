@@ -4,7 +4,8 @@ import kotlin.math.abs
 import kotlin.math.hypot
 
 /** Release-only recognition. No delayed callback or idle timer is needed. */
-class HandleGesture(private val edge: Edge, private val distance: Float, private val timeout: Long, private val slop: Float) {
+class HandleGesture(private val edge: Edge, private val distance: Float, private val timeout: Long, private val slop: Float,
+    private val holdTime: Long = 500, private val swipeHoldTime: Long = 500) {
     private var active = false
     private var cancelled = false
     private var x = 0f; private var y = 0f; private var start = 0L
@@ -33,9 +34,9 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
         move(x, y, time); active = false
         if (cancelled || time < start) return null
         val (inward, parallel) = components(x - this.x, y - this.y)
-        if (!moved) return when { time - start <= 250 -> GestureKind.TAP; time - start >= 500 -> GestureKind.HOLD; else -> null }
+        if (!moved) return when { time - start <= 250 -> GestureKind.TAP; time - start >= holdTime -> GestureKind.HOLD; else -> null }
         if (!crossed || inward < distance || inward <= abs(parallel)) return null
-        return when { time - stableAt >= 500 -> GestureKind.SWIPE_HOLD; time - start <= timeout -> GestureKind.SWIPE; else -> null }
+        return when { time - stableAt >= swipeHoldTime -> GestureKind.SWIPE_HOLD; time - start <= timeout -> GestureKind.SWIPE; else -> null }
     }
     private fun components(dx: Float, dy: Float) = when (edge) { Edge.LEFT -> dx to dy; Edge.RIGHT -> -dx to dy; Edge.BOTTOM -> -dy to dx }
 }
