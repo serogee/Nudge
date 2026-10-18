@@ -4,6 +4,7 @@
 
 ### Added
 
+- Save or cancel handle and panel edits from the header. Preview pending changes immediately and choose Save, Discard, or Keep editing before leaving.
 - Assign Close panels or Screenshot to a panel button or direct gesture. Closing panels resets their swipe sequence. Screenshot closes interactive panels before requesting Android's capture UI.
 - Set Hold time and Swipe and hold time independently for each handle, from 300 to 3000 ms. Keep 500 ms defaults for existing settings and backups.
 - Choose a background-free Nudge mark from the built-in icon library. Apply the panel's icon color and use Standalone to remove the button container.
@@ -18,6 +19,7 @@
 
 ### Fixed
 
+- Truncate long editor titles with an ellipsis while keeping Save, Cancel, and rename controls visible.
 - Keep ownership of handle windows before attachment completes. Remove pending windows during replacement, reconnection, and rotation.
 - Apply the editor's orientation to on-phone guides. Map landscape Bottom to the left edge on an upright phone. Keep runtime Bottom at the logical bottom in either landscape rotation.
 - Rotate panel preview content with its guide and use the same safe insets in mini previews and live guides.
