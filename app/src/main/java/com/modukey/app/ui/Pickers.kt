@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,10 +26,10 @@ import com.modukey.app.platform.IconPackInfo
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(ButtonAction.entries.filter { includeEmpty || it != ButtonAction.EMPTY }) { action ->
                 Surface(onClick = { choose(action) }, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Column(Modifier.padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.fillMaxWidth().padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
                         ButtonGraphic(PanelButton(action = action), "", Modifier.size(28.dp))
-                        Text(t(label(action)), style = MaterialTheme.typography.labelLarge)
+                        Text(t(label(action)), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                     }
                 }
             }
