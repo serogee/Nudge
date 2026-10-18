@@ -18,10 +18,9 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
+@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit, landscape: Boolean, selectOrientation: (Boolean) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
-    var landscape by rememberSaveable(h.id) { mutableStateOf(false) }
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -53,7 +52,7 @@ import kotlin.math.roundToInt
                         val bounds = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, s, landscape)
                         val others = config.handles.filter { it.id != h.id && it.enabled }.map { it.trigger }
                         Section(R.string.preview) {
-                            OrientationChoices(landscape) { landscape = it }
+                            OrientationChoices(landscape, selectOrientation)
                             PhonePreview(s, landscape, others)
                             Help(R.string.preview_help)
                             Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)

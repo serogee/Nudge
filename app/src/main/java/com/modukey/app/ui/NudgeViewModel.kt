@@ -75,7 +75,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun resetHandle(id: String) { editHandle(id) { HandleConfig(id = it.id, name = it.name, enabled = it.enabled) }; flush() }
     fun flush() = app.configuration.flush()
     fun retrySaving() = app.configuration.retry()
-    fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true) = app.editor.begin(token, EditorSelection(handleId, panelId, preview))
+    fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true, landscape: Boolean? = null) = app.editor.begin(token, EditorSelection(handleId, panelId, preview, landscape))
     fun endEditor(token: Any) = app.editor.end(token)
     fun testPanel(id: String, previewHandleId: String?) {
         if (status.value.connected) app.editor.test(PanelTestRequest(id, previewHandleId)) else tell(R.string.preview_unavailable)

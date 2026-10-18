@@ -5,7 +5,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class EditorSelection(val handleId: String? = null, val panelId: String? = null, val preview: Boolean = true)
+data class EditorSelection(val handleId: String? = null, val panelId: String? = null, val preview: Boolean = true, val landscape: Boolean? = null) {
+    fun matches(handleId: String?, panelId: String?) = this.handleId == handleId && this.panelId == panelId
+}
 data class PanelTestRequest(val panelId: String, val handleId: String? = null)
 class EditorSession {
     private var owner: Any? = null
