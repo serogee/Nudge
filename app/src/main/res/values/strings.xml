@@ -43,7 +43,7 @@
     <string name="gestures">Gestures</string>
     <string name="panels">Panels</string>
     <string name="availability">Availability</string>
-    <string name="preview">Preview</string>
+    <string name="preview">Visual Preview (Non-interactive)</string>
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
     <string name="preview_help">Use the position controls to move the handle. The phone guide passes touches through while you edit.</string>
@@ -328,8 +328,8 @@
     <string name="migrated_panel_name">%1$s · Panel %2$d</string>
     <string name="gesture_action">Gesture action</string>
     <string name="direct_action">Direct action</string>
-    <string name="input_method_picker">Input method picker</string>
-    <string name="input_method_picker_failed">Cannot open the input method picker. Try again.</string>
+    <string name="input_method_picker">Input Method</string>
+    <string name="input_method_picker_failed">Cannot open Input Method. Try again.</string>
     <string name="search_panels">Search panels</string>
     <string name="create_panel_help">Create a panel in the Panels tab to assign it here.</string>
     <string name="preview_handle">Preview handle</string>
