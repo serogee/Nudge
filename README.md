@@ -35,9 +35,9 @@ Do Not Disturb access is needed for DND and certain ringtone changes. Lock scree
 
 ## Customization and panels
 
-Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Editors show non-touchable phone guides while visible, even with the master off. Normal activation resumes when editing ends.
+Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Sticky Preview switches control non-touchable phone guides, even with the master off. Mini previews are display-only and allow page scrolling. Normal activation resumes when editing ends.
 
-Open Panels to create, name, order, duplicate, edit, or delete panels. A fresh configuration has no panels. Assign each handle gesture to No action, Volume popup, a panel, or a panel with Volume popup. Existing configured or assigned panels migrate automatically; unused empty slots are omitted.
+Open Panels to create, name, order, duplicate, edit, or delete panels. A fresh configuration has no panels. Choose No action, Select panel, or Direct action for each gesture. Show Volume Popup can accompany any selection. No action with the switch on opens only the volume popup. Existing configured or assigned panels migrate automatically; unused empty slots are omitted.
 
 Select Direct action in a gesture assignment to use Lock screen, Open app, settings, or any sound control without a panel. Open app includes an app picker. Volume up and Volume down can also show the volume popup. Save applies the complete assignment; Cancel keeps the previous one. Swipe sequence timeout applies to actions without an open panel and uses an expiry timestamp without background work.
 
@@ -47,7 +47,7 @@ Panels keep their own buttons, appearance, layouts, placement, and landscape set
 
 Fixed panels show only the first buttons within their row and column limits and never scroll. Extra buttons stay saved and editable with a Not shown label. Scrollable panels expose all buttons inside an adjustable viewport. Switching modes retains button order and mode settings.
 
-Each panel chooses whether an outside touch closes and blocks the touch or closes and passes it through. Back closes the panel without navigating the app beneath. Handle gestures remain available. Preview buttons do not run actions; Test panel opens working controls.
+Each panel can block and close, pass through and close, or pass through and stay open after an outside touch. Back closes the panel without navigating the app beneath. Handle gestures remain available. Preview buttons do not run actions; Test panel opens working controls.
 
 Each panel can close automatically after 1–60 seconds without touch input. This option starts off. Opening or touching the panel restarts its timer; held input pauses it. Expiry closes the panel and resets its handle's swipe sequence to the first assigned stage. Editing guides stay open. Only an open interactive panel has a pending timer; closing or replacing it cancels that timer.
 
@@ -132,3 +132,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Device-Profile.ps1
 The profile is saved under `.local/device-checks`; manually complete the checklist with the model, exact HyperOS build, navigation mode and observations. Home's popup confirmation is session-local and user-reported. Copy compatibility details from Info for support.
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
+
+## Unreleased development
+
+- Touch length can cover the usable short edge, or the longer edge with Enable longer touch length. Screen constraints preserve saved values.
+- Positive Follow handle Y offsets move panels up. Old offsets migrate once to retain physical placement.
+- Full-screen soft hide requires a reveal gesture before activation and uses an adjustable inactivity delay. Hidden touch areas still receive touches.
+- Empty panel buttons retain independent container-only, blank, or slash appearances.
+- Color opacity, combined popup assignments, notched handle badges, and the shared N app mark are included in development.
+
+Version 0.2.1 artifacts remain unchanged. Device checks and unexpected panel dismissal investigation remain pending.
