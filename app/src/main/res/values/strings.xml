@@ -247,7 +247,6 @@
     <string name="icon_shape">Icon shape</string>
     <string name="decrease">Decrease %1$s</string>
     <string name="increase">Increase %1$s</string>
-    <string name="panel_drag_help">Drag the panel to move it. Follow handle uses offsets. Other positions use screen percentages.</string>
     <string name="info">Info</string>
     <string name="app_settings">App Settings</string>
     <string name="enable_gestures">Enable Gestures</string>
@@ -290,7 +289,6 @@
     <string name="automatic_icon_color">Automatic icon color</string>
     <string name="auto_icon_help">Keep built-in icons readable. App and pack icons keep their colors.</string>
     <string name="panel_background">Panel background</string>
-    <string name="miui_palette">MIUI dark palette</string>
     <string name="panel_animation">Panel animations</string>
     <string name="open_animation">Open animation</string>
     <string name="close_animation">Close animation</string>
@@ -328,11 +326,8 @@
     <string name="direct_action">Direct action</string>
     <string name="input_method_picker">Input method picker</string>
     <string name="input_method_picker_failed">Cannot open the input method picker. Try again.</string>
-    <string name="direct_action_help">Run this action without opening a panel. App and settings actions require unlock on the lock screen.</string>
     <string name="search_panels">Search panels</string>
     <string name="create_panel_help">Create a panel in the Panels tab to assign it here.</string>
-    <string name="also_volume">Also show volume popup</string>
-    <string name="also_volume_help">Open this panel and request the native volume popup.</string>
     <string name="preview_handle">Preview handle</string>
     <string name="default_preview_handle">Default right edge</string>
     <string name="preview_handle_help">This choice affects the preview only. During use, the handle that opens the panel sets its placement.</string>
