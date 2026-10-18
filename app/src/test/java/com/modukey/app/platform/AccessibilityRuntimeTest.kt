@@ -1,9 +1,14 @@
 package com.modukey.app.platform
 
 import android.app.KeyguardManager
+import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
+import android.content.pm.ResolveInfo
 import android.media.AudioManager
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
@@ -51,11 +56,19 @@ class AccessibilityRuntimeTest {
             assertNull(app.diagnostics.details.value,app.status.state.value.error); assertTrue(app.status.state.value.connected)
         }
         app.configuration.update { it.editHandle("runtime-0") { h -> h.copy(trigger=h.trigger.copy(excludedPackages=setOf("test.game"))) } }
+        val game = ActivityInfo().apply {
+            packageName="test.game"; name="test.game.GameActivity"; enabled=true
+            applicationInfo=ApplicationInfo().apply { packageName="test.game"; enabled=true }
+        }
+        shadowOf(app.packageManager).addOrUpdateActivity(game)
+        shadowOf(app.packageManager).addResolveInfoForIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage("test.game"),
+            ResolveInfo().apply { activityInfo=game })
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(32))
         fun window(pkg:String,activity:String) {
-            val event=AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED).apply { packageName=pkg; className=activity }
+            val event=AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED).apply { packageName=pkg; className=activity; eventTime=SystemClock.uptimeMillis() }
             service.onAccessibilityEvent(event); event.recycle()
         }
-        window("test.game","GameActivity")
+        window("test.game","test.game.GameActivity")
         await { app.status.state.value.attachedHandleIds.size==11 }
         window(app.packageName,MainActivity::class.java.name)
         await { app.status.state.value.attachedHandleIds.size==12 }
