@@ -350,4 +350,47 @@ class NudgeInterfaceTest {
         val b=rule.onNodeWithContentDescription("Volume down").fetchSemanticsNode().boundsInRoot
         assertTrue(b.top>a.top); assertEquals(a.left,b.left)
     }
+    @Test fun `sticky preview switches change editor overlays without changing saved configuration`() {
+        val app = ready()
+        val panel = SavedPanel(name = "Tools")
+        rule.runOnIdle {
+            app.configuration.update { it.copy(panels = listOf(panel)) }
+            app.status.report(com.modukey.app.platform.ServiceState(connected = true))
+        }
+        val original = rule.runOnIdle { app.configuration.state.value }
+        rule.onNode(hasText("Handles") and hasClickAction()).performClick()
+        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNodeWithContentDescription("On-phone preview").assertIsOn().performClick()
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.state.value) }
+        rule.activityRule.scenario.recreate()
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("On-phone preview").assertIsOff()
+        rule.onNodeWithText("Make handle visible").performScrollTo()
+        rule.onNodeWithContentDescription("On-phone preview").assertIsDisplayed().performClick()
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.preview) }
+        rule.onNodeWithText("Gestures").performClick()
+        rule.onNodeWithContentDescription("On-phone preview").assertDoesNotExist()
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview) }
+        rule.onNode(hasText("Panels") and hasClickAction()).performClick()
+        rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
+        rule.onNodeWithText("Follow handle").performScrollTo()
+        rule.onNodeWithContentDescription("On-phone preview").assertIsDisplayed().performClick()
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.state.value) }
+    }
+
+    @Test fun `empty button editor saves only its own appearance`() {
+        ready()
+        val original = PanelButton(action = ButtonAction.EMPTY)
+        var saved: PanelButton? = null
+        val vm = rule.runOnIdle { ViewModelProvider(rule.activity)[NudgeViewModel::class.java] }
+        rule.runOnIdle { rule.activity.setContent { NudgeTheme { ButtonEditor(original, PanelConfig(), vm, {}) { saved = it } } } }
+        rule.onNodeWithText("Slash icon").performScrollTo().performClick()
+        rule.onNodeWithText("No button").performClick()
+        rule.runOnIdle { assertNull(saved) }
+        rule.onNodeWithText("Save").performClick()
+        rule.runOnIdle {
+            assertEquals(original.copy(emptyAppearance = EmptyAppearance.NO_BUTTON), saved)
+            assertEquals(EmptyAppearance.SLASH, original.emptyAppearance)
+        }
+    }
 }
