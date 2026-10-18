@@ -202,7 +202,7 @@ class AccessibilityRuntimeTest {
         val panel=SavedPanel()
         val slots=listOf(GestureSlot.SWIPE_1,GestureSlot.SWIPE_2,GestureSlot.SWIPE_3,GestureSlot.SWIPE_HOLD,GestureSlot.TAP,GestureSlot.HOLD)
         val buttons=listOf(ButtonAction.VOLUME_UP,ButtonAction.VOLUME_DOWN,ButtonAction.MEDIA_MUTE,ButtonAction.SILENT,ButtonAction.OPEN_APP,ButtonAction.LOCK)
-            .map { PanelButton(action=it,appPackage="test.camera",appActivity="test.camera.Main",showVolumePopup=true) }
+            .map { PanelButton(action=it,appPackage="test.camera",appActivity="test.camera.Main",showVolumePopup=it in listOf(ButtonAction.VOLUME_UP,ButtonAction.VOLUME_DOWN)) }
         val direct=slots.zip(buttons).associate { (slot,button) -> slot to GestureTarget.direct(button) }
         val h=HandleConfig(enabled=true,trigger=TriggerSettings(landscapeEnabled=true),bindings=direct+(GestureSlot.SWIPE_1 to GestureTarget.panel(panel.id)))
         app.configuration.update { AppConfiguration(enabled=true,handles=listOf(h),panels=listOf(panel)) }

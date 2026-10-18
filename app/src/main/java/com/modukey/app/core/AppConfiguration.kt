@@ -6,13 +6,13 @@ enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null) {
     val isNone get() = panelId == null && !volume && action == null
-    fun normalized() = if (action != null) copy(panelId = null, volume = volume || action.showVolumePopup, action = action.copy(showVolumePopup = false)) else this
+    fun normalized() = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.copy(showVolumePopup = false)) else this
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
         val NONE = GestureTarget()
         val VOLUME = GestureTarget(volume = true)
         fun panel(id: String, volume: Boolean = false) = GestureTarget(id, volume)
-        fun direct(action: PanelButton) = GestureTarget(volume = action.showVolumePopup, action = action.copy(showVolumePopup = false))
+        fun direct(action: PanelButton) = GestureTarget(action = action).normalized()
     }
 }
 enum class PanelMode { FIXED, SCROLLABLE }
