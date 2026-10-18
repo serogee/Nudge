@@ -22,7 +22,7 @@ import com.modukey.app.ui.NudgeTheme
 import com.modukey.app.ui.PanelContent
 import kotlin.math.roundToInt
 
-data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT)
+data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT, val previewQuarterTurns: Int = 0)
 interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound() }
 enum class PanelDismissReason { BACK, OUTSIDE_TOUCH, WINDOW_DETACHED }
 
@@ -44,6 +44,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         if (window == null) attach(spec)
         else {
             window.spec = spec
+            window.configurePreview()
             val p = params(spec)
             val previous = window.layout
             if (previous.x != p.x || previous.y != p.y || previous.width != p.width || previous.height != p.height || previous.flags != p.flags) {
@@ -92,7 +93,20 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         }
         init {
             root.addView(compose, FrameLayout.LayoutParams(-1, -1))
+            configurePreview()
             root.addOnAttachStateChangeListener(detached)
+        }
+        @SuppressLint("RtlHardcoded")
+        fun configurePreview() {
+            val turns = if (spec.editing) spec.previewQuarterTurns.mod(4) else 0
+            val bounds = spec.geometry.bounds
+            val width = (if (turns % 2 == 0) bounds.width else bounds.height).roundToInt().coerceAtLeast(1)
+            val height = (if (turns % 2 == 0) bounds.height else bounds.width).roundToInt().coerceAtLeast(1)
+            val previous = compose.layoutParams
+            if (previous.width != width || previous.height != height) compose.layoutParams = FrameLayout.LayoutParams(width, height, Gravity.TOP or Gravity.LEFT)
+            compose.pivotX = 0f; compose.pivotY = 0f; compose.rotation = turns * 90f
+            compose.translationX = if (turns == 1) height.toFloat() else if (turns == 2) width.toFloat() else 0f
+            compose.translationY = if (turns == 2) height.toFloat() else if (turns == 3) width.toFloat() else 0f
         }
         fun disableInput() {
             exiting = true
