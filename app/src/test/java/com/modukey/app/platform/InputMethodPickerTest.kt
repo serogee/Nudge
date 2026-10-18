@@ -54,8 +54,11 @@ class InputMethodPickerTest {
     }
     @After fun stop() { app.onTerminate() }
     private fun request(panel:Boolean=false):ActivityController<UnlockActionActivity> {
-        if(panel) app.configuration.update { it.copy(panels=listOf(SavedPanel(settings=PanelConfig(buttons=listOf(button))))) }
-        val result=PanelActions(service).execute(handle.id,button,false,if(panel) null else GestureSlot.HOLD)
+        val selected=if(panel) button.copy(id=newId()) else button
+        if(panel) app.configuration.update { it.copy(panels=listOf(SavedPanel(settings=PanelConfig(buttons=listOf(selected))))) }
+        val configuration=checkNotNull(app.configuration.state.value)
+        assertEquals(configuration,com.modukey.app.data.ConfigurationCodec.decode(com.modukey.app.data.ConfigurationCodec.encode(configuration)))
+        val result=PanelActions(service).execute(handle.id,selected,false,if(panel) null else GestureSlot.HOLD)
         assertTrue(result.succeeded); assertTrue(result.close)
         val intent=shadowOf(service).nextStartedActivity
         assertEquals(UnlockActionActivity::class.java.name,intent.component!!.className)
