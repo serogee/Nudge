@@ -56,6 +56,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     fun resetSoftHide() { softHide.reset(); animator?.cancel(); bounce = 0f; scheduleExpiry(); invalidate() }
     private fun updateSoftHide() {
         softHide.configure(!editing && settings.softHideEnabled, fullScreen, settings.softHideDelayMs, SystemClock.uptimeMillis())
+        if (!softHide.active) { animator?.cancel(); animator = null; bounce = 0f }
         scheduleExpiry()
     }
     private fun scheduleExpiry() {
