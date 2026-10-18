@@ -6,7 +6,7 @@ Each handle has its own gestures, appearance, placement, exclusions, and lock-sc
 
 The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
 
-Version 0.2.1 adds shared panels, direct gesture actions, and the native input method picker. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
+Version 0.3.0 is published. Version 0.3.1 adds hold-time controls, panel utilities, and editor Save and Cancel controls. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
 
 ## Build
 
@@ -86,11 +86,11 @@ The release script requires a clean Git working tree, an existing signing key an
 Each version has its own folder under `releases/`. For example:
 
 ```text
-releases/0.1.2/
-  Nudge-0.1.2.apk
-  Nudge-0.1.2.apk.sha256
-  Nudge-0.1.2-notes.md
-  Nudge-0.1.2.json
+releases/0.3.1/
+  Nudge-0.3.1.apk
+  Nudge-0.3.1.apk.sha256
+  Nudge-0.3.1-notes.md
+  Nudge-0.3.1.json
 ```
 
 Build metadata records the commit, SDKs, signer, and verification status. Exported notes are copied from the committed, reviewed `docs/release-notes-<version>.md`. Changelog generation with `-Artifact` uses the same version folder. Prior-APK signer checks prefer the version folder and also accept the older flat layout. Archived builds remain under `releases/archive/`. All release artifacts remain ignored by Git; upload the files inside the version folder when publishing on GitHub.
@@ -98,19 +98,19 @@ Build metadata records the commit, SDKs, signer, and verification status. Export
 For each new distributed version, commit the completed features/fixes, then increase `versionName` and `versionCode` in `version.properties`. Generate the changelog from the commits since the previous reachable release tag:
 
 ```powershell
-# Preview without changing files. After 0.1.1, for example:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.1.2
+# Preview changes since the latest published release:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.3.1 -FromTag v0.3.0
 # After changing version.properties, update that version's changelog and notes:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Write
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag v0.3.0 -Write
 # Review the generated files, add device observations, and commit the version and notes.
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateTag
 ```
 
 The generator uses the first line of each full commit message, including messages with body bullets immediately after the title. `feat` becomes Added, `fix` Fixed, `perf` Performance, and build/docs/test/chore commits Maintenance. Other changes go under Changed; `!` or a `BREAKING CHANGE:` footer identifies breaking changes. Scoped and older unscoped titles both work. Each entry includes its commit hash. Scopes and message rules are defined in [.plans/scopes.md](.plans/scopes.md) and [AGENTS.md](AGENTS.md).
 
-`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.2.1` selects the latest user-confirmed published baseline for 0.3.0; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
+`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.3.0` selects the latest user-confirmed published baseline for 0.3.1; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
 
-Established local version tags count as published releases for this repository. The newest tag can remain a working release until marked ready. Currently, `v0.2.1` is the published baseline and `v0.3.0` is the working release. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
+Established local version tags count as published releases for this repository. The newest tag can remain a working release until marked ready. The user confirms `v0.3.0`, code 7, is published on GitHub. Version 0.3.1, code 8, is prepared for the next release; its final build, tag, and publication remain pending. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
 
 Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
@@ -139,16 +139,42 @@ The profile is saved under `.local/device-checks`; manually complete the checkli
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
 
-## Unreleased development
+## 0.3.1 preparation and publication
 
-- Touch length can cover the usable short edge, or the longer edge with Enable longer touch length. Screen constraints preserve saved values.
-- Positive Follow handle Y offsets move panels up. Old offsets migrate once to retain physical placement.
-- Full-screen soft hide requires a reveal gesture before activation and uses an adjustable inactivity delay. Hidden touch areas still receive touches.
-- Empty panel buttons retain independent container-only, blank, or slash appearances.
-- Color opacity, combined popup assignments, notched handle badges, and the shared N app mark are included in development.
+Version 0.3.0, code 7, is published on GitHub. Version 0.3.1, code 8, has reviewed notes on the feature branch. Its baseline is `v0.3.0`. Earlier release entries, tags, and APKs remain unchanged.
 
-Panel app-change detection now checks activity identity and event timing. The first observation, queued events, and ambiguous popup events keep the panel open. See [panel dismissal findings and device checks](docs/panel-dismissal.md). Use Info > Copy compatibility details to collect bounded dismissal reasons after an incident.
+Push the preparation commits before merging the pull request on GitHub:
 
-Version 0.3.0, code 7, has reviewed notes prepared on the feature branch. After merging the pull request, update local `main` and run `scripts/Release.ps1 -CreateTag` from its clean checkout. This builds the final signed APK, verifies it, and creates the local release tag. Push that tag before creating the GitHub release. Artifacts use `releases/0.3.0/`.
+```powershell
+git push -u origin feat/gesture-picker-hold-controls
+```
 
-Version 0.2.1 artifacts remain unchanged. Redmi/HyperOS verification remains pending.
+After the GitHub merge, run these commands from this repository. Start with a clean working tree:
+
+```powershell
+git switch main
+git pull --ff-only origin main
+git fetch origin --tags
+git status --short
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateTag
+```
+
+Continue only after the release script succeeds. It runs checks, builds the signed APK with the existing key, verifies the signer and version, exports the four release files, and creates local tag `v0.3.1`. Do not create that tag again. Do not regenerate the reviewed notes after merging. If any command fails, resolve the failure before continuing.
+
+Install the APK over 0.3.0 without uninstalling. With one authorized phone connected:
+
+```powershell
+adb install -r .\releases\0.3.1\Nudge-0.3.1.apk
+```
+
+Check retained settings, accessibility connection, gestures, editor Save and Cancel, rotation, and panel utilities. Record actual Redmi/HyperOS results in the ignored `plans/compatibility.md`. Physical-device and overnight battery checks remain pending until performed.
+
+When the build and update checks are satisfactory, push only the new tag:
+
+```powershell
+git push origin v0.3.1
+```
+
+Then [draft a GitHub release](https://github.com/serogee/Nudge/releases/new), select the existing `v0.3.1` tag, and use title **Nudge 0.3.1**. Paste `releases/0.3.1/Nudge-0.3.1-notes.md` into the description. Upload the APK, `.apk.sha256`, `.json`, and notes file from `releases/0.3.1/`. Publish after all assets are attached. For a stable release, leave the pre-release option off and set it as latest. See [GitHub release instructions](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
+
+The release script does not push or publish. Its JSON metadata records the merged commit and final APK checksum. Confirm publication before recording 0.3.1 as the next published baseline.

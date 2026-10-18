@@ -1,6 +1,6 @@
 # Handles and panels
 
-This guide includes Unreleased controls after version 0.2.1. Existing release artifacts remain unchanged. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
+This guide covers the prepared 0.3.1 release. Version 0.3.0 is published. Earlier release artifacts remain unchanged. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
