@@ -34,10 +34,13 @@ fun Context.buttonLabel(button: PanelButton): String = if (button.action == Butt
 fun Context.handleLabel(config: AppConfiguration, handle: HandleConfig): String = handle.name.ifBlank { getString(R.string.handle_name, config.handles.indexOfFirst { it.id == handle.id } + 1) }
 fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(R.string.untitled_panel) }
 fun Context.targetLabel(config: AppConfiguration, target: GestureTarget): String {
-    target.action?.let { return if (target.volume) getString(R.string.panel_with_volume, buttonLabel(it)) else buttonLabel(it) }
+    target.action?.let {
+        val name = getString(R.string.action_target, buttonLabel(it))
+        return if (target.volume) getString(R.string.panel_with_volume, name) else name
+    }
     val panel = config.panel(target.panelId)
     return if (panel != null) {
-        val name = panelLabel(panel)
+        val name = getString(R.string.panel_target, panelLabel(panel))
         if (target.volume) getString(R.string.panel_with_volume, name) else name
     } else getString(if (target.volume) R.string.volume_popup else R.string.no_action)
 }
