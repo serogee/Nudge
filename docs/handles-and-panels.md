@@ -112,7 +112,7 @@ Add handles and panels is the default import mode. It creates disabled handle co
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
 
-The current configuration uses schema 4 for expanded appearance and handle controls. Schemas 1?3 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+The current configuration uses schema 4 for expanded appearance and handle controls. Schemas 1 through 3 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
 
 Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
@@ -132,7 +132,7 @@ Automated tests cover models, persistence, gestures, layout, window ordering, an
 
 Touch length normally reaches the usable shorter screen edge. Enable longer touch length extends its maximum to the longer edge. The active edge and screen constraints limit rendering without reducing the saved length. Turning the option off retains the saved value. Re-enable it to restore the longer size.
 
-Soft hide in full screen starts off. When enabled, the first valid gesture reveals the handle with one brief bounce and runs no action. Later gestures execute normally. Hide after defaults to three seconds and accepts 1?30 seconds. Contact and an owned panel suspend expiry. Hidden touch areas still receive touches. Detection uses status-bar visibility; unknown visibility retains normal behavior. HyperOS detection remains pending device verification.
+Soft hide in full screen starts off. When enabled, the first valid gesture reveals the handle with one brief bounce and runs no action. Later gestures execute normally. Hide after defaults to three seconds and accepts 1 to 30 seconds. Contact and an owned panel suspend expiry. Hidden touch areas still receive touches. Detection uses status-bar visibility; unknown visibility retains normal behavior. HyperOS detection remains pending device verification.
 
 ## Unreleased panel controls
 
