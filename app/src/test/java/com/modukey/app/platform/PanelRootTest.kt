@@ -82,4 +82,13 @@ class PanelRootTest {
         root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK))
         assertEquals(listOf(PanelDismissReason.OUTSIDE_TOUCH, PanelDismissReason.BACK), reasons)
     }
+    @Test fun `physical volume keys do not request panel dismissal`() {
+        val root = PanelRoot(context)
+        val reasons = mutableListOf<PanelDismissReason>(); root.dismiss = { reasons += it }
+        for (key in listOf(KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN, KeyEvent.KEYCODE_VOLUME_MUTE)) {
+            root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, key))
+            root.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, key))
+        }
+        assertTrue(reasons.isEmpty())
+    }
 }

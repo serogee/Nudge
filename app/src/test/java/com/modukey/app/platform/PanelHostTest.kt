@@ -1,7 +1,10 @@
 package com.modukey.app.platform
 
 import android.animation.ValueAnimator
+import android.content.Intent
+import android.media.AudioManager
 import android.os.Looper
+import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -185,5 +188,17 @@ class PanelHostTest {
         f.windows.removeViewImmediate(f.windows.attached.single())
         assertEquals(listOf(PanelDismissReason.WINDOW_DETACHED), reasons)
         assertTrue(f.errors.isEmpty())
+    }
+    @Test fun `sound broadcasts and settings refresh retain the current window`() {
+        val reasons = mutableListOf<PanelDismissReason>()
+        val f = fixture { reasons += it }
+        f.host.show(spec(PanelAnimation.NONE)); idle(32)
+        val root = f.windows.attached.single(); val snapshots = f.snapshots()
+        app.sendBroadcast(Intent(AudioManager.RINGER_MODE_CHANGED_ACTION))
+        app.contentResolver.notifyChange(Settings.System.CONTENT_URI, null)
+        idle(32)
+        assertTrue(f.snapshots() > snapshots)
+        assertEquals(listOf(root), f.windows.attached)
+        assertTrue(reasons.isEmpty()); assertTrue(f.errors.isEmpty())
     }
 }
