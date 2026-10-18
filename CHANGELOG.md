@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+
+- Set Hold time and Swipe and hold time independently for each handle, from 300 to 3000 ms. Keep 500 ms defaults for existing settings and backups.
+- Choose a background-free Nudge mark from the built-in icon library. Apply the panel's icon color and use Standalone to remove the button container.
+
+### Changed
+
+- Use icon sample 1 with gaps between its three pills throughout the app. Use ExtraBold initials in handle badges.
+- Identify panel and direct gesture choices with a four-square icon and Panel: or Action: prefixes. Add gaps between panel options.
+- Keep wrapped action names centered. Rename Input method picker to Input Method.
+- Label handle and panel previews Visual Preview (Non-interactive).
+
 ## 0.3.0 - 2026-10-18
 
 Changes since v0.2.1, the latest published baseline.
