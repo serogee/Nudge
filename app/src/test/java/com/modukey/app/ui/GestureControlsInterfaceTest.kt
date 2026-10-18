@@ -126,4 +126,47 @@ class GestureControlsInterfaceTest {
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
         rule.onAllNodesWithText("Visual Preview (Non-interactive)").assertCountEquals(2)
     }
+    @Test fun `utility actions can be selected directly and survive a configuration backup`() {
+        val app = ready()
+        val buttons = listOf(PanelButton(action = ButtonAction.CLOSE_PANELS), PanelButton(action = ButtonAction.SCREENSHOT))
+        rule.runOnIdle { app.configuration.update { it.copy(panels = listOf(SavedPanel(settings = PanelConfig(buttons = buttons)))) } }
+        editGestures()
+        rule.onNodeWithText("Volume popup").performScrollTo().performClick()
+        rule.onNodeWithText("Action: Direct action").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToIndex(ButtonAction.CLOSE_PANELS.ordinal)
+        rule.onNodeWithText("Close panels").performClick()
+        rule.onNodeWithText("Save").performClick()
+        rule.onNodeWithText("Action: Close panels + volume popup").performClick()
+        rule.onNode(hasText("Action: Close panels") and hasAnyAncestor(isDialog())).performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToIndex(ButtonAction.SCREENSHOT.ordinal)
+        rule.onNodeWithText("Screenshot").performClick()
+        rule.onNodeWithText("Save").performClick()
+        rule.runOnIdle {
+            val saved = app.configuration.state.value!!
+            assertEquals(ButtonAction.SCREENSHOT, saved.handles.single().target(GestureSlot.SWIPE_1).action!!.action)
+            assertEquals(buttons, saved.panels.single().settings.buttons)
+            assertEquals(saved, com.modukey.app.data.ConfigurationCodec.decode(com.modukey.app.data.ConfigurationCodec.encode(saved)))
+        }
+    }
+    @Test fun `orientation tabs update both live editors and survive recreation without changing settings`() {
+        val app = ready()
+        rule.runOnIdle {
+            app.configuration.update { it.copy(panels = listOf(SavedPanel(name = "Tools"))) }
+            app.status.report(com.modukey.app.platform.ServiceState(connected = true))
+        }
+        val saved = rule.runOnIdle { app.configuration.state.value }
+        rule.onNode(hasText("Handles") and hasClickAction()).performClick()
+        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNodeWithText("Landscape").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+        rule.activityRule.scenario.recreate(); rule.waitForIdle()
+        rule.onNodeWithText("Landscape").assertIsSelected()
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape) }
+        rule.onNode(hasText("Panels") and hasClickAction()).performClick()
+        rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
+        rule.onNodeWithText("Landscape").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+        rule.onNodeWithText("Portrait").performClick()
+        rule.runOnIdle { assertEquals(false, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.state.value) }
+    }
 }
