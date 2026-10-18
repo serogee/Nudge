@@ -39,14 +39,16 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         }
     }
     fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean) {
-        if (this.edge != edge || this.editing != editing || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs) {
+        if (this.edge != edge || this.editing != editing || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
+            this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs) {
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
         this.settings = settings; this.edge = edge; this.editing = editing
         importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
         isClickable = !editing; geometry(); updateSoftHide(); invalidate()
     }
-    private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs, ViewConfiguration.get(context).scaledTouchSlop.toFloat())
+    private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs,
+        ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs)
     fun cancelGesture() { gesture.cancel(); softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry() }
     fun setPanelOpen(open: Boolean) {
         if (panelOpen == open) return
