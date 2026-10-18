@@ -10,6 +10,7 @@
 - Add independent empty panel buttons with container-only, blank, and slash appearances.
 - Add an outside-touch option that passes touches through and keeps the panel open.
 - Add independent button-background and icon opacity controls, including automatic colors.
+- Record bounded panel dismissal reasons and event context in local diagnostics.
 
 ### Changed
 
@@ -24,11 +25,14 @@
 - Make positive Follow handle Y offsets move panels upward.
 - Preserve temporary editor choices during activity recreation and configuration loading.
 - Keep legacy popup flags limited to volume adjustments. Reject empty buttons as direct gesture actions.
+- Keep panels open for the first activity observation, stale events, and ambiguous popup windows. Require a confirmed app transition before app-change dismissal.
+- Track required activity events before opening panels. Keep sound updates and volume controls from causing false app changes.
+- Report unexpected runtime panel window removal and reset its swipe sequence.
 
 ### Pending verification
 
 - Physical Redmi/HyperOS checks for full-screen detection, Back after pass-through touches, popup coexistence, and battery use remain pending.
-- Unexpected panel dismissal investigation is deferred to a separate task. App-change detection remains unchanged.
+- Automated tests reproduce the previous false-dismissal paths. The cause of the reported Redmi incident still needs device diagnostics.
 
 ## 0.2.1 - 2026-10-18
 
