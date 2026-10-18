@@ -53,6 +53,48 @@ class RotationPreviewRuntimeTest {
         override fun hide(animate: Boolean) { spec = null }
         override fun refreshSound() = Unit
     }
+    @Test fun `draft overlays update live but normal windows use approved settings`() {
+        val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
+        val service = controller.get(); destroy = { controller.destroy() }
+        shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+        shadowOf(service.getSystemService(PowerManager::class.java)).setIsInteractive(true)
+        shadowOf(service.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
+        await { app.configuration.state.value != null }
+        val handle = HandleConfig(enabled = true)
+        val panel = SavedPanel(settings = PanelConfig(buttons = listOf(PanelButton())))
+        app.configuration.update { AppConfiguration(enabled = true, handles = listOf(handle), panels = listOf(panel)) }
+        ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
+        await { app.status.state.value.attachedHandleIds == setOf(handle.id) }
+        val windows = Windows(service.getSystemService(WindowManager::class.java), metrics(400, 800))
+        ReflectionHelpers.setField(service, "manager", windows)
+        service.onConfigurationChanged(service.resources.configuration)
+        await { windows.registered.size == 1 }
+        ReflectionHelpers.getField<PanelHost>(service, "panelHost").hide(false)
+        val host = Host(); ReflectionHelpers.setField(service, "panelHost", host)
+        val saved = app.configuration.state.value
+        val token = Any()
+        app.configuration.openHandle(handle.id)
+        app.editor.begin(token, EditorSelection(handle.id))
+        app.configuration.editHandle(handle.id) { it.copy(trigger = it.trigger.copy(lengthDp = 220f)) }
+        await { windows.registered.values.single().height == 220 }
+        assertEquals(saved, app.configuration.state.value)
+        // Backgrounding hides the guide but keeps the draft for the returning editor.
+        app.editor.end(token)
+        await { windows.registered.values.single().height == 120 }
+        assertTrue(app.configuration.draft.value!!.changed)
+        app.configuration.cancelDraft(); app.configuration.openPanel(panel.id)
+        app.editor.begin(token, EditorSelection(handle.id, panel.id))
+        app.configuration.editPanel(panel.id) { it.copy(settings = it.settings.copy(opacity = .4f)) }
+        await { host.spec?.panel?.opacity == .4f && host.spec?.editing == true }
+        app.editor.test(PanelTestRequest(panel.id, handle.id))
+        await { host.spec?.editing == false && host.spec?.panel?.opacity == .4f }
+        assertEquals(saved, app.configuration.state.value)
+        app.configuration.cancelDraft()
+        await { host.spec?.panel?.opacity == panel.settings.opacity }
+        app.editor.end(token)
+        await { host.spec == null && windows.registered.values.single().height == 120 }
+        assertEquals(saved, app.configuration.state.value)
+    }
     @Test fun `live landscape guides map to the left and runtime bottom survives both rotations without duplicates`() {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
         val service = controller.get(); destroy = { controller.destroy() }

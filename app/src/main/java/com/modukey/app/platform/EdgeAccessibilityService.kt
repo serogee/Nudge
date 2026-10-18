@@ -100,11 +100,11 @@ class EdgeAccessibilityService : AccessibilityService() {
             }, ContextCompat.RECEIVER_NOT_EXPORTED)
             registered = true
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
-            scope?.launch { app.configuration.state.filterNotNull().collect { frames?.request() } }
+            scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.editor.state.collect { screenshots?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
                 val selection = app.editor.state.value
-                if (selection?.preview == true && selection.matches(request.handleId, request.panelId) && app.configuration.state.value?.panel(request.panelId) != null) {
+                if (selection?.preview == true && selection.matches(request.handleId, request.panelId) && app.configuration.preview.value?.panel(request.panelId) != null) {
                     dismissPanel(PanelCloseReason.TEST_REPLACED); open = OpenPanel(request.panelId, request.handleId, testing = true)
                     panelOpenedAt = SystemClock.uptimeMillis(); refresh()
                 }
@@ -202,7 +202,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private fun runButton(button: PanelButton) {
         val owner = open ?: return
-        val config = app.configuration.state.value ?: return
+        val config = (if (owner.testing) app.configuration.preview.value else app.configuration.state.value) ?: return
         val h = config.handle(owner.handleId)
         if (!owner.testing && (h == null || reason(config, h) != HandleAvailability.ACTIVE)) { dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE); refresh(); return }
         val p = config.panel(owner.panelId)?.settings ?: return
@@ -227,9 +227,10 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private fun render() {
         if (scope == null) return
-        val config = app.configuration.state.value ?: return
+        val selected = app.editor.state.value
+        val config = (if (selected != null) app.configuration.preview.value else app.configuration.state.value) ?: return
         if (softHideForeground != foreground) { views.values.forEach { it.resetSoftHide() }; softHideForeground = foreground }
-        val s = screen(); val selected = app.editor.state.value
+        val s = screen()
         val preview = selected?.landscape?.takeIf { open?.testing != true }?.let { PreviewGeometry.calculate(s.width, s.height, s.insets, s.rotation, it) }
         val guideScreen = preview?.let { ScreenSpace(it.width, it.height, s.density, it.insets, it.landscape) } ?: s
         val editing = selected != null && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
