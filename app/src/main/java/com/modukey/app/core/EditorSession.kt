@@ -5,8 +5,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class EditorSelection(val handleId: String, val panelIndex: Int? = null)
-data class PanelTestRequest(val handleId: String, val panelIndex: Int)
+data class EditorSelection(val handleId: String? = null, val panelId: String? = null)
+data class PanelTestRequest(val panelId: String, val handleId: String? = null)
 class EditorSession {
     private var owner: Any? = null
     private val mutable = MutableStateFlow<EditorSelection?>(null)

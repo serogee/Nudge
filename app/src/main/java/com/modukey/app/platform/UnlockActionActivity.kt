@@ -31,8 +31,9 @@ class UnlockActionActivity : ComponentActivity() {
                 val request = app.unlocks.take(token)
                 val config = app.configuration.state.value
                 val handle = config?.handle(request?.handleId)
-                val button = handle?.panels?.flatMap { it.buttons }?.firstOrNull { it.id == request?.button?.id }
-                if (request != null && config != null && handle != null && button != null && button == request.button && app.status.state.value.connected && (request.testing || (config.enabled && handle.enabled && handle.trigger.lockScreenEnabled)) &&
+                val button = config?.let { request?.currentButton(it) }
+                if (request != null && config != null && button != null && button == request.button && app.status.state.value.connected &&
+                    (request.testing || (handle != null && config.enabled && handle.enabled && handle.trigger.lockScreenEnabled)) &&
                     getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
                     try { PanelActions.launchUnlocked(this@UnlockActionActivity, button, request.policy) }
                     catch (_: RuntimeException) { Toast.makeText(this@UnlockActionActivity, R.string.action_failed, Toast.LENGTH_SHORT).show() }

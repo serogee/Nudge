@@ -21,7 +21,9 @@ private val Application.preferences by preferencesDataStore("trigger_settings", 
 
 class NudgeApplication : Application() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    val configuration by lazy { ConfigurationController(DataStoreConfigurationRepository(preferences), scope) }
+    val configuration by lazy { ConfigurationController(DataStoreConfigurationRepository(preferences, ::migratedPanelName), scope) }
+    fun migratedPanelName(name: String, handle: Int, panel: Int): String = getString(R.string.migrated_panel_name,
+        name.ifBlank { getString(R.string.handle_name, handle + 1) }, panel + 1)
     val editor = EditorSession()
     val icons by lazy { IconRepository(this) }
     val unlocks = UnlockRequests()

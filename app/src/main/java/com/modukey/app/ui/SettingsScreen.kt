@@ -7,6 +7,11 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.modukey.app.platform.HyperOsSettings
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -26,7 +31,6 @@ import com.modukey.app.updates.*
     val busy by vm.backupBusy.collectAsStateWithLifecycle(); val pending by vm.importPreview.collectAsStateWithLifecycle()
     val export=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let(vm::export) }
     val importLauncher=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::readImport) }
-    var helpOpen by remember { mutableStateOf(false) }
     Section(R.string.backup) {
         Help(R.string.backup_help)
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -35,18 +39,7 @@ import com.modukey.app.updates.*
         }
         if(busy) CircularProgressIndicator()
     }
-    Section(R.string.hyperos_setup) {
-        Help(R.string.autostart_note)
-        OutlinedButton(onClick={ helpOpen=!helpOpen }) { Text(t(R.string.hyperos_setup)) }
-        if(helpOpen) {
-            Text(t(R.string.connection),style=MaterialTheme.typography.titleSmall); Help(R.string.setup_accessibility)
-            OutlinedButton(onClick={ openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text(t(R.string.open_accessibility)) }
-            Text(t(R.string.restricted_settings),style=MaterialTheme.typography.titleSmall); Help(R.string.setup_restricted)
-            OutlinedButton(onClick={ openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) }) { Text(t(R.string.app_info)) }
-            Text(t(R.string.autostart),style=MaterialTheme.typography.titleSmall); Help(R.string.setup_autostart)
-            Text(t(R.string.battery_recovery),style=MaterialTheme.typography.titleSmall); Help(R.string.setup_battery); Help(R.string.setup_recents); Help(R.string.setup_recovery)
-        }
-    }
+    HyperOsSetup(vm, openSettings)
     Section(R.string.dnd) {
         Help(R.string.policy_required); Help(R.string.dnd_other_rule)
         OutlinedButton(onClick={ openSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }) { Text(t(R.string.open_policy)) }
@@ -62,8 +55,9 @@ import com.modukey.app.updates.*
     pending?.let { imported ->
         var replace by remember(imported) { mutableStateOf(false) }
         AlertDialog(onDismissRequest={ vm.importPreview.value=null },title={ Text(t(R.string.import_config)) },text={ Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            Text(t(R.string.import_summary,imported.handles.size,imported.handles.sumOf { it.panels.sumOf { p -> p.buttons.size } }))
+            Text(t(R.string.import_summary,imported.handles.size,imported.panels.size,imported.panels.sumOf { it.settings.buttons.size }))
             imported.handles.forEach { Text(context.handleLabel(imported,it)) }
+            imported.panels.forEach { Text(context.panelLabel(it)) }
             Row { RadioButton(!replace,{ replace=false }); TextButton(onClick={ replace=false }) { Text(t(R.string.import_add)) } }
             Help(R.string.import_add_help)
             Row { RadioButton(replace,{ replace=true }); TextButton(onClick={ replace=true }) { Text(t(R.string.import_replace)) } }
@@ -75,7 +69,7 @@ import com.modukey.app.updates.*
 @Composable private fun UpdateControls(config:AppConfiguration,vm:NudgeViewModel) {
     val context=LocalContext.current; val state by vm.updates.collectAsStateWithLifecycle()
     fun open(url:String) { try { context.startActivity(Intent(Intent.ACTION_VIEW,url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_:android.content.ActivityNotFoundException) { vm.tell(R.string.no_browser) } }
-    Toggle(R.string.include_prereleases,R.string.prerelease_help,config.includePrereleases,vm::setIncludePrereleases)
+    Toggle(R.string.include_prereleases,R.string.prerelease_help,config.includePrereleases,default=false,change=vm::setIncludePrereleases)
     OutlinedButton(onClick=vm::checkForUpdates,enabled=state!=UpdateState.Checking) { Text(t(if(state==UpdateState.Checking) R.string.checking else R.string.check_updates)) }
     when(val s=state) {
         UpdateState.Idle -> Help(R.string.update_idle)
@@ -99,6 +93,38 @@ import com.modukey.app.updates.*
                     ?: Help(R.string.update_apk_missing)
             }
             OutlinedButton(onClick={ open(s.release.pageUrl) }) { Text(t(R.string.view_notes)) }
+        }
+    }
+}
+
+
+@Composable fun HyperOsSetup(vm: NudgeViewModel, openSettings: (String) -> Unit) {
+    val context = LocalContext.current
+    var open by rememberSaveable { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
+                Text(t(R.string.hyperos_setup), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = { open = !open }) {
+                    Icon(AppIcons.Down, t(if (open) R.string.collapse_setup else R.string.expand_setup), Modifier.rotate(if (open) 180f else 0f))
+                }
+            }
+            Help(R.string.autostart_note)
+            if (open) {
+                Text(t(R.string.open_accessibility), style = MaterialTheme.typography.titleSmall)
+                Help(R.string.setup_accessibility)
+                OutlinedButton(onClick = { openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text(t(R.string.open_accessibility)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Open, null, Modifier.size(16.dp)) }
+                Text(t(R.string.restricted_settings), style = MaterialTheme.typography.titleSmall)
+                Help(R.string.setup_restricted)
+                OutlinedButton(onClick = { openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) }) { Text(t(R.string.app_info)) }
+                Text(t(R.string.autostart), style = MaterialTheme.typography.titleSmall)
+                Help(R.string.setup_autostart)
+                OutlinedButton(onClick = { if (!HyperOsSettings.openAutostart(context)) vm.tell(R.string.autostart_unavailable) }) {
+                    Text(t(R.string.open_autostart)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Open, null, Modifier.size(16.dp))
+                }
+                Text(t(R.string.battery_recovery), style = MaterialTheme.typography.titleSmall)
+                Help(R.string.setup_battery); Help(R.string.setup_recents); Help(R.string.setup_recovery)
+            }
         }
     }
 }

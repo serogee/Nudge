@@ -1,0 +1,248 @@
+{
+  "schema": 1,
+  "enabled": true,
+  "includePrereleases": true,
+  "handles": [
+    {
+      "id": "legacy-side",
+      "name": "Side",
+      "enabled": true,
+      "volumeSequenceMs": 4500,
+      "trigger": {
+        "portrait": {
+          "edge": "BOTTOM",
+          "position": 0.23
+        },
+        "landscape": {
+          "edge": "LEFT",
+          "position": 0.72
+        },
+        "landscapeEnabled": true,
+        "landscapeOverride": true,
+        "lockScreen": true,
+        "length": 144,
+        "depth": 22,
+        "visible": true,
+        "indicatorLength": 0.8,
+        "indicatorThickness": 0.4,
+        "color": 4285249512,
+        "opacity": 0.75,
+        "corner": 7,
+        "swipeDistance": 36,
+        "swipeTime": 750,
+        "haptics": true,
+        "excluded": [
+          "game.example"
+        ]
+      },
+      "bindings": {
+        "SWIPE_1": "PANEL_1",
+        "SWIPE_2": "VOLUME",
+        "SWIPE_3": "NONE",
+        "SWIPE_HOLD": "NONE",
+        "TAP": "NONE",
+        "HOLD": "PANEL_3"
+      },
+      "panels": [
+        {
+          "portrait": {
+            "mode": "FIXED",
+            "direction": "VERTICAL",
+            "crossCount": 2,
+            "maximumLines": 3,
+            "extent": 0.75,
+            "buttonSize": 64,
+            "follow": false,
+            "x": 0.2,
+            "y": 0.8,
+            "offsetX": -22,
+            "offsetY": 14
+          },
+          "landscape": {
+            "mode": "SCROLLABLE",
+            "direction": "HORIZONTAL",
+            "crossCount": 3,
+            "maximumLines": 4,
+            "extent": 0.65,
+            "buttonSize": 72,
+            "follow": true,
+            "x": 0.4,
+            "y": 0.6,
+            "offsetX": 18,
+            "offsetY": -12
+          },
+          "landscapeOverride": true,
+          "outside": "PASS_THROUGH",
+          "background": 4279312947,
+          "opacity": 0.85,
+          "corner": 18,
+          "shape": "SQUIRCLE",
+          "iconCorner": 0.3,
+          "iconPack": "example.pack",
+          "animation": "SCALE",
+          "iconBackground": false,
+          "automaticButtonColor": false,
+          "buttonColor": 4282137662,
+          "automaticIconColor": false,
+          "iconColor": 4293454056,
+          "buttons": [
+            {
+              "id": "legacy-button-0",
+              "action": "VOLUME_UP",
+              "appPackage": "",
+              "appActivity": "",
+              "appLabel": "",
+              "iconPackage": "",
+              "iconDrawable": "",
+              "builtInIcon": "CAMERA",
+              "showVolumePopup": true,
+              "iconContainer": "STANDALONE"
+            },
+            {
+              "id": "legacy-button-1",
+              "action": "OPEN_APP",
+              "appPackage": "example.app1",
+              "appActivity": "example.app1.Main",
+              "appLabel": "App 1",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_1",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-2",
+              "action": "OPEN_APP",
+              "appPackage": "example.app2",
+              "appActivity": "example.app2.Main",
+              "appLabel": "App 2",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_2",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-3",
+              "action": "OPEN_APP",
+              "appPackage": "example.app3",
+              "appActivity": "example.app3.Main",
+              "appLabel": "App 3",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_3",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-4",
+              "action": "OPEN_APP",
+              "appPackage": "example.app4",
+              "appActivity": "example.app4.Main",
+              "appLabel": "App 4",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_4",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-5",
+              "action": "OPEN_APP",
+              "appPackage": "example.app5",
+              "appActivity": "example.app5.Main",
+              "appLabel": "App 5",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_5",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-6",
+              "action": "OPEN_APP",
+              "appPackage": "example.app6",
+              "appActivity": "example.app6.Main",
+              "appLabel": "App 6",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_6",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-7",
+              "action": "OPEN_APP",
+              "appPackage": "example.app7",
+              "appActivity": "example.app7.Main",
+              "appLabel": "App 7",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_7",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-8",
+              "action": "OPEN_APP",
+              "appPackage": "example.app8",
+              "appActivity": "example.app8.Main",
+              "appLabel": "App 8",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_8",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-9",
+              "action": "OPEN_APP",
+              "appPackage": "example.app9",
+              "appActivity": "example.app9.Main",
+              "appLabel": "App 9",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_9",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-10",
+              "action": "OPEN_APP",
+              "appPackage": "example.app10",
+              "appActivity": "example.app10.Main",
+              "appLabel": "App 10",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_10",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            },
+            {
+              "id": "legacy-button-11",
+              "action": "OPEN_APP",
+              "appPackage": "example.app11",
+              "appActivity": "example.app11.Main",
+              "appLabel": "App 11",
+              "iconPackage": "example.pack",
+              "iconDrawable": "icon_11",
+              "builtInIcon": "",
+              "showVolumePopup": false,
+              "iconContainer": "DEFAULT"
+            }
+          ]
+        },
+        {
+          "portrait": {},
+          "landscape": {},
+          "buttons": []
+        },
+        {
+          "portrait": {},
+          "landscape": {},
+          "buttons": []
+        }
+      ]
+    }
+  ]
+}

@@ -29,20 +29,44 @@ class HandleGestureTest {
         val bottom = gesture(Edge.BOTTOM); bottom.down(0f, 100f, 0); assertEquals(GestureKind.SWIPE, bottom.up(0f, 70f, 100))
     }
     @Test fun `volume deadline cycles skips gaps and expires at boundary`() {
-        val h = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME, GestureSlot.SWIPE_3 to GestureTarget.PANEL_1))
+        val h = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME, GestureSlot.SWIPE_3 to GestureTarget.panel("tools")))
         val s = GestureSessions()
         val first = s.next(h, GestureKind.SWIPE, 0); assertEquals(GestureTarget.VOLUME to 0, first)
         s.submitted(h, first.second, first.first, 0)
-        assertEquals(GestureTarget.PANEL_1 to 2, s.next(h, GestureKind.SWIPE, 2999))
+        assertEquals(GestureTarget.panel("tools") to 2, s.next(h, GestureKind.SWIPE, 2999))
         assertEquals(GestureTarget.VOLUME to 0, s.next(h, GestureKind.SWIPE, 3000))
-        s.submitted(h, 2, GestureTarget.PANEL_1, 3001)
+        s.submitted(h, 2, GestureTarget.panel("tools"), 3001)
         assertEquals(GestureTarget.VOLUME to 0, s.next(h, GestureKind.SWIPE, 100000))
     }
     @Test fun `handles are independent and tap resets only its handle`() {
         val a = HandleConfig(); val b = HandleConfig(); val s = GestureSessions()
-        s.submitted(a, 0, GestureTarget.PANEL_1, 0); s.submitted(b, 0, GestureTarget.PANEL_1, 0)
+        s.submitted(a, 0, GestureTarget.panel("tools"), 0); s.submitted(b, 0, GestureTarget.panel("tools"), 0)
         s.next(a, GestureKind.TAP, 100); s.reset(b.id)
         assertEquals(GestureTarget.VOLUME to 0, s.next(a, GestureKind.SWIPE, 100))
         assertEquals(GestureTarget.VOLUME to 0, s.next(b, GestureKind.SWIPE, 100))
+    }
+    @Test fun `combined targets advance while their panel is open and none stages are skipped`() {
+        val target = GestureTarget.panel("tools", volume = true)
+        val h = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_3 to GestureTarget.VOLUME))
+        val sessions = GestureSessions()
+        assertEquals(target to 0, sessions.next(h, GestureKind.SWIPE, 0))
+        sessions.submitted(h, 0, target, 0)
+        assertEquals(GestureTarget.VOLUME to 2, sessions.next(h, GestureKind.SWIPE, 100_000))
+        sessions.reset(h.id)
+        assertEquals(target to 0, sessions.next(h, GestureKind.SWIPE, 100_001))
+    }
+    @Test fun `direct swipe actions cycle skip gaps and reset exactly at the saved deadline`() {
+        val up=GestureTarget.direct(PanelButton(action=ButtonAction.VOLUME_UP))
+        val down=GestureTarget.direct(PanelButton(action=ButtonAction.VOLUME_DOWN))
+        val h=HandleConfig(volumeSequenceMs=5_000,bindings=mapOf(GestureSlot.SWIPE_1 to up,GestureSlot.SWIPE_3 to down,GestureSlot.HOLD to down))
+        val sessions=GestureSessions()
+        assertEquals(up to 0,sessions.next(h,GestureKind.SWIPE,0))
+        sessions.submitted(h,0,up,0)
+        assertEquals(down to 2,sessions.next(h,GestureKind.SWIPE,4_999))
+        assertEquals(up to 0,sessions.next(h,GestureKind.SWIPE,5_000))
+        sessions.submitted(h,2,down,5_000)
+        assertEquals(up to 0,sessions.next(h,GestureKind.SWIPE,5_001))
+        assertEquals(down to null,sessions.next(h,GestureKind.HOLD,5_002))
+        assertEquals(up to 0,sessions.next(h,GestureKind.SWIPE,5_003))
     }
 }

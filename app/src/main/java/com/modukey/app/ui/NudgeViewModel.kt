@@ -30,6 +30,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val error = app.configuration.error
     val status = app.status.state
     val accessibilityEnabled = MutableStateFlow(false)
+    val policyAccess = MutableStateFlow(false)
     val launchableApps = MutableStateFlow<List<LaunchableApp>>(emptyList())
     val appsLoaded = MutableStateFlow(false)
     val iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
@@ -49,31 +50,40 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun edit(change: (AppConfiguration) -> AppConfiguration) = app.configuration.update(change)
     fun editHandle(id: String, change: (HandleConfig) -> HandleConfig) = edit { it.editHandle(id, change) }
     fun editTrigger(id: String, change: (TriggerSettings) -> TriggerSettings) = editHandle(id) { it.copy(trigger = change(it.trigger)) }
-    fun editPanel(id: String, index: Int, change: (PanelConfig) -> PanelConfig) = editHandle(id) { h -> h.copy(panels = h.panels.mapIndexed { i, p -> if (i == index) change(p) else p }) }
-    fun editLayout(id: String, index: Int, landscape: Boolean, change: (PanelLayout) -> PanelLayout) = editPanel(id, index) { p ->
+    fun editSavedPanel(id: String, change: (SavedPanel) -> SavedPanel) = edit { it.editPanel(id, change) }
+    fun editPanel(id: String, change: (PanelConfig) -> PanelConfig) = editSavedPanel(id) { it.copy(settings = change(it.settings)) }
+    fun editLayout(id: String, landscape: Boolean, change: (PanelLayout) -> PanelLayout) = editPanel(id) { p ->
         if (landscape && p.landscapeOverride) p.copy(landscape = change(p.landscape)) else p.copy(portrait = change(p.portrait))
     }
-    fun editButton(id: String, panel: Int, button: String, change: (PanelButton) -> PanelButton) = editPanel(id, panel) { p -> p.copy(buttons = p.buttons.map { if (it.id == button) change(it) else it }) }
+    fun addPanel(): String {
+        val p = SavedPanel(); edit { it.copy(panels = it.panels + p) }; flush(); return p.id
+    }
+    fun removePanel(id: String) { edit { it.removePanel(id) }; flush() }
+    fun duplicatePanel(id: String) { edit { c -> c.panel(id)?.let { c.copy(panels = c.panels + it.duplicate()) } ?: c }; flush() }
+    fun reorderPanel(id: String, target: Int) = edit { c -> c.copy(panels = moved(c.panels, c.panels.indexOfFirst { it.id == id }, target)) }
     fun addHandle(): String {
         val h = HandleConfig(); edit { it.copy(handles = it.handles + h) }; flush(); return h.id
     }
     fun duplicate(id: String) { edit { c -> c.handle(id)?.let { c.copy(handles = c.handles + it.duplicate()) } ?: c }; flush() }
     fun remove(id: String) { edit { it.copy(handles = it.handles.filterNot { h -> h.id == id }) }; flush() }
-    fun moveHandle(id: String, delta: Int) = edit { c -> c.copy(handles = moved(c.handles, c.handles.indexOfFirst { it.id == id }, delta)) }
-    fun moveButton(id: String, panel: Int, button: String, delta: Int) = editPanel(id, panel) { p -> p.copy(buttons = moved(p.buttons, p.buttons.indexOfFirst { it.id == button }, delta)) }
-    private fun <T> moved(items: List<T>, index: Int, delta: Int): List<T> {
-        if (index !in items.indices || index + delta !in items.indices) return items
-        return items.toMutableList().apply { val value = removeAt(index); add(index + delta, value) }
+    fun reorderHandle(id: String, target: Int) = edit { c -> c.copy(handles = moved(c.handles, c.handles.indexOfFirst { it.id == id }, target)) }
+    fun reorderButton(id: String, button: String, target: Int) = editPanel(id) { p -> p.copy(buttons = moved(p.buttons, p.buttons.indexOfFirst { it.id == button }, target)) }
+    private fun <T> moved(items: List<T>, index: Int, target: Int): List<T> {
+        if (index !in items.indices || target !in items.indices || index == target) return items
+        return items.toMutableList().apply { val value = removeAt(index); add(target, value) }
     }
     fun resetHandle(id: String) { editHandle(id) { HandleConfig(id = it.id, name = it.name, enabled = it.enabled) }; flush() }
     fun flush() = app.configuration.flush()
     fun retrySaving() = app.configuration.retry()
-    fun beginEditor(token: Any, id: String, panel: Int?) = app.editor.begin(token, EditorSelection(id, panel))
+    fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null) = app.editor.begin(token, EditorSelection(handleId, panelId))
     fun endEditor(token: Any) = app.editor.end(token)
-    fun testPanel(id: String, panel: Int) {
-        if (status.value.connected) app.editor.test(PanelTestRequest(id, panel)) else tell(R.string.preview_unavailable)
+    fun testPanel(id: String, previewHandleId: String?) {
+        if (status.value.connected) app.editor.test(PanelTestRequest(id, previewHandleId)) else tell(R.string.preview_unavailable)
     }
-    fun refreshPermissions() { accessibilityEnabled.value = AccessibilityPermission.enabled(app) }
+    fun refreshPermissions() {
+        accessibilityEnabled.value = AccessibilityPermission.enabled(app)
+        policyAccess.value = app.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
+    }
     fun checkForUpdates() = updateChecker.check(configuration.value?.includePrereleases ?: false)
     fun setIncludePrereleases(value: Boolean) {
         if (configuration.value?.includePrereleases == value) return
@@ -123,7 +133,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
                             if (bytes.size() + count > ConfigurationCodec.MAX_BYTES) throw IOException("backup_size")
                             bytes.write(buffer, 0, count)
                         }
-                        ConfigurationCodec.decode(bytes.toString("UTF-8"))
+                        ConfigurationCodec.decode(bytes.toString("UTF-8"), migratedName = app::migratedPanelName)
                     } ?: throw IOException()
                 }
             } catch (e: IOException) { tell(when (e.message) { "backup_size" -> R.string.backup_size; "configuration_version" -> R.string.configuration_version; "configuration_invalid" -> R.string.configuration_invalid; else -> R.string.backup_failed }) }
@@ -133,7 +143,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun applyImport(replace: Boolean) {
         val imported = importPreview.value ?: return
-        edit { current -> if (replace) imported.copy(enabled = false) else current.copy(handles = current.handles + imported.handles.map { it.duplicate() }) }
+        edit { current -> if (replace) imported.copy(enabled = false) else current.addCopies(imported) }
         importPreview.value = null; flush(); tell(R.string.backup_imported)
     }
     fun inspectDiagnostics(ready: (String) -> Unit) {

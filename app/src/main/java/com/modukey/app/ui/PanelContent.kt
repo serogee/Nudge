@@ -43,33 +43,33 @@ fun PanelContent(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometr
     val padding = with(density) { geometry.padding.toDp() }
     val shown = panel.buttons.take(geometry.visibleCount)
     Surface(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(panel.cornerDp.dp),
-        color = Color(panel.background).copy(alpha = panel.opacity), contentColor = Color.White) {
+        color = Color(panel.background).copy(alpha = panel.opacity), contentColor = contrastOn(Color(panel.background))) {
         if (shown.isEmpty()) Box(Modifier.padding(padding), contentAlignment = androidx.compose.ui.Alignment.Center) { Text(stringResource(R.string.no_buttons), style = MaterialTheme.typography.labelSmall) }
         else if (layout.mode == PanelMode.SCROLLABLE) {
             if (layout.direction == PanelDirection.VERTICAL) LazyVerticalGrid(columns = GridCells.Fixed(geometry.crossCount),
                 modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(padding), userScrollEnabled = interactive,
                 horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
-                items(shown, key = { it.id }) { b -> ActionButton(b, panel, cell, state, interactive) { onAction(b) } }
+                items(shown, key = { it.id }) { b -> PanelButtonFace(b, panel, cell, state, interactive) { onAction(b) } }
             } else LazyHorizontalGrid(rows = GridCells.Fixed(geometry.crossCount), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(padding), userScrollEnabled = interactive,
                 horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
-                items(shown, key = { it.id }) { b -> ActionButton(b, panel, cell, state, interactive) { onAction(b) } }
+                items(shown, key = { it.id }) { b -> PanelButtonFace(b, panel, cell, state, interactive) { onAction(b) } }
             }
         } else if (layout.direction == PanelDirection.VERTICAL) {
             Column(Modifier.padding(padding), verticalArrangement = Arrangement.spacedBy(gap)) {
                 shown.chunked(geometry.crossCount).forEach { line -> Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                    line.forEach { b -> ActionButton(b, panel, cell, state, interactive) { onAction(b) } }
+                    line.forEach { b -> PanelButtonFace(b, panel, cell, state, interactive) { onAction(b) } }
                 } }
             }
         } else Row(Modifier.padding(padding), horizontalArrangement = Arrangement.spacedBy(gap)) {
             shown.chunked(geometry.crossCount).forEach { line -> Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                line.forEach { b -> ActionButton(b, panel, cell, state, interactive) { onAction(b) } }
+                line.forEach { b -> PanelButtonFace(b, panel, cell, state, interactive) { onAction(b) } }
             } }
         }
     }
 }
 
 @Composable
-private fun ActionButton(button: PanelButton, panel: PanelConfig, cell: androidx.compose.ui.unit.Dp, state: SoundState, interactive: Boolean, action: () -> Unit) {
+fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.compose.ui.unit.Dp, state: SoundState = SoundState(), interactive: Boolean = false, action: () -> Unit = {}) {
     val context = LocalContext.current
     val title = context.buttonLabel(button)
     val selected = when (button.action) {
@@ -81,45 +81,53 @@ private fun ActionButton(button: PanelButton, panel: PanelConfig, cell: androidx
     }
     val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND)
     val description = if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
-    val shape = when (panel.iconShape) {
-        IconShape.CIRCLE -> CircleShape
-        IconShape.ROUNDED_SQUARE -> RoundedCornerShape((panel.iconCornerFraction * 100).toInt())
-        IconShape.SQUIRCLE -> remember(panel.iconCornerFraction) { SquircleShape(panel.iconCornerFraction) }
+    val shape = iconShape(panel)
+    val container = when (button.iconContainer) {
+        IconContainer.DEFAULT -> panel.iconBackground
+        IconContainer.CONTAINER -> true
+        IconContainer.STANDALONE -> false
     }
-    Box(Modifier.size(cell).clip(shape).background(if (selected) Color(0xFF426523) else Color.White.copy(alpha = 0.09f))
+    val background = if (panel.automaticButtonColor) {
+        if (selected) Color(0xFF3482FF) else if (Color(panel.background).luminance() < .5f) Color(0xFF3C3C3E) else Color(0xFFE1E3E5)
+    } else Color(panel.buttonColor)
+    val behind = if (container) background else Color(panel.background)
+    val tint = if (panel.automaticIconColor) contrastOn(behind) else Color(panel.iconColor)
+    Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(background) else Modifier)
         .then(if (interactive) Modifier.clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
         .semantics { contentDescription = description }, contentAlignment = androidx.compose.ui.Alignment.Center) {
-        ButtonGraphic(button, panel.iconPack, Modifier.size(cell * 0.5f).clip(shape))
+        ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape), tint, cell.value.toInt())
     }
 }
 
 @Composable
-fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifier) {
+fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifier, tint: Color = MaterialTheme.colorScheme.onSurface, sizeDp: Int = 48) {
+    button.icon.builtIn?.let { Icon(AppIcons.library(it), null, modifier, tint = tint); return }
     val app = LocalContext.current.applicationContext as NudgeApplication
     val density = LocalDensity.current.density
-    val bitmap by produceState<ImageBitmap?>(null, button.action, button.appPackage, button.appActivity, button.icon, pack, density) {
-        value = app.icons.icon(button, pack, (48 * density).toInt())?.asImageBitmap()
+    val bitmap by produceState<ImageBitmap?>(null, button.action, button.appPackage, button.appActivity, button.icon, pack, density, sizeDp) {
+        value = null
+        value = app.icons.icon(button, pack, (sizeDp * density).toInt())?.asImageBitmap()
     }
     if (bitmap != null) Image(bitmap!!, contentDescription = null, modifier = modifier)
     else when (button.action) {
         ButtonAction.NUDGE_SETTINGS -> Image(painterResource(R.drawable.ic_modukey), null, modifier)
-        ButtonAction.PHONE_SETTINGS -> Icon(Icons.Outlined.Settings, null, modifier, tint = Color.White)
+        ButtonAction.PHONE_SETTINGS -> Icon(Icons.Outlined.Settings, null, modifier, tint = tint)
         else -> Canvas(modifier) {
             val u = size.minDimension / 24f
             fun p(x: Float, y: Float) = Offset(x * u, y * u)
-            fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(Color.White, p(x1, y1), p(x2, y2), 1.8f * u, StrokeCap.Round)
+            fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(tint, p(x1, y1), p(x2, y2), 1.8f * u, StrokeCap.Round)
             when (button.action) {
                 ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN, ButtonAction.MEDIA_MUTE -> {
                     val path = Path().apply { moveTo(3*u, 9*u); lineTo(7*u, 9*u); lineTo(12*u, 5*u); lineTo(12*u, 19*u); lineTo(7*u, 15*u); lineTo(3*u, 15*u); close() }
-                    drawPath(path, Color.White)
+                    drawPath(path, tint)
                     if (button.action == ButtonAction.MEDIA_MUTE) { line(16f, 9f, 21f, 15f); line(21f, 9f, 16f, 15f) }
                     else { line(16f, 12f, 22f, 12f); if (button.action == ButtonAction.VOLUME_UP) line(19f, 9f, 19f, 15f) }
                 }
                 ButtonAction.SILENT -> { line(7f, 16f, 17f, 16f); line(7f, 16f, 8f, 7f); line(8f, 7f, 16f, 7f); line(16f, 7f, 17f, 16f); line(10f, 20f, 14f, 20f); line(3f, 3f, 21f, 21f) }
-                ButtonAction.VIBRATE -> { drawRect(Color.White, p(8f, 4f), Size(8*u, 16*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.6f*u)); line(4f, 8f, 3f, 12f); line(3f, 12f, 4f, 16f); line(20f, 8f, 21f, 12f); line(21f, 12f, 20f, 16f) }
-                ButtonAction.DND -> { drawCircle(Color.White, 9*u, p(12f, 12f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); line(7f, 12f, 17f, 12f) }
-                ButtonAction.LOCK -> { drawRect(Color.White, p(5f, 10f), Size(14*u, 11*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); drawArc(Color.White, 180f, 180f, false, p(8f, 2f), Size(8*u, 14*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); line(12f, 14f, 12f, 17f) }
-                else -> for (x in listOf(4f, 14f)) for (y in listOf(4f, 14f)) drawRect(Color.White, p(x,y), Size(6*u,6*u))
+                ButtonAction.VIBRATE -> { drawRect(tint, p(8f, 4f), Size(8*u, 16*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.6f*u)); line(4f, 8f, 3f, 12f); line(3f, 12f, 4f, 16f); line(20f, 8f, 21f, 12f); line(21f, 12f, 20f, 16f) }
+                ButtonAction.DND -> { drawCircle(tint, 9*u, p(12f, 12f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); line(7f, 12f, 17f, 12f) }
+                ButtonAction.LOCK -> { drawRect(tint, p(5f, 10f), Size(14*u, 11*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); drawArc(tint, 180f, 180f, false, p(8f, 2f), Size(8*u, 14*u), style = androidx.compose.ui.graphics.drawscope.Stroke(1.8f*u)); line(12f, 14f, 12f, 17f) }
+                else -> for (x in listOf(4f, 14f)) for (y in listOf(4f, 14f)) drawRect(tint, p(x,y), Size(6*u,6*u))
             }
         }
     }
@@ -137,4 +145,17 @@ private class SquircleShape(private val fraction: Float) : Shape {
         }
         return Outline.Generic(p)
     }
+}
+
+
+@Composable fun iconShape(panel: PanelConfig): Shape = when (panel.iconShape) {
+    IconShape.CIRCLE -> CircleShape
+    IconShape.ROUNDED_SQUARE -> RoundedCornerShape((panel.iconCornerFraction * 100).toInt())
+    IconShape.SQUIRCLE -> remember(panel.iconCornerFraction) { SquircleShape(panel.iconCornerFraction) }
+}
+
+fun contrastOn(background: Color): Color {
+    val dark = Color(0xFF202223)
+    val luminance = background.luminance()
+    return if ((luminance + .05f) / (dark.luminance() + .05f) >= 1.05f / (luminance + .05f)) dark else Color.White
 }
