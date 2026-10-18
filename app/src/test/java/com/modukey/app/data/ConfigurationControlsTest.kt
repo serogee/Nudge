@@ -36,4 +36,13 @@ class ConfigurationControlsTest {
         assertTrue(target.volume)
         assertFalse(target.action!!.showVolumePopup)
     }
+    @Test fun `empty cells retain independent appearances and cannot become direct actions`() {
+        val buttons = EmptyAppearance.entries.map { PanelButton(action = ButtonAction.EMPTY, emptyAppearance = it) }
+        val panel = SavedPanel(settings = PanelConfig(buttons = buttons))
+        val value = ConfigurationCodec.decode(ConfigurationCodec.encode(AppConfiguration(panels = listOf(panel))))
+        assertEquals(buttons, value.panels.single().settings.buttons)
+        assertEquals(buttons.map { it.emptyAppearance }, value.panels.single().duplicate().settings.buttons.map { it.emptyAppearance })
+        val invalid = AppConfiguration(handles = listOf(HandleConfig(bindings = mapOf(GestureSlot.TAP to GestureTarget.direct(buttons.first())))))
+        try { ConfigurationCodec.decode(ConfigurationCodec.encode(invalid)); fail("Accepted an empty direct action") } catch (_: java.io.IOException) { }
+    }
 }

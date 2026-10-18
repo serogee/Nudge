@@ -50,6 +50,7 @@ object ConfigurationCodec {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
                             if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
+                            require(target.action?.action != ButtonAction.EMPTY)
                         }
                     }
                 }

@@ -128,7 +128,7 @@ class ConfigurationCodecTest {
         assertEquals(PanelAnimation.SLIDE,reopened.panels.single().settings.closeAnimation)
     }
     @Test fun `all direct actions roundtrip and copies own independent action ids`() {
-        val handles=ButtonAction.entries.map { action -> HandleConfig(enabled=true,bindings=mapOf(
+        val handles=ButtonAction.entries.filter { it != ButtonAction.EMPTY }.map { action -> HandleConfig(enabled=true,bindings=mapOf(
             GestureSlot.SWIPE_1 to GestureTarget.direct(PanelButton(action=action,appPackage="test.camera",appActivity="test.camera.Main",appLabel="Camera",showVolumePopup=true)))) }
         val original=AppConfiguration(enabled=true,handles=handles).normalized()
         assertEquals(original,ConfigurationCodec.decode(ConfigurationCodec.encode(original)))
