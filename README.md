@@ -2,11 +2,11 @@
 
 Configurable edge handles for Android volume controls and custom button panels. Built with Kotlin, Jetpack Compose, and Material 3 for personal use on Redmi Note 12 / HyperOS 1.
 
-Each handle has its own gestures, appearance, placement, exclusions, lock-screen option, and three panels. All handles share one accessibility service. New and duplicated handles start disabled. Home provides a master switch and actual connection status.
+Each handle has its own gestures, appearance, placement, exclusions, and lock-screen option. Panels are created and edited separately. Several handles can open the same panel. All handles share one accessibility service. New and duplicated handles start disabled. Home provides a master switch and actual connection status.
 
 The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
 
-Version 0.2.0 adds independent handles and custom panels. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior, and [release notes](docs/release-notes-0.2.0.md) for changes and pending device checks.
+Version 0.2.1 adds shared panels, direct gesture actions, and the native input method picker. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
 
 ## Build
 
@@ -37,15 +37,27 @@ Do Not Disturb access is needed for DND and certain ringtone changes. Lock scree
 
 Open Handles to create, order, duplicate, or edit handles. The first handle receives touches where areas overlap. Editors show non-touchable phone guides while visible, even with the master off. Normal activation resumes when editing ends.
 
+Open Panels to create, name, order, duplicate, edit, or delete panels. A fresh configuration has no panels. Assign each handle gesture to No action, Volume popup, a panel, or a panel with Volume popup. Existing configured or assigned panels migrate automatically; unused empty slots are omitted.
+
+Select Direct action in a gesture assignment to use Lock screen, Open app, settings, or any sound control without a panel. Open app includes an app picker. Volume up and Volume down can also show the volume popup. Save applies the complete assignment; Cancel keeps the previous one. Swipe sequence timeout applies to actions without an open panel and uses an expiry timestamp without background work.
+
+Add Input method picker as a panel button or a direct gesture action to open Android's native keyboard chooser. Nudge uses a short-lived internal activity to obtain input focus. It does not enable a keyboard or choose one for you. Locked use requires normal system unlock. A failed request closes the internal activity and reports an error.
+
+Panels keep their own buttons, appearance, layouts, placement, and landscape settings. Follow handle uses the handle that opens the panel. Select a preview handle in the panel editor to check placement. Deleting a panel clears its gesture links and keeps the volume part of combined assignments. Deleting a handle keeps its panels available.
+
 Fixed panels show only the first buttons within their row and column limits and never scroll. Extra buttons stay saved and editable with a Not shown label. Scrollable panels expose all buttons inside an adjustable viewport. Switching modes retains button order and mode settings.
 
 Each panel chooses whether an outside touch closes and blocks the touch or closes and passes it through. Back closes the panel without navigating the app beneath. Handle gestures remain available. Preview buttons do not run actions; Test panel opens working controls.
+
+Each panel can close automatically after 1–60 seconds without touch input. This option starts off. Opening or touching the panel restarts its timer; held input pauses it. Expiry closes the panel and resets its handle's swipe sequence to the first assigned stage. Editing guides stay open. Only an open interactive panel has a pending timer; closing or replacing it cancels that timer.
+
+Each panel has separate Open animation and Close animation settings. Both offer None, Fade, Slide and fade, or Scale, slide, and fade. Existing panels start with a closing effect that matches their saved opening effect. Later changes are independent. Exit moves toward the invoking handle's edge. Input stops immediately on dismissal; rendered content stays until the short exit ends. Screen-off, editor changes, and service cleanup remove panels immediately. Animations respect the system setting and schedule no idle frames.
 
 Handle and panel landscape overrides retain separate values when disabled. Bottom remains the logical bottom after rotation. Center-based placement remains stable during resizing, subject to safe screen bounds.
 
 Lock-screen availability is configured per handle and defaults off. All configured actions remain available. Apps and settings request Android's normal unlock step before opening. Nudge does not wake the screen or operate on always-on display. After reboot, unlock the phone once before use.
 
-Backups use the system file picker and include hidden buttons and icon references. Add imports disabled independent copies. Replace requires confirmation and leaves the master switch off. Icon packs must be installed separately.
+Backups use the system file picker and include panels, gesture links, hidden buttons, and icon references. Add imports disabled handle copies and independent panel copies, preserving shared links within the imported group. Replace requires confirmation and leaves the master switch off. Older backups migrate on import. Icon packs must be installed separately.
 
 ## Battery use and compatibility
 
@@ -96,7 +108,7 @@ The generator uses the first line of each full commit message, including message
 
 Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
-In **Settings → Updates**, tap **Check for updates**. Nudge reads the [public GitHub release list](https://github.com/serogee/Nudge/releases), compares version numbers automatically and reports an update, the current version, or a newer local build. **Include pre-releases (testing)** is saved and defaults to off: off checks stable releases only; on checks stable releases and published test versions, with pre-releases labelled. Changing this option cancels the active check, clears its result and discards any late reply. It does not start a new request. Customization reset preserves this update preference. Drafts and unsupported version tags are excluded. Only published releases are used, not local Git tags. Numeric versions compare correctly (for example, 0.1.10 is newer than 0.1.9); the debug suffix does not count as a new release. Checks are bounded by connection/read timeouts, run off the main thread and report network/rate-limit errors instead of claiming the app is current.
+In **Info → Updates**, tap **Check for updates**. Nudge reads the [public GitHub release list](https://github.com/serogee/Nudge/releases), compares version numbers automatically and reports an update, the current version, or a newer local build. **Include pre-releases (testing)** is saved and defaults to off: off checks stable releases only; on checks stable releases and published test versions, with pre-releases labelled. Changing this option cancels the active check, clears its result and discards any late reply. It does not start a new request. Customization reset preserves this update preference. Drafts and unsupported version tags are excluded. Only published releases are used, not local Git tags. Numeric versions compare correctly (for example, 0.1.10 is newer than 0.1.9); the debug suffix does not count as a new release. Checks are bounded by connection/read timeouts, run off the main thread and report network/rate-limit errors instead of claiming the app is current.
 
 If only pre-releases are published, checks with testing off report that no stable release is available. Enable testing to include them. The app does not change GitHub release labels.
 
@@ -117,6 +129,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Device-Profile.ps1
 # For multiple devices: add -Serial <adb-serial>
 ```
 
-The profile is saved under `.local/device-checks`; manually complete the checklist with the model, exact HyperOS build, navigation mode and observations. Home's popup confirmation is session-local and user-reported. Copy compatibility details from Settings for support.
+The profile is saved under `.local/device-checks`; manually complete the checklist with the model, exact HyperOS build, navigation mode and observations. Home's popup confirmation is session-local and user-reported. Copy compatibility details from Info for support.
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
