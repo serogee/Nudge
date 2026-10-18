@@ -153,19 +153,20 @@ class NudgeInterfaceTest {
         rule.onNodeWithContentDescription("Edit").performClick()
         rule.onNodeWithText("Gestures").performClick()
         rule.onNodeWithText("Volume popup").performScrollTo().assertIsDisplayed().performClick()
-        rule.onNodeWithText("Tools").assertIsDisplayed().performClick()
-        rule.onNode(hasScrollToIndexAction() and hasAnyAncestor(isDialog())).performScrollToNode(hasText("Also show volume popup"))
-        rule.onNodeWithText("Also show volume popup").performClick()
-        rule.onNodeWithContentDescription("Also show volume popup").assertIsOn()
+        rule.onNodeWithText("Select panel").performClick()
+        rule.onNodeWithText("Search panels").assertExists()
+        rule.onNodeWithText("Tools").performClick()
+        rule.onNodeWithContentDescription("Show Volume Popup").assertIsOn()
         rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle { assertEquals(GestureTarget.panel(panel.id,true),app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Tools + volume popup").performClick()
         rule.onNode(hasText("No action") and hasAnyAncestor(isDialog())).performClick()
+        rule.onNodeWithText("Show Volume Popup").performClick()
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle { assertEquals(GestureTarget.NONE,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onAllNodesWithText("No action").onFirst().performClick()
-        rule.onNodeWithText("Volume popup").performClick()
+        rule.onNodeWithText("Show Volume Popup").performClick()
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
     }
@@ -205,12 +206,13 @@ class NudgeInterfaceTest {
         rule.runOnIdle { assertEquals(GestureTarget.VOLUME,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1)) }
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle { assertEquals(ButtonAction.LOCK,app.configuration.state.value!!.handles.single().target(GestureSlot.SWIPE_1).action!!.action) }
-        rule.onNodeWithText("Lock screen").performClick()
+        rule.onNodeWithText("Lock screen + volume popup").performClick()
         rule.onNode(hasText("Lock screen") and hasAnyAncestor(isDialog())).performClick()
         chooseAction(ButtonAction.OPEN_APP)
         rule.onNodeWithText("Cancel").performClick()
-        rule.onNodeWithText("Save").assertIsNotEnabled()
-        rule.onNodeWithText("Choose app").performScrollTo().performClick()
+        rule.onNodeWithText("Save").assertIsEnabled()
+        rule.onNode(hasText("Lock screen") and hasAnyAncestor(isDialog())).performClick()
+        chooseAction(ButtonAction.OPEN_APP)
         rule.waitUntil(10_000) { rule.onAllNodesWithText("Test camera").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Test camera").performClick()
         rule.onNodeWithText("Save").performClick()
@@ -218,7 +220,7 @@ class NudgeInterfaceTest {
         assertEquals(ButtonAction.OPEN_APP,saved.target(GestureSlot.SWIPE_1).action!!.action)
         assertEquals("test.camera",saved.target(GestureSlot.SWIPE_1).action!!.appPackage)
         assertEquals("test.camera.Main",saved.target(GestureSlot.SWIPE_1).action!!.appActivity)
-        rule.onNodeWithText("Test camera").performClick()
+        rule.onNodeWithText("Test camera + volume popup").performClick()
         rule.onAllNodes(hasText("Test camera") and hasAnyAncestor(isDialog())).onFirst().performClick()
         chooseAction(ButtonAction.LOCK)
         rule.onNodeWithText("Cancel").performClick()
@@ -235,13 +237,12 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Volume popup").performScrollTo().performClick()
         rule.onNodeWithText("Direct action").performClick()
         rule.onNodeWithText("Volume up").performClick()
-        rule.onNodeWithText("Show volume popup").performScrollTo().performClick()
-        rule.onNodeWithContentDescription("Show volume popup").assertIsOn()
+        rule.onNodeWithContentDescription("Show Volume Popup").assertIsOn()
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle {
             val handle=app.configuration.state.value!!.handles.single()
             assertEquals(ButtonAction.VOLUME_UP,handle.target(GestureSlot.SWIPE_1).action!!.action)
-            assertTrue(handle.target(GestureSlot.SWIPE_1).action!!.showVolumePopup)
+            assertTrue(handle.target(GestureSlot.SWIPE_1).volume)
             assertEquals(other,handle.target(GestureSlot.HOLD))
         }
     }
@@ -298,7 +299,7 @@ class NudgeInterfaceTest {
         var saved: PanelButton? = null
         val vm = rule.runOnIdle { ViewModelProvider(rule.activity)[NudgeViewModel::class.java] }
         rule.runOnIdle { rule.activity.setContent { NudgeTheme { ButtonEditor(original, PanelConfig(), vm, {}) { saved = it } } } }
-        rule.onNodeWithText("Show volume popup").performScrollTo().performClick()
+        rule.onNodeWithText("Show Volume Popup").performScrollTo().performClick()
         rule.runOnIdle { assertNull(saved) }
         rule.onNodeWithText("Panel default").performScrollTo().performClick()
         rule.onNodeWithText("Standalone").performClick()

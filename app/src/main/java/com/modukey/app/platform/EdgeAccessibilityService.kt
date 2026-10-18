@@ -138,6 +138,15 @@ class EdgeAccessibilityService : AccessibilityService() {
         // One gesture can request both windows. Android owns the native popup's lifetime.
         replacePanel(target.panelId?.takeIf { config.panel(it) != null }?.let { OpenPanel(it, id) }, id)
         var submitted = target.panelId != null
+        if (target.volume && target.action?.action !in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) {
+            when (val result = app.volume.show()) {
+                VolumeResult.Requested -> submitted = true
+                is VolumeResult.Failed -> {
+                    app.diagnostics.record("Volume request failed: ${result.message}")
+                    Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         target.action?.let { action ->
             val slot = when (kind) {
                 GestureKind.SWIPE -> GestureSlot.entries[requireNotNull(stage)]
@@ -147,18 +156,9 @@ class EdgeAccessibilityService : AccessibilityService() {
             }
             // Remove the previous panel before an app launch or the system lock action.
             refresh()
-            actions?.execute(id, action, testing = false, gestureSlot = slot)?.let { result ->
-                submitted = result.succeeded
+            actions?.execute(id, if (action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) action.copy(showVolumePopup = target.volume) else action, testing = false, gestureSlot = slot)?.let { result ->
+                submitted = submitted || result.succeeded
                 result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
-            }
-        }
-        if (target.volume) {
-            when (val result = app.volume.show()) {
-                VolumeResult.Requested -> submitted = true
-                is VolumeResult.Failed -> {
-                    app.diagnostics.record("Volume request failed: ${result.message}")
-                    Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show()
-                }
             }
         }
         if (submitted) sessions.submitted(handle, stage, target, now) else sessions.reset(id)

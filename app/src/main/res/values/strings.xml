@@ -275,7 +275,7 @@
     <string name="edit_button">Edit button</string>
     <string name="button_action">Action</string>
     <string name="button_icon">Icon</string>
-    <string name="show_volume_popup">Show volume popup</string>
+    <string name="show_volume_popup">Show Volume Popup</string>
     <string name="show_volume_help">Show the native volume popup when this button changes volume.</string>
     <string name="icon_container">Icon container</string>
     <string name="container_default">Panel default</string>
@@ -344,4 +344,6 @@
     <string name="outside_keep">Pass touch through and keep open</string>
     <string name="button_opacity">Button background opacity</string>
     <string name="icon_opacity">Icon opacity</string>
+    <string name="select_panel">Select panel</string>
+    <string name="gesture_popup_help">Show the native volume popup. Select No action for the popup alone.</string>
 </resources>

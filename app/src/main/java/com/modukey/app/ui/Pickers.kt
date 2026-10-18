@@ -19,7 +19,7 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import com.modukey.app.platform.IconPackInfo
 
-@Composable fun ActionPicker(dismiss: () -> Unit, choose: (ButtonAction) -> Unit) {
+@Composable fun ActionPicker(dismiss: () -> Unit, includeEmpty: Boolean = true, choose: (ButtonAction) -> Unit) {
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.button_action)) }, text = {
         LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.heightIn(max = 460.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
