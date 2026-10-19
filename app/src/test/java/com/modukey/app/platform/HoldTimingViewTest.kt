@@ -1,6 +1,9 @@
 package com.modukey.app.platform
 
 import android.view.MotionEvent
+import android.os.Looper
+import org.robolectric.Shadows.shadowOf
+import java.time.Duration
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -19,6 +22,22 @@ class HoldTimingViewTest {
     private fun touch(view: HandleTriggerView, action: Int, time: Long, x: Float = 1f) {
         val event = MotionEvent.obtain(0, time, action, x, 20f, 0)
         try { assertTrue(view.onTouchEvent(event)) } finally { event.recycle() }
+    }
+    @Test fun immediateModesRunWhilePressedAndCancelTheirPendingCallbacks() {
+        val actions = mutableListOf<GestureKind>()
+        val view = HandleTriggerView(app, actions::add)
+        view.layout(0, 0, 48, 180)
+        view.configure(TriggerSettings(holdExecution = HoldExecution.AFTER_TIME, swipeHoldExecution = HoldExecution.AFTER_TIME), Edge.LEFT, false)
+        touch(view, MotionEvent.ACTION_DOWN, 100)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(499)); assertTrue(actions.isEmpty())
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1)); assertEquals(listOf(GestureKind.HOLD), actions)
+        touch(view, MotionEvent.ACTION_UP, 700); assertEquals(1, actions.size)
+        touch(view, MotionEvent.ACTION_DOWN, 1000); touch(view, MotionEvent.ACTION_MOVE, 1100, 31f)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+        assertEquals(listOf(GestureKind.HOLD, GestureKind.SWIPE_HOLD), actions)
+        touch(view, MotionEvent.ACTION_UP, 1700, 31f); assertEquals(2, actions.size)
+        touch(view, MotionEvent.ACTION_DOWN, 2000); view.cancelGesture()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5)); assertEquals(2, actions.size)
     }
     @Test fun `native view uses separate delays and fires once on release`() {
         val actions = mutableListOf<GestureKind>()

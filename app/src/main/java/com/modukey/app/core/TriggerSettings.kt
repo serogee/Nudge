@@ -31,7 +31,19 @@ data class TriggerSettings(
     val softHideDelayMs: Long = 3_000,
     val holdTimeMs: Long = 500,
     val swipeHoldTimeMs: Long = 500,
+    val swipeHoldDistanceDp: Float = 24f,
+    val swipeHoldTimeoutMs: Long = 600,
+    val holdExecution: HoldExecution = HoldExecution.ON_RELEASE,
+    val swipeHoldExecution: HoldExecution = HoldExecution.ON_RELEASE,
+    val swipeFeedback: GestureFeedback = GestureFeedback(haptics),
+    val swipeHoldFeedback: GestureFeedback = GestureFeedback(haptics),
+    val holdFeedback: GestureFeedback = GestureFeedback(haptics),
+    val tapFeedback: GestureFeedback = GestureFeedback(haptics),
 ) {
+    fun feedback(kind: GestureKind) = when (kind) {
+        GestureKind.SWIPE -> swipeFeedback; GestureKind.SWIPE_HOLD -> swipeHoldFeedback
+        GestureKind.HOLD -> holdFeedback; GestureKind.TAP -> tapFeedback
+    }
     fun placement(isLandscape: Boolean) = if (isLandscape && landscapeOverrideEnabled) landscape else portrait
 
     fun normalized() = copy(
@@ -46,6 +58,10 @@ data class TriggerSettings(
         cornerRadiusDp = cornerRadiusDp.finite(2f).coerceIn(0f, 16f),
         swipeDistanceDp = swipeDistanceDp.finite(24f).coerceIn(12f, 80f),
         swipeTimeoutMs = swipeTimeoutMs.coerceIn(200, 1200),
+        swipeHoldDistanceDp = swipeHoldDistanceDp.finite(24f).coerceIn(12f, 80f),
+        swipeHoldTimeoutMs = swipeHoldTimeoutMs.coerceIn(200, 1200),
+        swipeFeedback = swipeFeedback.normalized(), swipeHoldFeedback = swipeHoldFeedback.normalized(),
+        holdFeedback = holdFeedback.normalized(), tapFeedback = tapFeedback.normalized(),
         softHideDelayMs = softHideDelayMs.coerceIn(1_000, 30_000),
         holdTimeMs = holdTimeMs.coerceIn(300, 3_000),
         swipeHoldTimeMs = swipeHoldTimeMs.coerceIn(300, 3_000),

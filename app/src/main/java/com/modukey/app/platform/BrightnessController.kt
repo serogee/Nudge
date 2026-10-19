@@ -1,39 +1,49 @@
 package com.modukey.app.platform
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import com.modukey.app.core.BrightnessPreset
+import com.modukey.app.core.BrightnessReturnSettings
 import com.modukey.app.core.BrightnessSession
 import com.modukey.app.core.BrightnessValue
 import kotlin.math.roundToInt
 
 enum class BrightnessResult { CHANGED, ALREADY_SET, NEED_ACCESS, FAILED }
-data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false)
+data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false, val automatic: Boolean = false)
 
 /** Observe the two brightness settings only while a restore value exists. Never poll or wake the display. */
 class BrightnessController(context: Context) {
     private val app = context.applicationContext
     private val resolver = app.contentResolver
     private val session = BrightnessSession()
-    private var observing = false
-    private val minimum by lazy { resourceBound("config_screenBrightnessSettingMinimum", 1).coerceAtLeast(1) }
-    private val maximum by lazy { resourceBound("config_screenBrightnessSettingMaximum", 255).coerceAtLeast(minimum) }
-    private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
-        override fun onChange(selfChange: Boolean) {
-            runCatching { session.observe(read()) }.onFailure { session.clear() }
-            observeIfNeeded()
-        }
-    }
+    private var observer: ContentObserver? = null
+    // SCREEN_BRIGHTNESS uses 1..255. Private hardware resources can use a different scale.
+    private val minimum = 1
+    private val maximum = 255
+    private var writing = false
+    private var lastStatus = BrightnessStatus()
     fun status(): BrightnessStatus = try {
-        val current = read(); session.observe(current); observeIfNeeded()
-        BrightnessStatus(!current.automatic && current.level == maximum, !current.automatic && current.level == minimum)
+        if (writing) lastStatus else {
+            val current = read(); session.observe(current); observeIfNeeded()
+            BrightnessStatus(session.active(BrightnessPreset.MAXIMUM, current), session.active(BrightnessPreset.MINIMUM, current), current.automatic).also { lastStatus = it }
+        }
     } catch (_: RuntimeException) { BrightnessStatus() }
     val canWrite get() = Settings.System.canWrite(app)
     fun fraction(): Float = runCatching { ((read().level - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f) }.getOrDefault(.5f)
+    fun toggleAutomatic(): BrightnessResult {
+        if (!canWrite) return BrightnessResult.NEED_ACCESS
+        return changing {
+            val before = read()
+            val mode = if (before.automatic) Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL else Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+            // Change only mode. Android controls the actual level while automatic brightness is active.
+            if (!Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)) BrightnessResult.FAILED
+            else if (read().automatic == before.automatic) BrightnessResult.FAILED
+            else { session.clear(); observeIfNeeded(); BrightnessResult.CHANGED }
+        }
+    }
     fun adjust(increase: Boolean): BrightnessResult {
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return try {
@@ -47,20 +57,21 @@ class BrightnessController(context: Context) {
         return try { setLevel(minimum + ((maximum - minimum) * value.coerceIn(0f, 1f)).roundToInt()) }
         catch (_: RuntimeException) { BrightnessResult.FAILED }
     }
-    private fun setLevel(level: Int): BrightnessResult {
+    private fun setLevel(level: Int): BrightnessResult = changing {
         val before = read(); val after = BrightnessValue(level, false)
-        if (before == after) return BrightnessResult.ALREADY_SET
-        session.clear(); observeIfNeeded()
-        if (write(after) && read() == after) return BrightnessResult.CHANGED
+        // Moving a slider to an endpoint is still a manual operation, even if its value is unchanged.
+        session.clear()
+        if (before == after) return@changing BrightnessResult.ALREADY_SET
+        if (write(after) && read() == after) return@changing BrightnessResult.CHANGED
         val partial = read()
         if (partial != before && partial.level in setOf(before.level, after.level)) write(before)
-        return BrightnessResult.FAILED
+        BrightnessResult.FAILED
     }
 
-    fun toggle(preset: BrightnessPreset): BrightnessResult {
+    fun toggle(preset: BrightnessPreset, settings: BrightnessReturnSettings = BrightnessReturnSettings()): BrightnessResult {
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS
-        return try {
-            val change = session.change(preset, read(), minimum, maximum) ?: return BrightnessResult.ALREADY_SET
+        return changing {
+            val change = session.change(preset, read(), minimum, maximum, settings)
             if (!write(change.after)) {
                 // Undo a partial write only while its values still match this action.
                 val partial = read()
@@ -71,7 +82,15 @@ class BrightnessController(context: Context) {
                 if (actual != change.after) { session.clear(); observeIfNeeded(); BrightnessResult.FAILED }
                 else { session.applied(change); observeIfNeeded(); BrightnessResult.CHANGED }
             }
-        } catch (_: RuntimeException) { session.clear(); observeIfNeeded(); BrightnessResult.FAILED }
+        }
+    }
+    private inline fun changing(block: () -> BrightnessResult): BrightnessResult {
+        writing = true
+        // Do not receive delayed notifications for our own writes. Every observed write is external.
+        stopObserving()
+        return try { block() }
+        catch (_: RuntimeException) { session.clear(); BrightnessResult.FAILED }
+        finally { writing = false; observeIfNeeded(); status() }
     }
     fun close() { session.clear(); observeIfNeeded() }
     private fun read() = BrightnessValue(Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS, 128),
@@ -85,17 +104,25 @@ class BrightnessController(context: Context) {
             Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, value.level)
 
     private fun observeIfNeeded() {
-        if (session.tracking && !observing) {
+        if (writing) return
+        if (session.tracking && observer == null) {
+            val next = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    if (observer !== this || writing) return
+                    // A manual write never activates a preset, including a write to the same endpoint.
+                    session.clear(); observeIfNeeded()
+                }
+            }
+            observer = next
             try {
-                resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, observer)
-                resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE), false, observer)
-                observing = true
-            } catch (_: RuntimeException) { runCatching { resolver.unregisterContentObserver(observer) }; session.clear() }
-        } else if (!session.tracking && observing) { observing = false; runCatching { resolver.unregisterContentObserver(observer) } }
+                resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, next)
+                resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE), false, next)
+            } catch (_: RuntimeException) { stopObserving(); session.clear() }
+        } else if (!session.tracking) stopObserving()
     }
-    @SuppressLint("DiscouragedApi")
-    private fun resourceBound(name: String, fallback: Int): Int = runCatching {
-        val id = app.resources.getIdentifier(name, "integer", "android")
-        if (id == 0) fallback else app.resources.getInteger(id).takeIf { it in 0..65_535 } ?: fallback
-    }.getOrDefault(fallback)
+    private fun stopObserving() {
+        val previous = observer ?: return
+        observer = null
+        runCatching { resolver.unregisterContentObserver(previous) }
+    }
 }

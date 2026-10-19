@@ -28,10 +28,10 @@ class HoldTimingTest {
     }
     @Test fun `movement after a swipe restarts the selected stationary interval`() {
         val g = gesture(swipeHold = 900)
-        g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(40f, 0f, 800)
-        assertNull(g.up(40f, 0f, 1_699))
-        g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(40f, 0f, 800)
-        assertEquals(GestureKind.SWIPE_HOLD, g.up(40f, 0f, 1_700))
+        g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(50f, 0f, 800)
+        assertNull(g.up(50f, 0f, 1_699))
+        g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(50f, 0f, 800)
+        assertEquals(GestureKind.SWIPE_HOLD, g.up(50f, 0f, 1_700))
     }
     @Test fun `long hold does not bypass cancellation or late swipe thresholds`() {
         val g = gesture(hold = 3_000, swipeHold = 3_000)

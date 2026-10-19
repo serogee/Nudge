@@ -10,6 +10,24 @@ import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationCodecTest {
+    @Test fun brightnessAppearanceRoundTripsAndLegacyPositionMigratesOnce() {
+        val automatic = PanelButton(action = ButtonAction.BRIGHTNESS_DOWN)
+        val popup = BrightnessPopupSettings(y = .2f, cornerRadiusDp = 18f, showBackground = false, showAutomaticToggle = false)
+        val config = AppConfiguration(brightnessPopup = popup,
+            panels = listOf(SavedPanel(settings = PanelConfig(buttons = listOf(automatic))))).normalized()
+        assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        val legacy = JSONObject(ConfigurationCodec.encode(config)).put("schema", 7)
+        legacy.getJSONObject("brightnessPopup").apply {
+            put("y", .8); remove("cornerRadiusDp"); remove("showBackground"); remove("showAutomaticToggle")
+        }
+        val migrated = ConfigurationCodec.decode(ConfigurationCodec.upgrade(legacy.toString()))
+        assertEquals(.2f, migrated.brightnessPopup.y, .0001f)
+        assertEquals(32f, migrated.brightnessPopup.cornerRadiusDp)
+        assertTrue(migrated.brightnessPopup.showBackground); assertTrue(migrated.brightnessPopup.showAutomaticToggle)
+        assertEquals(migrated, ConfigurationCodec.decode(ConfigurationCodec.upgrade(ConfigurationCodec.encode(migrated))))
+        assertEquals(config.panels, migrated.panels)
+    }
+
     @Test fun sliderShortcutsAndIndependentFlagsRoundTrip() {
         val action = PanelButton(action = ButtonAction.BRIGHTNESS_DOWN)
         val h = HandleConfig(bindings = mapOf(GestureSlot.TAP to GestureTarget(volume = true, brightness = true)))

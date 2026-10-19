@@ -6,8 +6,11 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 @StringRes fun label(value: Any): Int = when (value) {
+    BrightnessTouchBehavior.JUMP_TO_TOUCH -> R.string.brightness_jump_to_touch
+    BrightnessTouchBehavior.SLIDE_TO_ADJUST -> R.string.brightness_slide_to_adjust
     BrightnessSide.OPPOSITE_VOLUME -> R.string.opposite_volume; BrightnessSide.LEFT, VolumeSide.LEFT -> R.string.left
     BrightnessSide.RIGHT, VolumeSide.RIGHT -> R.string.right; BrightnessSide.CUSTOM -> R.string.slider_custom
+    HoldExecution.ON_RELEASE -> R.string.hold_on_release; HoldExecution.AFTER_TIME -> R.string.hold_after_time
     Edge.LEFT -> R.string.left; Edge.RIGHT -> R.string.right; Edge.BOTTOM -> R.string.bottom
     GestureSlot.SWIPE_1 -> R.string.swipe_1; GestureSlot.SWIPE_2 -> R.string.swipe_2; GestureSlot.SWIPE_3 -> R.string.swipe_3
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
@@ -21,7 +24,9 @@ import com.modukey.app.core.*
     ButtonAction.INPUT_METHOD_PICKER -> R.string.input_method_picker
     ButtonAction.CLOSE_PANELS -> R.string.close_panels; ButtonAction.SCREENSHOT -> R.string.screenshot
     ButtonAction.BRIGHTNESS_MAXIMUM -> R.string.brightness_maximum; ButtonAction.BRIGHTNESS_MINIMUM -> R.string.brightness_minimum
+    ButtonAction.BRIGHTNESS_AUTOMATIC -> R.string.brightness_automatic
     ButtonAction.TOGGLE_HANDLES -> R.string.toggle_handles
+    ButtonAction.TOGGLE_HANDLE_VISIBILITY -> R.string.toggle_handle_visibility
     ButtonAction.NOTIFICATIONS -> R.string.notifications; ButtonAction.CONTROL_PANEL -> R.string.control_panel
     ButtonAction.BRIGHTNESS_UP -> R.string.brightness_up; ButtonAction.BRIGHTNESS_DOWN -> R.string.brightness_down
     HandleToggleScope.ALL -> R.string.all_handles; HandleToggleScope.CURRENT -> R.string.current_handle; HandleToggleScope.OTHERS -> R.string.other_handles

@@ -72,7 +72,11 @@ import com.modukey.app.core.*
                 OptionRow(t(R.string.handle_toggle_scope), HandleToggleScope.entries, action.handleScope, HandleToggleScope.ALL) { draft = draft.copy(action = action.copy(handleScope = it)) }
                 Help(R.string.handle_toggle_help)
             }
-            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item { Help(R.string.brightness_help) }
+            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item {
+                val action = requireNotNull(draft.action)
+                BrightnessReturnControls(action.brightnessReturn) { draft = draft.copy(action = action.copy(brightnessReturn = it)) }
+            }
+            if (draft.action?.action == ButtonAction.BRIGHTNESS_AUTOMATIC) item { Help(R.string.brightness_automatic_action_help) }
             if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) item { Help(R.string.brightness_step_help) }
             if (draft.action?.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) item { Help(R.string.native_panel_help) }
             if (draft.action?.action == ButtonAction.OPEN_APP) item {

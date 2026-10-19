@@ -65,7 +65,8 @@ class NudgeInterfaceTest {
     @Test fun `hidden handle appearance controls stay disabled until enabled`() {
         ready()
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Hex color").assertIsNotEnabled()
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
         rule.onNodeWithText("Hex color").assertIsEnabled()
@@ -85,7 +86,8 @@ class NudgeInterfaceTest {
         val app = ready()
         rule.runOnIdle { app.configuration.update { it.editHandle("first-handle") { h -> h.copy(trigger = h.trigger.copy(lengthDp = 172f, depthDp = 22f)) } } }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Reset Touch length").performScrollTo().performClick()
         rule.runOnIdle {
             val trigger = app.configuration.preview.value!!.handles.first().trigger
@@ -142,7 +144,8 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Delete").performClick()
         rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panels.isEmpty()) }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Gestures").assertExists()
         rule.onNodeWithText("Availability").assertExists()
         rule.onNodeWithContentDescription("Edit panel").assertDoesNotExist()
@@ -152,7 +155,8 @@ class NudgeInterfaceTest {
         val panel = SavedPanel(name = "Tools")
         rule.runOnIdle { app.configuration.update { it.copy(panels = listOf(panel)) } }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Gestures").performClick()
         rule.onNodeWithText("Volume popup").performScrollTo().assertIsDisplayed().performClick()
         rule.onNodeWithText("Panel: Select panel").performClick()
@@ -200,7 +204,8 @@ class NudgeInterfaceTest {
             }
         })
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Gestures").performClick()
         rule.onNodeWithText("Volume popup").performScrollTo().performClick()
         rule.onNodeWithText("Action: Direct action").performClick()
@@ -234,7 +239,8 @@ class NudgeInterfaceTest {
         rule.runOnIdle { app.configuration.update { it.editHandle(it.handles.single().id) { h -> h.copy(bindings=h.bindings+(GestureSlot.HOLD to other)) } } }
         rule.onNodeWithText("Do Not Disturb access is needed").assertExists()
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Gestures").performClick()
         rule.onNodeWithText("Volume popup").performScrollTo().performClick()
         rule.onNodeWithText("Action: Direct action").performClick()
@@ -361,7 +367,8 @@ class NudgeInterfaceTest {
         }
         val original = rule.runOnIdle { app.configuration.preview.value }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithContentDescription("On-phone preview").assertIsOn().performClick()
         rule.runOnIdle { assertEquals(false, app.editor.state.value?.preview); assertEquals(original, app.configuration.preview.value) }
         rule.activityRule.scenario.recreate()

@@ -58,6 +58,32 @@ class HandlePauseRuntimeTest {
     private fun button(f: Fixture) = ReflectionHelpers.callInstanceMethod<Void>(f.service, "runButton",
         ClassParameter.from(PanelButton::class.java, f.panel.settings.buttons.single()))
 
+    @Test fun visibilityActionKeepsWindowsAndGesturesWhilePreservingSavedAppearance() {
+        val f = fixture()
+        app.configuration.update { config -> config.copy(handles = config.handles.map { h ->
+            h.copy(trigger = h.trigger.copy(indicatorVisible = true), bindings = h.bindings + (GestureSlot.TAP to GestureTarget.panel(f.panel.id)))
+        }) }
+        val views = ReflectionHelpers.getField<MutableMap<String, HandleTriggerView>>(f.service, "views")
+        val original = views.toMap()
+        val saved = app.configuration.state.value!!.handles
+        val actions = PanelActions(f.service)
+        val toggle = PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY)
+        assertFalse(actions.execute(f.owner.id, toggle, false).close)
+        await { views.values.all { ReflectionHelpers.getField<Boolean>(it, "hideIndicator") } }
+        assertTrue(app.configuration.state.value!!.hideHandleIndicators)
+        assertTrue(actions.snapshot().handleIndicatorsHidden)
+        assertEquals(saved, app.configuration.state.value!!.handles)
+        assertEquals(original.keys, views.keys)
+        original.forEach { (id, view) -> assertSame(view, views[id]) }
+        views.getValue(f.owner.id).performClick()
+        await { app.status.state.value.panelId == f.panel.id }
+        actions.execute(f.owner.id, toggle, false)
+        await { views.values.none { ReflectionHelpers.getField<Boolean>(it, "hideIndicator") } }
+        assertFalse(app.configuration.state.value!!.hideHandleIndicators)
+        assertEquals(saved, app.configuration.state.value!!.handles)
+        assertEquals(f.panel.id, app.status.state.value.panelId)
+    }
+
     @Test fun `an open panel can resume all paused handles and saved disabling still closes it`() {
         val f = fixture(); gesture(f)
         assertEquals(f.owner.id, f.host.spec!!.handleId)

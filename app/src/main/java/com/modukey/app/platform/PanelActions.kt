@@ -18,7 +18,8 @@ import com.modukey.app.core.*
 
 data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringer: Int = AudioManager.RINGER_MODE_NORMAL, val dnd: Boolean = false, val ownDnd: Boolean = false,
     val maximumBrightness: Boolean = false, val minimumBrightness: Boolean = false, val enabledHandleIds: Set<String> = emptySet(),
-    val pausedHandleIds: Set<String> = emptySet(), val ownerHandleId: String? = null, val handlesEnabled: Boolean = false)
+    val pausedHandleIds: Set<String> = emptySet(), val ownerHandleId: String? = null, val handlesEnabled: Boolean = false, val automaticBrightness: Boolean = false,
+    val handleIndicatorsHidden: Boolean = false)
 data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
     fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
@@ -43,13 +44,22 @@ class PanelActions(private val service: AccessibilityService,
         val config = app.configuration.state.value
         SoundState(audio.getStreamVolume(AudioManager.STREAM_MUSIC), audio.isStreamMute(AudioManager.STREAM_MUSIC), audio.ringerMode, dnd, own,
             brightness.maximum, brightness.minimum, config?.handles?.filter { it.enabled }?.mapTo(mutableSetOf()) { it.id }.orEmpty(),
-            app.handlePauses.state.value, handlesEnabled = config?.enabled == true)
+            app.handlePauses.state.value, handlesEnabled = config?.enabled == true, automaticBrightness = brightness.automatic,
+            handleIndicatorsHidden = config?.hideHandleIndicators == true)
     } catch (_: RuntimeException) { SoundState() }
 
     override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?): ActionResult = try {
         when (button.action) {
             ButtonAction.EMPTY -> ActionResult()
             ButtonAction.CLOSE_PANELS -> ActionResult(close = true)
+            ButtonAction.TOGGLE_HANDLE_VISIBILITY -> {
+                if (app.configuration.state.value == null) ActionResult(succeeded = false, message = R.string.action_failed)
+                else {
+                    app.configuration.update { it.copy(hideHandleIndicators = !it.hideHandleIndicators) }
+                    app.configuration.flush()
+                    ActionResult()
+                }
+            }
             ButtonAction.SCREENSHOT -> if (screenshot()) ActionResult(close = true)
                 else ActionResult(message = R.string.screenshot_failed, succeeded = false)
             ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL ->
@@ -66,9 +76,10 @@ class PanelActions(private val service: AccessibilityService,
                 ActionResult()
             }
             ButtonAction.MEDIA_MUTE -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, 0); ActionResult() }
-            ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN -> {
-                val result = if (button.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) app.brightness.adjust(button.action == ButtonAction.BRIGHTNESS_UP)
-                    else app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM)
+            ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN, ButtonAction.BRIGHTNESS_AUTOMATIC -> {
+                val result = if (button.action == ButtonAction.BRIGHTNESS_AUTOMATIC) app.brightness.toggleAutomatic()
+                    else if (button.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) app.brightness.adjust(button.action == ButtonAction.BRIGHTNESS_UP)
+                    else app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM, button.brightnessReturn)
                 when (result) {
                     BrightnessResult.CHANGED -> ActionResult()
                     BrightnessResult.ALREADY_SET -> ActionResult(message = R.string.brightness_already_set)

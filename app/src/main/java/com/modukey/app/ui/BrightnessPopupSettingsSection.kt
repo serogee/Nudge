@@ -33,6 +33,8 @@ import kotlin.math.roundToInt
     Section(R.string.brightness_slider) {
         Toggle(R.string.brightness_preview, R.string.brightness_preview_help, preview) { preview = it }
         if (preview && !service.connected) Help(R.string.preview_unavailable)
+        OptionRow(t(R.string.brightness_touch_behavior), BrightnessTouchBehavior.entries, s.touchBehavior, defaults.touchBehavior) { v -> edit { it.copy(touchBehavior = v) } }
+        Help(R.string.brightness_touch_behavior_help)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(t(R.string.appearance), Modifier.weight(1f))
             EditIcon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, if (expanded) R.string.collapse_setup else R.string.expand_setup) { expanded = !expanded }
@@ -46,12 +48,15 @@ import kotlin.math.roundToInt
                 Help(R.string.volume_side_help)
             }
             if (s.side == BrightnessSide.CUSTOM) PercentSlider(R.string.center_x, s.x, default = defaults.x) { v -> edit { it.copy(x = v) } }
-            PercentSlider(R.string.center_y, s.y, default = defaults.y) { v -> edit { it.copy(y = v) } }
+            PercentSlider(R.string.slider_center_from_bottom, s.y, default = defaults.y) { v -> edit { it.copy(y = v) } }
             SettingSlider(R.string.slider_width, s.widthDp, 48f..128f, t(R.string.dp_value, s.widthDp.roundToInt()), default = defaults.widthDp) { v -> edit { it.copy(widthDp = v) } }
             SettingSlider(R.string.slider_height, s.heightDp, 120f..480f, t(R.string.dp_value, s.heightDp.roundToInt()), default = defaults.heightDp) { v -> edit { it.copy(heightDp = v) } }
             SettingSlider(R.string.slider_timeout, s.timeoutMs / 1000f, 1f..10f, t(R.string.seconds_value, s.timeoutMs / 1000f), default = 3f) { v -> edit { it.copy(timeoutMs = (v * 1000).toLong()) } }
-            ColorPicker(s.background, title = R.string.slider_background, default = defaults.background) { v -> edit { it.copy(background = v) } }
-            PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
+            SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..64f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), default = defaults.cornerRadiusDp) { v -> edit { it.copy(cornerRadiusDp = v) } }
+            Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true) { v -> edit { it.copy(showBackground = v) } }
+            Toggle(R.string.slider_show_automatic, R.string.slider_automatic_help, s.showAutomaticToggle, default = true) { v -> edit { it.copy(showAutomaticToggle = v) } }
+            ColorPicker(s.background, title = R.string.slider_background, enabled = s.showBackground, default = defaults.background) { v -> edit { it.copy(background = v) } }
+            PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, enabled = s.showBackground, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
             ColorPicker(s.track, title = R.string.slider_track, default = defaults.track) { v -> edit { it.copy(track = v) } }
             PercentSlider(R.string.slider_track_opacity, s.trackOpacity, default = 1f) { v -> edit { it.copy(trackOpacity = v) } }
             ColorPicker(s.fill, title = R.string.slider_fill, default = defaults.fill) { v -> edit { it.copy(fill = v) } }

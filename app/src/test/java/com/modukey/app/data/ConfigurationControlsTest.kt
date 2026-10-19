@@ -8,6 +8,22 @@ import org.junit.Test
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [31])
 class ConfigurationControlsTest {
+    @Test fun independentGestureSettingsRoundTripAndLegacyFeedbackMigrates() {
+        val s = TriggerSettings(swipeDistanceDp = 50f, swipeHoldDistanceDp = 30f,
+            holdExecution = HoldExecution.AFTER_TIME, swipeHoldExecution = HoldExecution.ON_RELEASE,
+            swipeFeedback = GestureFeedback(true, .2f), holdFeedback = GestureFeedback(true, .9f))
+        val config = AppConfiguration(handles = listOf(HandleConfig(trigger = s))).normalized()
+        assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        val root = JSONObject(ConfigurationCodec.encode(config)).put("schema", 8)
+        val t = root.getJSONArray("handles").getJSONObject(0).getJSONObject("trigger")
+        listOf("swipeFeedback", "swipeHoldFeedback", "holdFeedback", "tapFeedback", "swipeHoldDistanceDp", "swipeHoldTimeoutMs").forEach(t::remove)
+        t.put("haptics", true)
+        val migrated = ConfigurationCodec.decode(ConfigurationCodec.upgrade(root.toString())).handles.single().trigger
+        assertEquals(50f, migrated.swipeHoldDistanceDp)
+        GestureKind.entries.forEach { assertTrue(migrated.feedback(it).enabled) }
+        assertEquals(config.handles.single().trigger.holdTimeMs, migrated.holdTimeMs)
+    }
+
     @Test fun `schema three preserves physical Y placement and upgrades only once`() {
         val p = SavedPanel(settings = PanelConfig(portrait = PanelLayout(offsetYDp = 24f), landscape = PanelLayout(offsetYDp = -31f)))
         val old = JSONObject(ConfigurationCodec.encode(AppConfiguration(panels = listOf(p)))).put("schema", 3).toString()

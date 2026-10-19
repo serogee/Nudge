@@ -1,6 +1,6 @@
 # Handles and panels
 
-This guide covers the prepared 0.3.1 release. Version 0.3.0 is published. Earlier release artifacts remain unchanged. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
+This guide covers the current development interface. Earlier release artifacts remain unchanged. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
@@ -10,7 +10,7 @@ In the development interface, drag a card's left grip to change its priority. Se
 
 Handle and panel editors keep changes in a temporary draft. The top pencil changes to Save and Cancel after an edit. Save applies all changes in that editor. Cancel restores its saved settings. Long titles use an ellipsis so both controls stay visible.
 
-Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
+Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Their compact height keeps the title container unchanged. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
 
 Handle icons keep a bold initial inside a rounded square. A small inset pill marks the saved left, right, or bottom edge.
 
@@ -53,13 +53,17 @@ Screenshot removes the interactive Nudge panel, waits two display frames, and re
 There is no setting to hide handles during every screenshot method. Android's supported APIs do not provide a reliable pre-capture signal for all device methods. The [screenshot detection API](https://developer.android.com/about/versions/14/features/screenshot-detection) is activity-scoped and reports supported captures after they occur. Visible handles can appear in screenshots, including those requested through Nudge.
 
 - Tap: release within 250 ms without moving beyond touch slop.
-- Hold: hold still for the selected Hold time, then release.
+- Hold: hold still for the selected Hold time. Run at the deadline or after release.
 - Swipe: move inward at least 24 dp and release within 600 ms by default.
-- Swipe and hold: reach the swipe threshold within its time limit, hold still for the selected Swipe and hold time, then release.
+- Swipe and hold: reach its own distance within its own time limit. Hold still, then run at the deadline or after release.
 
-Each handle saves both hold times independently. Each accepts 300 to 3000 ms and defaults to 500 ms. Reset restores only that control. The swipe hold interval starts when the swipe reaches its threshold. Moving beyond touch slop restarts that interval. Existing configurations and older backups use 500 ms for both controls.
+Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
 
-Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Hold gestures do not run until release. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
+Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
+
+Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+
+Pulling a panel shifts a non-interactive preview slightly inward, up to 12 dp. The preview stays in place during a hold. Releasing a completed gesture opens the assigned panel and settles it over 180 ms. An immediate swipe-and-hold action keeps its panel suspended until release. Preview buttons do not execute actions. Disabled system animations skip the motion.
 
 A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
@@ -128,13 +132,21 @@ The development button editor keeps changes private until Save. Volume up and Vo
 
 Maximum brightness and Minimum brightness are available as panel buttons and direct gesture actions. The first use opens Android's Modify system settings screen if access is missing. Grant access, return, and run the action again. Nudge does not change brightness before access is granted.
 
-Each brightness limit uses manual brightness. Tap the same action again to restore the previous level and automatic mode. An external brightness or mode change clears the restore values. App restarts also clear them. The two actions retain their own restore values when switching between limits. They do not wake the screen. Device brightness limits require a Redmi check.
+Each brightness limit uses manual brightness. Only a Nudge action activates its button. A manual brightness change clears the active state, including a quick drag back to the same limit. App restarts also clear active states. Switching limits activates only the new action.
+
+Each action has **Use previous brightness**, enabled by default, and **Return brightness**, initially 50%. Tap an active action to return to its previous level and automatic mode when available. Previous maximum brightness is unavailable. Minimum also rejects a previous minimum. If the previous level is unavailable, or Use previous brightness is off, use Return brightness in manual mode. Returning always clears the active state, even if the selected return value equals a limit.
+
+The same controls appear for panel buttons, direct gestures, and Home shortcuts. Saved return settings are independent of runtime restore values. Return settings survive backups, duplication, and restarts. Runtime values are never exported. They do not wake the screen. Device brightness limits require a Redmi check.
 
 Toggle handles is available as a panel button and direct gesture action. Select All handles, This handle, or Other handles. This handle means the handle that opened the panel or ran the gesture. A panel test without a preview handle cannot select This handle or Other handles.
 
 The action pauses currently enabled handles without changing their saved Enable switches. Its tile shows On when all selected handles are available through this pause control. Tap again to resume. If only some are paused, tapping resumes the group. Existing panels remain usable while their handle is paused. Saved disabling, the master switch, and normal eligibility rules still close panels.
 
-Use Resume handles above the Handles list to clear all pauses. This also recovers a handle paused by its own gesture. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+The **Pause handles** switch is above **Add handle**. Both global switches scroll with the handle list, so editing remains reachable on small displays. Switch it on to pause all enabled handles. Switch it off to clear every pause, including a handle paused by its own gesture. The switch is on if any handles are paused. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+
+The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
+
+**Toggle handle visibility** applies the same override from a panel button, direct gesture, or Home shortcut. Its tile is On when visibility is allowed and Off while bars are hidden. It keeps an open panel usable. Restoring visibility shows only bars enabled in each handle's settings. **Toggle handles** follows **Close panels** in the action picker; **Toggle handle visibility** is next.
 
 Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
@@ -152,7 +164,7 @@ Add handles and panels is the default import mode. It creates disabled handle co
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
 
-The current configuration uses schema 6 for brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+Schema 6 introduced brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
 
 Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
@@ -183,3 +195,11 @@ Empty button adds a grid cell with no action. Its Appearance dropdown selects No
 Button drags beyond touch slop cancel clicking until the next press, including when the pointer returns to the same button. Scrolling remains available. The unexpected panel dismissal investigation is deferred to a separate task; app-change detection is unchanged.
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
+
+Development backups use schema 12 for per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
+
+## Brightness touch behavior
+
+Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
+
+Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.

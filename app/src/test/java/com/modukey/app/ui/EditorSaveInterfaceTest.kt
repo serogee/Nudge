@@ -35,7 +35,8 @@ class EditorSaveInterfaceTest {
     }
     private fun openHandle() {
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
     }
     private fun openPanel() {
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
@@ -48,10 +49,12 @@ class EditorSaveInterfaceTest {
 
     @Test fun `paired header actions show feedback and restore rename while keeping the editor open`() {
         val app = ready(); openHandle()
+        val headerHeight = rule.onNodeWithTag("editor-header").fetchSemanticsNode().boundsInRoot.height
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
         val cancel = rule.onNodeWithContentDescription("Cancel").fetchSemanticsNode().boundsInRoot
         val save = rule.onNodeWithContentDescription("Save").fetchSemanticsNode().boundsInRoot
         assertTrue(cancel.right < save.left)
+        assertEquals(headerHeight, rule.onNodeWithTag("editor-header").fetchSemanticsNode().boundsInRoot.height)
         rule.onNodeWithContentDescription("Cancel").performClick()
         rule.runOnIdle { assertEquals(rule.activity.getString(R.string.changes_cancelled), ShadowToast.getTextOfLatestToast()) }
         rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
@@ -164,7 +167,8 @@ class EditorSaveInterfaceTest {
         rule.onNodeWithText("Discard").performClick()
         rule.onNodeWithText("Manage Handles").assertExists()
         rule.runOnIdle { assertEquals(original, app.configuration.preview.value); assertNull(app.configuration.draft.value) }
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
         rule.runOnIdle { rule.activity.onBackPressedDispatcher.onBackPressed() }
         rule.onNodeWithText("Save changes?").assertIsDisplayed()

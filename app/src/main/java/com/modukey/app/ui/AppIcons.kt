@@ -22,6 +22,10 @@ object AppIcons {
     val Duplicate = icon("Duplicate") { moveTo(9f,8f); lineTo(21f,8f); lineTo(21f,21f); lineTo(9f,21f); close(); moveTo(15f,4f); lineTo(3f,4f); lineTo(3f,17f); moveTo(12f,14f); lineTo(18f,14f); moveTo(15f,11f); lineTo(15f,17f) }
     val Reset = icon("Reset") { moveTo(4f,10f); curveTo(5f,1f,20f,1f,20f,12f); curveTo(20f,21f,7f,23f,4f,15f); moveTo(4f,4f); lineTo(4f,10f); lineTo(10f,10f) }
     val Handle = icon("Handle") { moveTo(6f,3f); lineTo(18f,3f); curveTo(20f,3f,21f,4f,21f,6f); lineTo(21f,18f); curveTo(21f,20f,20f,21f,18f,21f); lineTo(6f,21f); curveTo(4f,21f,3f,20f,3f,18f); lineTo(3f,6f); curveTo(3f,4f,4f,3f,6f,3f); moveTo(18f,9f); lineTo(18f,15f) }
+    val HandleVisibility = icon("Handle visibility") {
+        moveTo(2f,12f); curveTo(7f,3f,17f,3f,22f,12f); curveTo(17f,21f,7f,21f,2f,12f); close()
+        moveTo(15f,12f); curveTo(15f,16f,9f,16f,9f,12f); curveTo(9f,8f,15f,8f,15f,12f)
+    }
     val Drag = icon("Drag") { for(x in listOf(9f,15f)) for(y in listOf(5f,12f,19f)) { moveTo(x,y); lineTo(x+.1f,y) } }
     val ChevronUp = icon("Collapse") { moveTo(6f,15f); lineTo(12f,9f); lineTo(18f,15f) }
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
@@ -34,6 +38,11 @@ object AppIcons {
     val ControlPanel = icon("Control panel") {
         moveTo(3f,6f); lineTo(8f,6f); moveTo(13f,6f); lineTo(21f,6f); moveTo(8f,3f); lineTo(8f,9f); lineTo(13f,9f); lineTo(13f,3f); close()
         moveTo(3f,18f); lineTo(12f,18f); moveTo(17f,18f); lineTo(21f,18f); moveTo(12f,15f); lineTo(12f,21f); lineTo(17f,21f); lineTo(17f,15f); close()
+    }
+    val BrightnessAutomatic = icon("Automatic brightness") {
+        moveTo(3f,9f); lineTo(3f,3f); lineTo(9f,3f); moveTo(15f,3f); lineTo(21f,3f); lineTo(21f,9f)
+        moveTo(21f,15f); lineTo(21f,21f); lineTo(15f,21f); moveTo(9f,21f); lineTo(3f,21f); lineTo(3f,15f)
+        moveTo(8f,17f); lineTo(12f,7f); lineTo(16f,17f); moveTo(10f,13f); lineTo(14f,13f)
     }
     val BrightnessMaximum = icon("Maximum brightness") {
         moveTo(17f,12f); curveTo(17f,19f,7f,19f,7f,12f); curveTo(7f,5f,17f,5f,17f,12f)

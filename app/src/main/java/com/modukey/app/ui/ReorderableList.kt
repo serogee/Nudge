@@ -34,12 +34,14 @@ import kotlin.math.roundToInt
 
 /** Only the left grip starts a drag. Autoscroll schedules frames only during a drag. */
 @Composable fun <T> ReorderableList(items: List<T>, id: (T) -> String, label: (T) -> String, modifier: Modifier = Modifier,
-    moveTo: (String, Int) -> Unit, finish: () -> Unit, content: @Composable RowScope.(T, Int) -> Unit) {
+    moveTo: (String, Int) -> Unit, finish: () -> Unit, header: (@Composable () -> Unit)? = null,
+    content: @Composable RowScope.(T, Int) -> Unit) {
     val state = rememberLazyListState()
     val currentItems by rememberUpdatedState(items)
     val currentId by rememberUpdatedState(id)
     val currentMove by rememberUpdatedState(moveTo)
     val currentFinish by rememberUpdatedState(finish)
+    val headerCount by rememberUpdatedState(if (header == null) 0 else 1)
     var dragging by remember { mutableStateOf<String?>(null) }
     var center by remember { mutableFloatStateOf(0f) }
     var finger by remember { mutableFloatStateOf(0f) }
@@ -50,16 +52,16 @@ import kotlin.math.roundToInt
     fun reorder() {
         val key = dragging ?: return
         val from = currentItems.indexOfFirst { currentId(it) == key }
-        val entries = state.layoutInfo.visibleItemsInfo
+        val entries = state.layoutInfo.visibleItemsInfo.filter { it.key != Int.MIN_VALUE }
         val selected = entries.firstOrNull { it.key == key }
         // Wait for the last move to reach layout before requesting another move.
-        if (selected != null && selected.index != from) return
+        if (selected != null && selected.index != from + headerCount) return
         val target = if (selected == null) entries.minByOrNull { abs(center - it.offset - it.size / 2f) }?.index
         else if (center > selected.offset + selected.size / 2f)
-            entries.lastOrNull { it.index > from && center >= it.offset + it.size / 2f - .5f }?.index
-        else entries.firstOrNull { it.index < from && center <= it.offset + it.size / 2f + .5f }?.index
+            entries.lastOrNull { it.index > from + headerCount && center >= it.offset + it.size / 2f - .5f }?.index
+        else entries.firstOrNull { it.index < from + headerCount && center <= it.offset + it.size / 2f + .5f }?.index
         if (target == null) return
-        if (from >= 0 && target != from) currentMove(key, target)
+        if (from >= 0 && target - headerCount != from) currentMove(key, target - headerCount)
     }
     val speed by remember { derivedStateOf {
         if (dragging == null) 0f else {
@@ -107,6 +109,7 @@ import kotlin.math.roundToInt
         } } finally { finishDrag() }
     }
     LazyColumn(modifier.then(input), state = state, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
+        if (header != null) item(key = Int.MIN_VALUE) { header() }
         itemsIndexed(items, key = { _, item -> id(item) }) { index, item ->
             val key = id(item); val active = key == dragging
             DisposableEffect(key) { onDispose { grips.remove(key) } }

@@ -15,6 +15,10 @@ fun handleToggleTargets(scope: HandleToggleScope, owner: String?, enabled: Set<S
 class HandlePauses {
     private val mutable = MutableStateFlow<Set<String>>(emptySet())
     val state = mutable.asStateFlow()
+    fun setAll(paused: Boolean, configuration: AppConfiguration) {
+        if (!paused) clear()
+        else if (configuration.enabled) mutable.value = configuration.handles.filter { it.enabled }.mapTo(mutableSetOf()) { it.id }
+    }
     fun toggle(scope: HandleToggleScope, owner: String?, configuration: AppConfiguration): Boolean {
         if (!configuration.enabled) return false
         val targets = handleToggleTargets(scope, owner, configuration.handles.filter { it.enabled }.mapTo(mutableSetOf()) { it.id })

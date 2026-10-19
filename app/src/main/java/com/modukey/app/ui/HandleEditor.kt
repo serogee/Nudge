@@ -90,28 +90,7 @@ import kotlin.math.roundToInt
                             if (!s.indicatorVisible) Help(R.string.visible_off_help)
                         }
                     }
-                    1 -> {
-                        Section(R.string.gestures) {
-                            GestureSlot.entries.forEach { slot ->
-                                GestureBindingRow(config, slot, h.target(slot), vm) { value -> vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) } }
-                                when (slot) {
-                                    GestureSlot.SWIPE_HOLD -> SettingSlider(R.string.swipe_hold_time, s.swipeHoldTimeMs.toFloat(), 300f..3000f,
-                                        t(R.string.ms_value, s.swipeHoldTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = value.toLong()) } }
-                                    GestureSlot.HOLD -> SettingSlider(R.string.hold_time, s.holdTimeMs.toFloat(), 300f..3000f,
-                                        t(R.string.ms_value, s.holdTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(holdTimeMs = value.toLong()) } }
-                                    else -> Unit
-                                }
-                            }
-                            Help(R.string.gesture_help); Help(R.string.hold_help)
-                        }
-                        Section(R.string.settings) {
-                            SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { value -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = value) } }
-                            SettingSlider(R.string.swipe_time, s.swipeTimeoutMs.toFloat(), 200f..1200f, t(R.string.ms_value, s.swipeTimeoutMs.toInt()), default = 600f) { value -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = value.toLong()) } }
-                            SettingSlider(R.string.volume_sequence, h.volumeSequenceMs.toFloat(), 1000f..10000f, t(R.string.seconds_value, h.volumeSequenceMs / 1000f), default = 3000f) { value -> vm.editHandle(h.id) { it.copy(volumeSequenceMs = value.toLong()) } }
-                            Help(R.string.volume_sequence_help)
-                            Toggle(R.string.haptics, R.string.haptics_help, s.haptics, default = false) { value -> vm.editTrigger(h.id) { it.copy(haptics = value) } }
-                        }
-                    }
+                    1 -> HandleGestureSettings(config, h, vm)
                     else -> Section(R.string.availability) {
                         Text(t(availabilityLabel(service.handles[h.id], h.enabled)), style = MaterialTheme.typography.bodyMedium)
                         Toggle(R.string.lock_available, R.string.lock_help, s.lockScreenEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(lockScreenEnabled = value) } }
