@@ -126,6 +126,8 @@ Version 0.1.1 migrates the old indicator length once to `oldIndicatorLengthDp / 
 
 Version 0.1.2 migrates indicator thickness once to `oldIndicatorThicknessDp / oldTouchDepthDp`, capped at 100% where it already filled the touch depth. Existing saved thickness and depth use their old validity limits before conversion. Later touch-depth changes keep this percentage, and all unrelated preferences are retained.
 
+Version 0.3.1 restores visible handle thickness in dp, with a 4 dp default and a 0?32 dp control. Earlier percentages convert once using the saved touch depth. Length remains a percentage. Smaller touch areas constrain drawing without changing saved thickness. New backups use schema 5; older backups remain importable.
+
 ## Device verification
 
 Keep device results in the local, Git-ignored checklist at `plans/compatibility.md` (formerly `docs/compatibility.md`). This file is not included in a fresh clone. An AOSP emulator or Robolectric cannot establish HyperOS compatibility. With a connected, authorized phone, run:
@@ -146,7 +148,7 @@ Version 0.3.0, code 7, is published on GitHub. Version 0.3.1, code 8, has review
 Push the preparation commits before merging the pull request on GitHub:
 
 ```powershell
-git push -u origin feat/gesture-picker-hold-controls
+git push -u origin HEAD
 ```
 
 After the GitHub merge, run these commands from this repository. Start with a clean working tree:
