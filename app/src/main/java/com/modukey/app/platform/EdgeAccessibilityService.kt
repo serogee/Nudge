@@ -101,6 +101,8 @@ class EdgeAccessibilityService : AccessibilityService() {
             registered = true
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
+            scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
+            scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.editor.state.collect { screenshots?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
                 val selection = app.editor.state.value
@@ -129,9 +131,12 @@ class EdgeAccessibilityService : AccessibilityService() {
     override fun onDestroy() { stopSession(); super.onDestroy() }
     override fun onTaskRemoved(rootIntent: Intent?) { app.diagnostics.record("Task removed; service remains system managed"); super.onTaskRemoved(rootIntent) }
 
-    private fun reason(config: AppConfiguration, h: HandleConfig, landscape: Boolean = screen().landscape) = HandleEligibility.reason(config, h,
+    private fun reason(config: AppConfiguration, h: HandleConfig, landscape: Boolean = screen().landscape, ignorePause: Boolean = false): HandleAvailability {
+        val base = HandleEligibility.reason(config, h,
         getSystemService(PowerManager::class.java).isInteractive, getSystemService(KeyguardManager::class.java).isKeyguardLocked,
         landscape, foreground)
+        return if (base == HandleAvailability.ACTIVE && !ignorePause && h.id in app.handlePauses.state.value) HandleAvailability.PAUSED else base
+    }
     private fun screen(): ScreenSpace {
         val m = manager.currentWindowMetrics
         val safe = m.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
@@ -204,7 +209,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         val owner = open ?: return
         val config = (if (owner.testing) app.configuration.preview.value else app.configuration.state.value) ?: return
         val h = config.handle(owner.handleId)
-        if (!owner.testing && (h == null || reason(config, h) != HandleAvailability.ACTIVE)) { dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE); refresh(); return }
+        if (!owner.testing && (h == null || reason(config, h, ignorePause = true) != HandleAvailability.ACTIVE)) { dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE); refresh(); return }
         val p = config.panel(owner.panelId)?.settings ?: return
         val trigger = h?.trigger ?: TriggerSettings()
         val s = screen()
@@ -252,7 +257,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 config.panel(it.panelId) == null -> PanelCloseReason.PANEL_REMOVED
                 it.testing && (!editing || selected?.preview != true || !selected.matches(it.handleId, it.panelId)) -> PanelCloseReason.TEST_ENDED
                 !it.testing && selected != null -> PanelCloseReason.EDITOR_CHANGED
-                !it.testing && reasons[it.handleId] != HandleAvailability.ACTIVE -> PanelCloseReason.HANDLE_UNAVAILABLE
+                !it.testing && config.handle(it.handleId)?.let { h -> reason(config, h, s.landscape, ignorePause = true) } != HandleAvailability.ACTIVE -> PanelCloseReason.HANDLE_UNAVAILABLE
                 else -> null
             }
         }
@@ -266,7 +271,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (changed) {
                 val previous = attachedPanel?.takeIf { !it.second }?.first
                 val animateExit = if (previous?.testing == true) editing && selected?.preview == true && selected.matches(previous.handleId, previous.panelId)
-                    else selected == null && config.handle(previous?.handleId)?.let { reason(config, it) == HandleAvailability.ACTIVE } == true
+                    else selected == null && config.handle(previous?.handleId)?.let { reason(config, it, ignorePause = true) == HandleAvailability.ACTIVE } == true
                 panelHost?.hide(animate = animateExit)
             }
             if (wanted != null) {
@@ -277,7 +282,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, trigger, space.landscape)
                 val geometry = PanelGeometry.calculate(space.usable, space.density, p.layout(space.landscape), p.buttons.size, b, edge)
                 panelHost?.show(PanelSpec(p, p.layout(space.landscape), if (panelEditing && preview != null) geometry.copy(bounds = preview.toDisplay(geometry.bounds)) else geometry,
-                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0))
+                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId))
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
@@ -299,7 +304,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         app.status.report(ServiceState(true, active.isNotEmpty(), errors.values.firstOrNull(), active, reasons, open?.handleId, open?.panelId))
     }
     private fun updateEvents(config: AppConfiguration) {
-        val need = open != null || (config.enabled && config.handles.any { h -> h.enabled &&
+        val need = open != null || (config.enabled && config.handles.any { h -> h.enabled && h.id !in app.handlePauses.state.value &&
             (h.trigger.excludedPackages.isNotEmpty() || h.trigger.softHideEnabled || h.bindings.values.any { config.panel(it.panelId) != null }) })
         foregroundTracker?.track(need, SystemClock.uptimeMillis())
         val events = if (need) AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED else 0
