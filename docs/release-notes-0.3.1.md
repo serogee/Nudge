@@ -4,6 +4,7 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 
 ## Release highlights
 
+- Set visible handle thickness in dp, from 0 to 32 dp, with a 4 dp default. Length remains a percentage.
 - Save or cancel all handle and panel edits from the header. Live previews show pending changes immediately.
 - Choose Save, Discard, or Keep editing before leaving an editor. Names, gestures, buttons, and layout changes share its draft.
 - Set Hold time and Swipe and hold time independently for each handle, from 300 to 3000 ms.
@@ -26,9 +27,11 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 
 ## Compatibility and known limits
 
-- Automated checks passed: 271 unit/Robolectric tests, lint with zero errors and 15 existing warnings, and the debug APK build.
+- Automated checks passed: 279 unit/Robolectric tests, lint with zero errors and 15 existing warnings, and the debug APK build.
 - The application ID remains com.modukey.app. Use the existing signing key for the final release build and updates.
-- Existing settings and backups keep their values. Missing hold-time fields use 500 ms defaults.
+- Existing thickness percentages convert once using each handle's saved touch depth. Other settings keep their values. Missing hold-time fields use 500 ms defaults.
+- Changing touch depth keeps dp thickness fixed. Drawing is limited to the touch area without changing the saved thickness.
+- New backups use schema 5. Older backups remain importable; older Nudge versions cannot import schema-5 backups.
 - Pending editor changes stay in memory. Save applies them to normal operation and storage. Cancel restores saved settings.
 - Drafts survive rotation and temporary backgrounding. Closing the activity or process discards unsaved edits. Backups contain saved settings.
 - The release script verifies the signed APK and compares its signer with the archived 0.3.0 APK when available.
@@ -54,6 +57,7 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 - stage handle and panel edits (849ed18)
 - preview pending editor changes (d6340c4)
 - save or cancel handle and panel edits (a4439cf)
+- use dp for visible handle thickness (f109c90)
 
 ## Fixed
 
@@ -82,3 +86,6 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 - record editor save controls (42b16b0)
 - mark Nudge 0.3.0 as published (2bd9b7f)
 - explain the 0.3.1 publication steps (c2c2db7)
+- prepare Nudge 0.3.1 (b2dfe37)
+- explain fixed handle thickness (0a4fe5f)
+- clarify the thickness follow-up (4f6540a)
