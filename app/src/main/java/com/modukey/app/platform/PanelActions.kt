@@ -22,11 +22,13 @@ data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringe
 data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
     fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
+    fun showBrightness(handleId: String, slot: GestureSlot): ActionResult = ActionResult(succeeded = false)
     fun snapshot(): SoundState
 }
 class PanelActions(private val service: AccessibilityService,
     private val screenshot: () -> Boolean = { service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT) },
-    private val systemPanel: (Int) -> Boolean = { service.performGlobalAction(it) }) : ActionExecutor {
+    private val systemPanel: (Int) -> Boolean = { service.performGlobalAction(it) },
+    private val brightnessPopup: (String) -> Boolean = { false }) : ActionExecutor {
     private val app get() = service.application as NudgeApplication
     private val audio = service.getSystemService(AudioManager::class.java)
     private val notification = service.getSystemService(NotificationManager::class.java)
@@ -100,11 +102,21 @@ class PanelActions(private val service: AccessibilityService,
     } catch (_: ActivityNotFoundException) { ActionResult(message = R.string.app_missing, succeeded = false) }
     catch (_: RuntimeException) { ActionResult(message = R.string.action_failed, succeeded = false) }
 
-    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false, gestureSlot: GestureSlot? = null, writeSettings: Boolean = false) {
+    override fun showBrightness(handleId: String, slot: GestureSlot): ActionResult {
+        val target = app.configuration.state.value?.handle(handleId)?.target(slot) ?: return ActionResult(succeeded = false)
+        if (!target.brightness) return ActionResult(succeeded = false)
+        if (!app.brightness.canWrite) {
+            launch(handleId, PanelButton(id = "brightness-permission", action = ButtonAction.BRIGHTNESS_UP), false,
+                gestureSlot = slot, writeSettings = true, brightnessTarget = target)
+            return ActionResult(message = R.string.brightness_access_required, succeeded = false)
+        }
+        return if (brightnessPopup(handleId)) ActionResult() else ActionResult(message = R.string.action_failed, succeeded = false)
+    }
+    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false, gestureSlot: GestureSlot? = null, writeSettings: Boolean = false, brightnessTarget: GestureTarget? = null) {
         if (!service.getSystemService(PowerManager::class.java).isInteractive) return
         val locked = service.getSystemService(KeyguardManager::class.java).isKeyguardLocked
         if (button.action == ButtonAction.INPUT_METHOD_PICKER || locked) {
-            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked, writeSettings = writeSettings))
+            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked, writeSettings = writeSettings, brightnessTarget = brightnessTarget))
             service.startActivity(Intent(service, UnlockActionActivity::class.java).putExtra("token", token)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
         } else launchUnlocked(service, button, policy, writeSettings)
@@ -128,9 +140,10 @@ class PanelActions(private val service: AccessibilityService,
 }
 
 data class PendingLaunch(val handleId: String, val button: PanelButton, val testing: Boolean, val policy: Boolean, val gestureSlot: GestureSlot? = null,
-    val fromLockScreen: Boolean = true, val writeSettings: Boolean = false) {
+    val fromLockScreen: Boolean = true, val writeSettings: Boolean = false, val brightnessTarget: GestureTarget? = null) {
     // Recheck the exact source after authentication. Deleted or changed assignments must not launch.
     fun currentButton(config: AppConfiguration): PanelButton? {
+        if (brightnessTarget != null) return button.takeIf { writeSettings && gestureSlot != null && brightnessTarget.brightness && config.handle(handleId)?.target(gestureSlot) == brightnessTarget }
         val current = if (gestureSlot != null) config.handle(handleId)?.target(gestureSlot)?.action
             else config.panels.asSequence().flatMap { it.settings.buttons }.firstOrNull { it.id == button.id }
         return current?.takeIf { it == button }
