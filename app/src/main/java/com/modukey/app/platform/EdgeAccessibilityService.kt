@@ -93,7 +93,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
         brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(); refresh() }, {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
-        })
+        }, changed = { panelHost?.refreshSound() })
         actions = PanelActions(this, screenshot = { screenshots?.request() == true }, systemPanel = { systemPanels?.request(it) == true }, brightnessPopup = ::showBrightness)
         panelTimeout = PanelTimeout(requireNotNull(scope)) { dismissPanel(PanelCloseReason.TIMEOUT); refresh() }
         panelHost = AccessibilityPanelHost(this, manager, actions!!, { reason -> dismissPanel(when (reason) {

@@ -69,7 +69,7 @@ class PanelActions(private val service: AccessibilityService,
             ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN, ButtonAction.BRIGHTNESS_AUTOMATIC -> {
                 val result = if (button.action == ButtonAction.BRIGHTNESS_AUTOMATIC) app.brightness.toggleAutomatic()
                     else if (button.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) app.brightness.adjust(button.action == ButtonAction.BRIGHTNESS_UP)
-                    else app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM)
+                    else app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM, button.brightnessReturn)
                 when (result) {
                     BrightnessResult.CHANGED -> ActionResult()
                     BrightnessResult.ALREADY_SET -> ActionResult(message = R.string.brightness_already_set)

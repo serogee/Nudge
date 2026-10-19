@@ -19,7 +19,8 @@ import kotlin.math.roundToInt
 
 /** One bounded window. Observers and callbacks exist only while this window is visible. */
 internal class BrightnessPopupHost(private val context: Context, private val manager: WindowManager,
-    private val brightness: BrightnessController, private val dismissed: () -> Unit, private val failure: (Int) -> Unit) {
+    private val brightness: BrightnessController, private val dismissed: () -> Unit, private val failure: (Int) -> Unit,
+    private val changed: () -> Unit = {}) {
     private var view: BrightnessPopupView? = null
     private var layout: WindowManager.LayoutParams? = null
     private var preview = false
@@ -41,11 +42,13 @@ internal class BrightnessPopupHost(private val context: Context, private val man
             if (current == null) {
                 val next = BrightnessPopupView(context, { fraction ->
                     val result = brightness.setFraction(fraction)
+                    changed()
                     if (result == BrightnessResult.FAILED || result == BrightnessResult.NEED_ACCESS) {
                         dismissed(); failure(if (result == BrightnessResult.NEED_ACCESS) R.string.brightness_access_required else R.string.brightness_failed)
                     }
                 }, { active -> handler.removeCallbacks(timeout); if (!active && view != null && !preview) handler.postDelayed(timeout, timeoutMs) }, dismissed, {
                     val result = brightness.toggleAutomatic()
+                    changed()
                     if (result == BrightnessResult.NEED_ACCESS || result == BrightnessResult.FAILED)
                         failure(if (result == BrightnessResult.NEED_ACCESS) R.string.brightness_access_required else R.string.brightness_failed)
                     view?.updateLevel(brightness.fraction(), brightness.status().automatic)
@@ -173,6 +176,7 @@ internal class BrightnessTrackView(context: Context, private val change: (Float)
     private var preview = false
     private var level = .5f
     private var dragging = false
+    private var lastY = 0f
     private var cancelled = false
     private var pending: Float? = null
     private var scheduled = false
@@ -184,6 +188,7 @@ internal class BrightnessTrackView(context: Context, private val change: (Float)
     private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { dismiss() } else null
     init { isFocusableInTouchMode = true; importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES; contentDescription = context.getString(R.string.brightness_slider) }
     fun configure(s: BrightnessPopupSettings, editing: Boolean, fraction: Float) {
+        if (dragging && (settings.touchBehavior != s.touchBehavior || preview != editing)) cancelInput()
         val dirty = settings != s || preview != editing || (!dragging && level != fraction)
         settings = s; preview = editing; isEnabled = !editing
         if (!dragging) level = fraction
@@ -211,7 +216,12 @@ internal class BrightnessTrackView(context: Context, private val change: (Float)
         paint.style = Paint.Style.FILL
     }
     private fun move(y: Float) {
-        val t = trackBounds(); level = ((t.bottom - y) / t.height().coerceAtLeast(1f)).coerceIn(0f, 1f)
+        val t = trackBounds()
+        if (settings.touchBehavior == BrightnessTouchBehavior.SLIDE_TO_ADJUST) {
+            if (y == lastY) return
+            level = (level + (lastY - y) / t.height().coerceAtLeast(1f)).coerceIn(0f, 1f)
+        } else level = ((t.bottom - y) / t.height().coerceAtLeast(1f)).coerceIn(0f, 1f)
+        lastY = y
         pending = level; invalidate()
         if (!scheduled) { scheduled = true; postOnAnimation(frame) }
     }
@@ -221,7 +231,10 @@ internal class BrightnessTrackView(context: Context, private val change: (Float)
         if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) { dismiss(); return true }
         if (event.pointerCount > 1) { cancelled = true; cancelInput(); return true }
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { cancelled = false; dragging = true; touching(true); move(event.y) }
+            MotionEvent.ACTION_DOWN -> {
+                cancelled = false; dragging = true; lastY = event.y; touching(true)
+                if (settings.touchBehavior == BrightnessTouchBehavior.JUMP_TO_TOUCH) move(event.y)
+            }
             MotionEvent.ACTION_MOVE -> if (dragging && !cancelled) move(event.y)
             MotionEvent.ACTION_UP -> if (dragging && !cancelled) { move(event.y); removeCallbacks(frame); scheduled = false; val last = pending; pending = null; dragging = false; last?.let(change); touching(false); performClick() }
             MotionEvent.ACTION_CANCEL -> { cancelled = true; cancelInput() }

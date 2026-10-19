@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import com.modukey.app.core.BrightnessPreset
+import com.modukey.app.core.BrightnessReturnSettings
 import com.modukey.app.core.BrightnessSession
 import com.modukey.app.core.BrightnessValue
 import kotlin.math.roundToInt
@@ -67,10 +68,10 @@ class BrightnessController(context: Context) {
         BrightnessResult.FAILED
     }
 
-    fun toggle(preset: BrightnessPreset): BrightnessResult {
+    fun toggle(preset: BrightnessPreset, settings: BrightnessReturnSettings = BrightnessReturnSettings()): BrightnessResult {
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS
         return changing {
-            val change = session.change(preset, read(), minimum, maximum) ?: return@changing BrightnessResult.ALREADY_SET
+            val change = session.change(preset, read(), minimum, maximum, settings)
             if (!write(change.after)) {
                 // Undo a partial write only while its values still match this action.
                 val partial = read()

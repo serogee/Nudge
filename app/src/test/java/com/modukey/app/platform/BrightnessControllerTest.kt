@@ -1,17 +1,23 @@
 package com.modukey.app.platform
 
 import android.content.ContentResolver
+import android.app.Activity
 import android.content.Context
 import android.app.KeyguardManager
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.WindowManager
+import android.view.MotionEvent
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.BrightnessPreset
+import com.modukey.app.core.BrightnessReturnSettings
 import com.modukey.app.core.ButtonAction
 import com.modukey.app.core.PanelButton
 import com.modukey.app.core.GestureSlot
+import com.modukey.app.core.BrightnessPopupSettings
+import com.modukey.app.core.Insets
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
@@ -59,10 +65,30 @@ class BrightnessControllerTest {
         app.brightness.toggle(BrightnessPreset.MINIMUM)
         assertTrue(app.brightness.status().minimum)
         app.brightness.toggle(BrightnessPreset.MINIMUM)
-        assertTrue(app.brightness.status().maximum)
-        app.brightness.toggle(BrightnessPreset.MAXIMUM)
-        assertEquals(100, level()); assertEquals(1, mode())
+        assertEquals(128, level()); assertEquals(0, mode())
         assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+        app.brightness.toggle(BrightnessPreset.MAXIMUM); app.brightness.toggle(BrightnessPreset.MAXIMUM)
+        assertEquals(128, level())
+    }
+    @Test fun customReturnAndUnavailablePreviousWorkThroughTheActionExecutor() {
+        Writes.allowed = true
+        val service = Robolectric.buildService(EdgeAccessibilityService::class.java).create().get()
+        val actions = PanelActions(service)
+        for (action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) {
+            val button = PanelButton(action = action, brightnessReturn = BrightnessReturnSettings(false, .25f))
+            set(100, true)
+            assertTrue(actions.execute("owner", button, false).succeeded)
+            shadowOf(Looper.getMainLooper()).idle()
+            assertTrue(if (action == ButtonAction.BRIGHTNESS_MAXIMUM) actions.snapshot().maximumBrightness else actions.snapshot().minimumBrightness)
+            assertTrue(actions.execute("owner", button, false).succeeded)
+            assertEquals(65, level()); assertEquals(0, mode())
+            assertFalse(actions.snapshot().maximumBrightness); assertFalse(actions.snapshot().minimumBrightness)
+            set(255, true)
+            val previous = button.copy(brightnessReturn = BrightnessReturnSettings(true, .75f))
+            actions.execute("owner", previous, false); actions.execute("owner", previous, false)
+            assertEquals(192, level()); assertEquals(0, mode())
+            assertFalse(actions.snapshot().maximumBrightness); assertFalse(actions.snapshot().minimumBrightness)
+        }
     }
     @Test fun sliderUsesPublicRangeAndPresetsHaveOwnedActiveStates() {
         Writes.allowed = true; set(100, false)
@@ -92,6 +118,27 @@ class BrightnessControllerTest {
             assertEquals(BrightnessResult.ALREADY_SET, app.brightness.setFraction(endpoint))
             assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
         }
+    }
+    @Test fun unchangedEndpointSliderInputRefreshesTheOpenPanelState() {
+        Writes.allowed = true; set(100, false)
+        val activity = Robolectric.buildActivity(Activity::class.java).setup()
+        val context = activity.get()
+        val states = mutableListOf<BrightnessStatus>()
+        val host = BrightnessPopupHost(context, context.getSystemService(WindowManager::class.java), app.brightness,
+            {}, { fail("Slider failed: $it") }, changed = { states += app.brightness.status() })
+        try {
+            app.brightness.toggle(BrightnessPreset.MAXIMUM)
+            assertTrue(host.show(BrightnessPopupSettings(showBackground = false, showAutomaticToggle = false), ScreenSpace(400f, 800f, 1f, Insets(), false), false))
+            val view = ReflectionHelpers.getField<BrightnessPopupView>(host, "view")
+            view.measure(android.view.View.MeasureSpec.makeMeasureSpec(64, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(240, android.view.View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, 64, 240)
+            for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+                MotionEvent.obtain(0, 10, action, 30f, 0f, 0).let { view.onTouchEvent(it); it.recycle() }
+            }
+            assertEquals(255, level())
+            assertFalse(states.last().maximum); assertFalse(states.last().minimum)
+        } finally { host.hide(); activity.pause().stop().destroy() }
     }
     @Test fun externalEndpointNotificationsClearOwnershipWithoutIntermediateReads() {
         Writes.allowed = true

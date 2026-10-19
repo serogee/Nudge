@@ -18,12 +18,13 @@ class BrightnessSessionTest {
             assertFalse(session.tracking)
         }
     }
-    @Test fun `switching between presets retains each previous value`() {
+    @Test fun switchingPresetsCannotRestoreMaximumOrReactivateAnOlderPreset() {
         val session = BrightnessSession()
         val maximum = apply(session, BrightnessPreset.MAXIMUM, original)
         val minimum = apply(session, BrightnessPreset.MINIMUM, maximum)
-        assertEquals(maximum, apply(session, BrightnessPreset.MINIMUM, minimum))
-        assertEquals(original, apply(session, BrightnessPreset.MAXIMUM, maximum))
+        assertFalse(session.active(BrightnessPreset.MAXIMUM, minimum))
+        assertEquals(BrightnessValue(128, false), apply(session, BrightnessPreset.MINIMUM, minimum))
+        assertFalse(session.tracking)
     }
     @Test fun `external level or mode changes discard stale restore values even if the limit returns`() {
         for (changed in listOf(BrightnessValue(101, false), BrightnessValue(255, true))) {
@@ -41,8 +42,30 @@ class BrightnessSessionTest {
         assertFalse(s.active(BrightnessPreset.MAXIMUM, maximum))
         apply(s, BrightnessPreset.MAXIMUM, maximum)
         assertTrue(s.active(BrightnessPreset.MAXIMUM, maximum))
-        assertEquals(maximum, apply(s, BrightnessPreset.MAXIMUM, maximum))
+        assertEquals(BrightnessValue(128, false), apply(s, BrightnessPreset.MAXIMUM, maximum))
         assertFalse(s.active(BrightnessPreset.MAXIMUM, maximum))
+    }
+    @Test fun customReturnOverridesPreviousAndClearsOwnershipEvenAtTheLimit() {
+        val session = BrightnessSession()
+        val maximum = apply(session, BrightnessPreset.MAXIMUM, original)
+        val change = session.change(BrightnessPreset.MAXIMUM, maximum, 1, 255, BrightnessReturnSettings(false, .25f))
+        assertEquals(BrightnessValue(65, false), change.after)
+        session.applied(change); assertFalse(session.tracking)
+        apply(session, BrightnessPreset.MAXIMUM, change.after)
+        val unchanged = session.change(BrightnessPreset.MAXIMUM, maximum, 1, 255, BrightnessReturnSettings(false, 1f))
+        session.applied(unchanged)
+        assertEquals(maximum, unchanged.after); assertFalse(session.active(BrightnessPreset.MAXIMUM, maximum))
+    }
+    @Test fun eitherPresetFallsBackWhenPreviousBrightnessIsMaximumOrItsOwnTarget() {
+        for (preset in BrightnessPreset.entries) {
+            for (before in listOf(255, if (preset == BrightnessPreset.MAXIMUM) 255 else 1)) {
+                val session = BrightnessSession()
+                val current = apply(session, preset, BrightnessValue(before, true))
+                val change = session.change(preset, current, 1, 255, BrightnessReturnSettings(true, .75f))
+                assertEquals(BrightnessValue(192, false), change.after)
+                session.applied(change); assertFalse(session.tracking)
+            }
+        }
     }
     @Test fun `unapplied writes and fresh sessions cannot create restore values`() {
         val session = BrightnessSession()
