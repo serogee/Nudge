@@ -106,4 +106,21 @@ class ConfigurationDraftTest {
         c.cancelDraft(); c.openPanel("tools")
         assertTrue(c.draft.value is ConfigurationDraft.Panel)
     }
+
+    @Test fun `save feedback waits for storage and reports failure without discarding pending settings`() = runTest {
+        val store = Store().apply { latency = 1_000 }; val c = ConfigurationController(store, backgroundScope); runCurrent()
+        c.openHandle("first-handle"); c.editHandle("first-handle") { it.copy(name = "Saved") }
+        var result: Boolean? = null
+        c.saveDraft { result = it }; runCurrent()
+        assertNull(result); advanceTimeBy(1_000); runCurrent()
+        assertEquals(true, result); assertEquals("Saved", store.disk.value.handles.single().name)
+        store.fail = true; result = null
+        c.editHandle("first-handle") { it.copy(name = "Pending") }; c.saveDraft { result = it }
+        runCurrent(); assertNull(result); advanceTimeBy(1_000); runCurrent()
+        assertEquals(false, result); assertEquals(ConfigurationError.SAVE, c.error.value)
+        assertEquals("Pending", c.state.value!!.handles.single().name)
+        assertEquals("Saved", store.disk.value.handles.single().name)
+        store.fail = false; c.retry(); advanceTimeBy(1_000); runCurrent()
+        assertEquals("Pending", store.disk.value.handles.single().name)
+    }
 }
