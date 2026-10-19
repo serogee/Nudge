@@ -56,6 +56,8 @@ import com.modukey.app.updates.*
         var replace by remember(imported) { mutableStateOf(false) }
         AlertDialog(onDismissRequest={ vm.importPreview.value=null },title={ Text(t(R.string.import_config)) },text={ Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text(t(R.string.import_summary,imported.handles.size,imported.panels.size,imported.panels.sumOf { it.settings.buttons.size }))
+            Text(t(R.string.import_shortcut_summary, imported.shortcuts.size))
+            Help(R.string.import_shortcut_help)
             imported.handles.forEach { Text(context.handleLabel(imported,it)) }
             imported.panels.forEach { Text(context.panelLabel(it)) }
             Row { RadioButton(!replace,{ replace=false }); TextButton(onClick={ replace=false }) { Text(t(R.string.import_add)) } }

@@ -178,7 +178,7 @@
     <string name="import_summary">Handles: %1$d · Panels: %2$d · Buttons: %3$d</string>
     <string name="import_add">Add handles and panels</string>
     <string name="import_replace">Replace configuration</string>
-    <string name="import_add_help">Copy handles and panels. New handles start off. Keep current global settings.</string>
+    <string name="import_add_help">Copy handles and panels. New handles start off. Keep current shortcuts and global settings.</string>
     <string name="import_replace_help">Replace all handles, panels, and global settings. Nudge will stay paused for review.</string>
     <string name="confirm_import">Import</string>
     <string name="backup_saved">Configuration exported.</string>
@@ -456,4 +456,7 @@
     <string name="shortcut_pinned">Added to Home screen</string>
     <string name="shortcut_not_pinned">Not added to Home screen</string>
     <string name="slider_custom">Custom position</string>
+    <string name="select_handle">Select handle</string>
+    <string name="import_shortcut_summary">Shortcuts: %1$d</string>
+    <string name="import_shortcut_help">Replace also imports brightness slider settings and shortcut definitions. It does not add icons to your Home screen.</string>
 </resources>
