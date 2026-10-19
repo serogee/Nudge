@@ -65,11 +65,13 @@ Backups use the system file picker and include panels, gesture links, hidden but
 
 ## Brightness slider and Home screen shortcuts
 
-Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum still restore their previous value unless another control changes brightness.
+Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum have independent **Return brightness** values. Enable **Use previous brightness** to restore a valid previous level and automatic mode. Otherwise, the return level defaults to 50% in manual mode. Previous maximum brightness is unavailable; Minimum also rejects its own minimum. Manual changes never activate either button, even at a limit.
 
 Enable **Show brightness slider** in a gesture assignment. It works alone or with a panel, direct action, and **Show Volume Popup**. The custom slider opens on the left by default, opposite the usual right-side volume popup. Android does not report Xiaomi's private volume popup bounds. Home provides the volume-side selection, custom placement, width, height, timeout, colors, and opacity. The starting size is 64 ? 240 dp; compare and adjust it on your phone. It approximates MIUI styling, rather than using Xiaomi's native volume window.
 
 **Corner radius** changes slider rounding. **Show slider background** controls outer padding; off uses the full track width. **Vertical center from bottom** starts at 0% on the bottom. Existing placement migrates without a jump. The optional **Automatic brightness** button is shown below the slider by default. The same toggle is available for panel buttons, gestures, and shortcuts.
+
+Home's **Touch behavior** selects **Jump to touch** or **Slide to adjust**. Jump uses the touched track position. Slide keeps the current level on touch, then changes it in proportion to the drag. Existing setups keep Jump to touch. Slide follows direction changes immediately at either limit.
 
 Home's preview is non-interactive and ends when Home is left or the app goes into the background. It works with the master switch off when accessibility is connected. The live slider requires **Modify system settings** access. Dragging selects manual brightness; showing a preview does not change brightness. Outside touch and Back dismiss the live slider. It also closes on timeout, screen-off, source ineligibility, and service cleanup. Locked use follows the invoking handle's lock-screen setting and never wakes the phone.
 

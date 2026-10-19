@@ -132,7 +132,11 @@ The development button editor keeps changes private until Save. Volume up and Vo
 
 Maximum brightness and Minimum brightness are available as panel buttons and direct gesture actions. The first use opens Android's Modify system settings screen if access is missing. Grant access, return, and run the action again. Nudge does not change brightness before access is granted.
 
-Each brightness limit uses manual brightness. Tap the same action again to restore the previous level and automatic mode. An external brightness or mode change clears the restore values. App restarts also clear them. The two actions retain their own restore values when switching between limits. They do not wake the screen. Device brightness limits require a Redmi check.
+Each brightness limit uses manual brightness. Only a Nudge action activates its button. A manual brightness change clears the active state, including a quick drag back to the same limit. App restarts also clear active states. Switching limits activates only the new action.
+
+Each action has **Use previous brightness**, enabled by default, and **Return brightness**, initially 50%. Tap an active action to return to its previous level and automatic mode when available. Previous maximum brightness is unavailable. Minimum also rejects a previous minimum. If the previous level is unavailable, or Use previous brightness is off, use Return brightness in manual mode. Returning always clears the active state, even if the selected return value equals a limit.
+
+The same controls appear for panel buttons, direct gestures, and Home shortcuts. Saved return settings are independent of runtime restore values. Return settings survive backups, duplication, and restarts. Runtime values are never exported. They do not wake the screen. Device brightness limits require a Redmi check.
 
 Toggle handles is available as a panel button and direct gesture action. Select All handles, This handle, or Other handles. This handle means the handle that opened the panel or ran the gesture. A panel test without a preview handle cannot select This handle or Other handles.
 
@@ -156,7 +160,7 @@ Add handles and panels is the default import mode. It creates disabled handle co
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
 
-The current configuration uses schema 6 for brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+Schema 6 introduced brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
 
 Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
@@ -187,3 +191,11 @@ Empty button adds a grid cell with no action. Its Appearance dropdown selects No
 Button drags beyond touch slop cancel clicking until the next press, including when the pointer returns to the same button. Scrolling remains available. The unexpected panel dismissal investigation is deferred to a separate task; app-change detection is unchanged.
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
+
+Development backups use schema 11 for per-action brightness return preferences and slider touch behavior. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
+
+## Brightness touch behavior
+
+Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
+
+Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
