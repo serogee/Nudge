@@ -23,8 +23,8 @@ import com.modukey.app.ui.PanelContent
 import kotlin.math.roundToInt
 
 data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT, val previewQuarterTurns: Int = 0,
-    val handleId: String? = null)
-interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound() }
+    val handleId: String? = null, val inputSuspended: Boolean = false)
+interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound(); fun pull(distance: Float, edge: Edge, settle: Boolean = false) {} }
 enum class PanelDismissReason { BACK, OUTSIDE_TOUCH, WINDOW_DETACHED }
 
 /** At most one active window and one inert window completing its finite exit. */
@@ -74,7 +74,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         var exiting = false
         var added = false
         private var disposed = false
-        val root = PanelRoot(context) { (spec.editing || exiting) to spec.panel.outsideTouch }.apply {
+        val root = PanelRoot(context) { (spec.editing || spec.inputSuspended || exiting) to spec.panel.outsideTouch }.apply {
             dismiss = { reason -> if (active === this@AttachedPanel) onDismiss(reason) }
             isHandle = handleAt
             touchState = { if (active === this@AttachedPanel) onTouchState(it) }
@@ -85,7 +85,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
             // These states belong to this window. Clearing or replacing active does not blank an exit frame.
             setContent { NudgeTheme {
                 val p = spec
-                PanelContent(p.panel, p.layout, p.geometry, sound, !p.editing) { if (active === this@AttachedPanel) onAction(it) }
+                PanelContent(p.panel, p.layout, p.geometry, sound, !p.editing && !p.inputSuspended) { if (active === this@AttachedPanel) onAction(it) }
             } }
         }
         private val detached = object : View.OnAttachStateChangeListener {
@@ -134,7 +134,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         }
     }
     private fun configureInput(window: AttachedPanel) {
-        if (!window.spec.editing) {
+        if (!window.spec.editing && !window.spec.inputSuspended) {
             refreshSound()
             if (!registered) {
                 ContextCompat.registerReceiver(context, receiver, IntentFilter().apply {
@@ -151,12 +151,25 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
             }
         } else stopObservers()
     }
-    override fun refreshSound() { active?.takeIf { !it.spec.editing }?.let { it.sound = actions.snapshot().copy(ownerHandleId = it.spec.handleId) } }
+    override fun pull(distance: Float, edge: Edge, settle: Boolean) {
+        val root = active?.root ?: return
+        PanelWindowAnimations.cancel(root)
+        root.alpha = 1f; root.scaleX = 1f; root.scaleY = 1f
+        if (settle && android.animation.ValueAnimator.areAnimatorsEnabled()) {
+            root.animate().translationX(0f).translationY(0f).setDuration(180)
+                .setInterpolator(android.view.animation.PathInterpolator(.2f, 0f, .2f, 1f)).start()
+        } else {
+            val amount = if (android.animation.ValueAnimator.areAnimatorsEnabled()) distance else 0f
+            root.translationX = when (edge) { Edge.LEFT -> amount; Edge.RIGHT -> -amount; else -> 0f }
+            root.translationY = if (edge == Edge.BOTTOM) -amount else 0f
+        }
+    }
+    override fun refreshSound() { active?.takeIf { !it.spec.editing && !it.spec.inputSuspended }?.let { it.sound = actions.snapshot().copy(ownerHandleId = it.spec.handleId) } }
     @SuppressLint("RtlHardcoded")
     private fun params(spec: PanelSpec) = WindowManager.LayoutParams(spec.geometry.bounds.width.roundToInt().coerceAtLeast(1),
         spec.geometry.bounds.height.roundToInt().coerceAtLeast(1), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-            (if (spec.editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
+            (if (spec.editing || spec.inputSuspended) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
             (if (spec.panel.outsideTouch != OutsideTouch.BLOCK) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
         PixelFormat.TRANSLUCENT).apply {
         gravity = Gravity.TOP or Gravity.LEFT; x = spec.geometry.bounds.x.roundToInt(); y = spec.geometry.bounds.y.roundToInt()
