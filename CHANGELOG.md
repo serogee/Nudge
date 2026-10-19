@@ -39,6 +39,7 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 - Pending editor changes stay in memory. Save applies them to normal operation and storage. Cancel restores saved settings.
 - Drafts survive rotation and temporary backgrounding. Closing the activity or process discards unsaved edits. Backups contain saved settings.
 - The release script verifies the signed APK and compares its signer with the archived 0.3.0 APK when available.
+- The attached Nudge-0.3.1.json records signed-build verification, the source commit, signing certificate, and APK checksum.
 - Redmi/HyperOS, installation over 0.3.0, screenshot UI, system text sizes, navigation, and overnight battery checks remain pending.
 - The reported intermittent duplicate handle was not reproduced on the Redmi. Automated tests cover window ownership and repeated rotation.
 - Visible handles can appear in screenshots. Android provides no reliable pre-capture signal for every device screenshot method.
@@ -93,6 +94,9 @@ Changes since v0.3.0, the latest published release. Version code increases from 
 - prepare Nudge 0.3.1 (b2dfe37)
 - explain fixed handle thickness (0a4fe5f)
 - clarify the thickness follow-up (4f6540a)
+- include dp thickness in 0.3.1 notes (386775a)
+- record authorized local release merges (ad5afea)
+- explain local merge publication (6ca0d6c)
 
 ## 0.3.0 - 2026-10-18
 
