@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 8 adds slider appearance and automatic mode, with brightness Y measured from the bottom. */
+/** Schema 9 adds independent gesture timing, distances, and vibration preferences. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 8
+    const val SCHEMA = 9
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
@@ -99,7 +99,17 @@ object ConfigurationCodec {
         excludedPackages = t.optJSONArray("excluded")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
         longerTouchLength = t.optBoolean("longerTouchLength"), softHideEnabled = t.optBoolean("softHideEnabled"),
         softHideDelayMs = t.optLong("softHideDelayMs", 3_000),
-        holdTimeMs = t.optLong("holdTimeMs", 500), swipeHoldTimeMs = t.optLong("swipeHoldTimeMs", 500))
+        holdTimeMs = t.optLong("holdTimeMs", 500), swipeHoldTimeMs = t.optLong("swipeHoldTimeMs", 500),
+        swipeHoldDistanceDp = t.float("swipeHoldDistanceDp", if (schema < 9) t.float("swipeDistance", 24f) else 24f),
+        swipeHoldTimeoutMs = t.optLong("swipeHoldTimeoutMs", if (schema < 9) t.optLong("swipeTime", 600) else 600),
+        holdExecution = enumValueOf(t.optString("holdExecution", "ON_RELEASE")),
+        swipeHoldExecution = enumValueOf(t.optString("swipeHoldExecution", "ON_RELEASE")),
+        swipeFeedback = feedback(t, "swipeFeedback"), swipeHoldFeedback = feedback(t, "swipeHoldFeedback"),
+        holdFeedback = feedback(t, "holdFeedback"), tapFeedback = feedback(t, "tapFeedback"))
+    private fun feedback(t: JSONObject, key: String): GestureFeedback = t.optJSONObject(key)?.let {
+        GestureFeedback(it.optBoolean("enabled"), it.float("strength", .5f))
+    } ?: GestureFeedback(t.optBoolean("haptics"))
+    private fun feedback(s: GestureFeedback) = JSONObject().put("enabled", s.enabled).put("strength", s.strength)
     private fun handle(h: HandleConfig): JSONObject {
         val s = h.trigger
         val trigger = JSONObject().put("portrait", placement(s.portrait)).put("landscape", placement(s.landscape))
@@ -111,6 +121,10 @@ object ConfigurationCodec {
             .put("excluded", array(s.excludedPackages.sorted())).put("longerTouchLength", s.longerTouchLength)
             .put("softHideEnabled", s.softHideEnabled).put("softHideDelayMs", s.softHideDelayMs)
             .put("holdTimeMs", s.holdTimeMs).put("swipeHoldTimeMs", s.swipeHoldTimeMs)
+            .put("swipeHoldDistanceDp", s.swipeHoldDistanceDp).put("swipeHoldTimeoutMs", s.swipeHoldTimeoutMs)
+            .put("holdExecution", s.holdExecution.name).put("swipeHoldExecution", s.swipeHoldExecution.name)
+            .put("swipeFeedback", feedback(s.swipeFeedback)).put("swipeHoldFeedback", feedback(s.swipeHoldFeedback))
+            .put("holdFeedback", feedback(s.holdFeedback)).put("tapFeedback", feedback(s.tapFeedback))
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
             put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness)
