@@ -41,6 +41,8 @@ import com.modukey.app.platform.*
     val service by vm.status.collectAsStateWithLifecycle()
     val accessibility by vm.accessibilityEnabled.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
+    val draft by vm.draft.collectAsStateWithLifecycle()
+    var pendingNavigation by remember { mutableStateOf<(() -> Unit)?>(null) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var handleId by rememberSaveable { mutableStateOf<String?>(null) }
     var panelId by key("independent-panel-navigation") { rememberSaveable { mutableStateOf<String?>(null) } }
@@ -52,16 +54,21 @@ import com.modukey.app.platform.*
     val panel = config?.panel(panelId)
     val previewHandle = config?.handle(previewHandleId)
     var overlayPreview by rememberSaveable(handleId, panelId) { mutableStateOf(true) }
+    var previewLandscape by rememberSaveable(handleId, panelId) { mutableStateOf(false) }
     var handleTab by rememberSaveable(handleId) { mutableIntStateOf(0) }
-    fun back() { if (tab == 2) panelId = null else handleId = null }
+    fun navigate(action: () -> Unit) {
+        if (draft?.changed == true) pendingNavigation = action
+        else { vm.closeEditing(); action() }
+    }
+    fun back() = navigate { if (tab == 2) panelId = null else handleId = null }
     BackHandler(enabled = handle != null || panel != null) { back() }
     LaunchedEffect(vm) { vm.notices.collect { snackbar.showSnackbar(context.getString(it)) } }
-    DisposableEffect(lifecycle, tab, handle?.id, panel?.id, previewHandle?.id, overlayPreview, handleTab) {
+    DisposableEffect(lifecycle, tab, handle?.id, panel?.id, previewHandle?.id, overlayPreview, handleTab, previewLandscape) {
         val token = Any()
         fun resume() {
             vm.refreshPermissions()
-            if (tab == 1 && handle != null) vm.beginEditor(token, handle.id, preview = overlayPreview && handleTab == 0)
-            else if (tab == 2 && panel != null) vm.beginEditor(token, previewHandle?.id, panel.id, preview = overlayPreview)
+            if (tab == 1 && handle != null) vm.beginEditor(token, handle.id, preview = overlayPreview && handleTab == 0, landscape = previewLandscape)
+            else if (tab == 2 && panel != null) vm.beginEditor(token, previewHandle?.id, panel.id, preview = overlayPreview, landscape = previewLandscape)
         }
         val observer = LifecycleEventObserver { _, event -> when (event) {
             Lifecycle.Event.ON_RESUME -> resume()
@@ -84,7 +91,7 @@ import com.modukey.app.platform.*
                 actions = { Text(BuildConfig.VERSION_NAME, Modifier.padding(end = 16.dp), style = MaterialTheme.typography.labelSmall) })
         }, bottomBar = { NavigationBar {
             listOf(R.string.home, R.string.handles, R.string.panels, R.string.info).forEachIndexed { index, title ->
-                NavigationBarItem(selected = tab == index, onClick = { tab = index; handleId = null; panelId = null; previewHandleId = null }, label = { Text(t(title)) },
+                NavigationBarItem(selected = tab == index, onClick = { navigate { tab = index; handleId = null; panelId = null; previewHandleId = null } }, label = { Text(t(title)) },
                     icon = { Icon(when(index) { 0 -> Icons.Outlined.Home; 1 -> AppIcons.Handle; 2 -> AppIcons.Apps; else -> Icons.Outlined.Info }, null) })
             }
         } }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
@@ -97,15 +104,24 @@ import com.modukey.app.platform.*
                 val c = config
                 if (c == null) { if (error == null) CircularProgressIndicator() }
                 else when {
-                    tab == 1 && handle != null -> HandleEditor(c, handle, vm, handleTab, { handleTab = it }, overlayPreview) { overlayPreview = it }
+                    tab == 1 && handle != null -> HandleEditor(c, handle, vm, handleTab, { handleTab = it }, overlayPreview, { overlayPreview = it }, previewLandscape) { previewLandscape = it }
                     tab == 1 -> HandlesScreen(c, vm) { handleId = it }
-                    tab == 2 && panel != null -> PanelEditor(c, panel, previewHandle?.id, vm, { previewHandleId = it }, overlayPreview) { overlayPreview = it }
+                    tab == 2 && panel != null -> PanelEditor(c, panel, previewHandle?.id, vm, { previewHandleId = it }, overlayPreview, { overlayPreview = it }, previewLandscape) { previewLandscape = it }
                     tab == 2 -> PanelsScreen(c, vm) { panelId = it; previewHandleId = c.handles.firstOrNull()?.id }
                     else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (tab == 0) HomeScreen(c, vm, service, accessibility, ::settings) else SettingsScreen(c, vm, ::settings)
                     }
                 }
             }
+        }
+        pendingNavigation?.let { destination ->
+            AlertDialog(onDismissRequest = { pendingNavigation = null }, title = { Text(t(R.string.unsaved_changes)) },
+                text = { Text(t(R.string.unsaved_changes_help)) },
+                confirmButton = { TextButton(onClick = { vm.saveEditing(); vm.closeEditing(); pendingNavigation = null; destination() }) { Text(t(R.string.save)) } },
+                dismissButton = { Row {
+                    TextButton(onClick = { vm.closeEditing(); pendingNavigation = null; destination() }) { Text(t(R.string.discard)) }
+                    TextButton(onClick = { pendingNavigation = null }) { Text(t(R.string.keep_editing)) }
+                } })
         }
     } }
 }

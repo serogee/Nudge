@@ -71,7 +71,7 @@ class UnlockActionActivity : ComponentActivity() {
         if (isFinishing || pickerRequested) return
         if (app.unlocks.peek(token)?.button?.action == ButtonAction.INPUT_METHOD_PICKER && !hasWindowFocus()) return
         val request = app.unlocks.take(token)
-        val config = app.configuration.state.value
+        val config = if (request?.testing == true) app.configuration.preview.value else app.configuration.state.value
         val handle = config?.handle(request?.handleId)
         val button = config?.let { request?.currentButton(it) }
         val picker = button?.action == ButtonAction.INPUT_METHOD_PICKER

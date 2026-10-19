@@ -18,7 +18,7 @@ class ConfigurationControlsTest {
     }
 
     @Test fun `new controls and direct popup choices survive export and independent changes`() {
-        val button = PanelButton(action = ButtonAction.LOCK, emptyAppearance = EmptyAppearance.NO_BUTTON)
+        val button = PanelButton(action = ButtonAction.LOCK, emptyAppearance = EmptyAppearance.NO_BUTTON, icon = IconReference(builtIn = BuiltInIcon.NUDGE))
         val h = HandleConfig(trigger = TriggerSettings(lengthDp = 900f, longerTouchLength = true, softHideEnabled = true, softHideDelayMs = 7_000),
             bindings = mapOf(GestureSlot.HOLD to GestureTarget(action = button, volume = true)))
         val p = SavedPanel(settings = PanelConfig(buttons = listOf(button.copy(id = newId())), opacity = 0f, buttonOpacity = .2f, iconOpacity = .7f))

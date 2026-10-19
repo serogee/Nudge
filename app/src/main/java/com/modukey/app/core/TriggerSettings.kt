@@ -29,6 +29,8 @@ data class TriggerSettings(
     val longerTouchLength: Boolean = false,
     val softHideEnabled: Boolean = false,
     val softHideDelayMs: Long = 3_000,
+    val holdTimeMs: Long = 500,
+    val swipeHoldTimeMs: Long = 500,
 ) {
     fun placement(isLandscape: Boolean) = if (isLandscape && landscapeOverrideEnabled) landscape else portrait
 
@@ -45,6 +47,8 @@ data class TriggerSettings(
         swipeDistanceDp = swipeDistanceDp.finite(24f).coerceIn(12f, 80f),
         swipeTimeoutMs = swipeTimeoutMs.coerceIn(200, 1200),
         softHideDelayMs = softHideDelayMs.coerceIn(1_000, 30_000),
+        holdTimeMs = holdTimeMs.coerceIn(300, 3_000),
+        swipeHoldTimeMs = swipeHoldTimeMs.coerceIn(300, 3_000),
     )
 }
 

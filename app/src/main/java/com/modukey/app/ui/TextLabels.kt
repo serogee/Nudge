@@ -17,6 +17,7 @@ import com.modukey.app.core.*
     ButtonAction.SILENT -> R.string.silent_ringer; ButtonAction.VIBRATE -> R.string.vibrate; ButtonAction.DND -> R.string.dnd
     ButtonAction.LOCK -> R.string.lock_screen; ButtonAction.OPEN_APP -> R.string.open_app
     ButtonAction.INPUT_METHOD_PICKER -> R.string.input_method_picker
+    ButtonAction.CLOSE_PANELS -> R.string.close_panels; ButtonAction.SCREENSHOT -> R.string.screenshot
     ButtonAction.EMPTY -> R.string.empty_button
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash
     IconShape.CIRCLE -> R.string.circle; IconShape.ROUNDED_SQUARE -> R.string.rounded_square; IconShape.SQUIRCLE -> R.string.squircle
@@ -27,16 +28,20 @@ import com.modukey.app.core.*
     BuiltInIcon.FLASHLIGHT -> R.string.flashlight; BuiltInIcon.MUSIC -> R.string.music; BuiltInIcon.HEADPHONES -> R.string.headphones
     BuiltInIcon.CALENDAR -> R.string.calendar; BuiltInIcon.CLOCK -> R.string.clock; BuiltInIcon.MAP -> R.string.map
     BuiltInIcon.HOME -> R.string.home; BuiltInIcon.FAVORITE -> R.string.favorite; BuiltInIcon.APPS -> R.string.apps
+    BuiltInIcon.NUDGE -> R.string.app_name
     else -> error("Unlabelled option: $value")
 }
 fun Context.buttonLabel(button: PanelButton): String = if (button.action == ButtonAction.OPEN_APP && button.appLabel.isNotBlank()) button.appLabel else getString(label(button.action))
 fun Context.handleLabel(config: AppConfiguration, handle: HandleConfig): String = handle.name.ifBlank { getString(R.string.handle_name, config.handles.indexOfFirst { it.id == handle.id } + 1) }
 fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(R.string.untitled_panel) }
 fun Context.targetLabel(config: AppConfiguration, target: GestureTarget): String {
-    target.action?.let { return if (target.volume) getString(R.string.panel_with_volume, buttonLabel(it)) else buttonLabel(it) }
+    target.action?.let {
+        val name = getString(R.string.action_target, buttonLabel(it))
+        return if (target.volume) getString(R.string.panel_with_volume, name) else name
+    }
     val panel = config.panel(target.panelId)
     return if (panel != null) {
-        val name = panelLabel(panel)
+        val name = getString(R.string.panel_target, panelLabel(panel))
         if (target.volume) getString(R.string.panel_with_volume, name) else name
     } else getString(if (target.volume) R.string.volume_popup else R.string.no_action)
 }

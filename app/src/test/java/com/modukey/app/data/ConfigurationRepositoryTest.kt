@@ -76,6 +76,40 @@ class ConfigurationRepositoryTest {
         }
         session(file) { store -> assertEquals(saved,DataStoreConfigurationRepository(store).configuration.first()) }
     }
+    @Test fun `hold timing defaults load from old documents and independent delays survive disk reopening`()=runTest {
+        val file=folder.newFile("hold-timing.preferences_pb")
+        val key=stringPreferencesKey("configuration.v1")
+        val old=JSONObject(ConfigurationCodec.encode(AppConfiguration()))
+        old.getJSONArray("handles").getJSONObject(0).getJSONObject("trigger").apply { remove("holdTimeMs"); remove("swipeHoldTimeMs") }
+        var expected:AppConfiguration?=null
+        session(file) { store ->
+            store.edit { it[key]=old.toString() }
+            val repo=DataStoreConfigurationRepository(store)
+            val loaded=repo.configuration.first()
+            assertEquals(500L,loaded.handles.single().trigger.holdTimeMs)
+            assertEquals(500L,loaded.handles.single().trigger.swipeHoldTimeMs)
+            val first=loaded.handles.single()
+            expected=loaded.copy(handles=listOf(first.copy(trigger=first.trigger.copy(holdTimeMs=1_200,swipeHoldTimeMs=900,depthDp=22f)),
+                HandleConfig(trigger=TriggerSettings(holdTimeMs=750,swipeHoldTimeMs=1_700)))).normalized()
+            repo.write(expected!!)
+        }
+        session(file) { store ->
+            val repo=DataStoreConfigurationRepository(store)
+            val reopened=repo.configuration.first()
+            assertEquals(expected,reopened)
+            val first=reopened.handles.first()
+            expected=reopened.editHandle(first.id) { h -> h.copy(trigger=h.trigger.copy(holdTimeMs=2_000)) }
+            repo.write(expected!!)
+        }
+        session(file) { store ->
+            val reopened=DataStoreConfigurationRepository(store).configuration.first()
+            assertEquals(expected,reopened)
+            assertEquals(900L,reopened.handles.first().trigger.swipeHoldTimeMs)
+            assertEquals(22f,reopened.handles.first().trigger.depthDp)
+            assertEquals(750L,reopened.handles.last().trigger.holdTimeMs)
+            assertEquals(1_700L,reopened.handles.last().trigger.swipeHoldTimeMs)
+        }
+    }
     @Test fun `legacy migration is atomic retains unknown keys and persists multiple handles on reopen`()=runTest {
         val file=folder.newFile("configuration.preferences_pb")
         suspend fun session(block:suspend (DataStore<Preferences>)->Unit) {

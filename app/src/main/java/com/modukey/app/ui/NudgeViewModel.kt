@@ -26,7 +26,8 @@ import java.io.IOException
 data class LaunchableApp(val label: String, val packageName: String, val activityName: String)
 class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as NudgeApplication
-    val configuration = app.configuration.state
+    val configuration = app.configuration.preview
+    val draft = app.configuration.draft
     val error = app.configuration.error
     val status = app.status.state
     val accessibilityEnabled = MutableStateFlow(false)
@@ -48,9 +49,9 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         refreshPermissions()
     }
     fun edit(change: (AppConfiguration) -> AppConfiguration) = app.configuration.update(change)
-    fun editHandle(id: String, change: (HandleConfig) -> HandleConfig) = edit { it.editHandle(id, change) }
+    fun editHandle(id: String, change: (HandleConfig) -> HandleConfig) = app.configuration.editHandle(id, change)
     fun editTrigger(id: String, change: (TriggerSettings) -> TriggerSettings) = editHandle(id) { it.copy(trigger = change(it.trigger)) }
-    fun editSavedPanel(id: String, change: (SavedPanel) -> SavedPanel) = edit { it.editPanel(id, change) }
+    fun editSavedPanel(id: String, change: (SavedPanel) -> SavedPanel) = app.configuration.editPanel(id, change)
     fun editPanel(id: String, change: (PanelConfig) -> PanelConfig) = editSavedPanel(id) { it.copy(settings = change(it.settings)) }
     fun editLayout(id: String, landscape: Boolean, change: (PanelLayout) -> PanelLayout) = editPanel(id) { p ->
         if (landscape && p.landscapeOverride) p.copy(landscape = change(p.landscape)) else p.copy(portrait = change(p.portrait))
@@ -75,7 +76,13 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun resetHandle(id: String) { editHandle(id) { HandleConfig(id = it.id, name = it.name, enabled = it.enabled) }; flush() }
     fun flush() = app.configuration.flush()
     fun retrySaving() = app.configuration.retry()
-    fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true) = app.editor.begin(token, EditorSelection(handleId, panelId, preview))
+    fun saveEditing() = app.configuration.saveDraft()
+    fun cancelEditing() = app.configuration.cancelDraft()
+    fun closeEditing() = app.configuration.closeDraft()
+    fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true, landscape: Boolean? = null) {
+        if (panelId != null) app.configuration.openPanel(panelId) else if (handleId != null) app.configuration.openHandle(handleId)
+        app.editor.begin(token, EditorSelection(handleId, panelId, preview, landscape))
+    }
     fun endEditor(token: Any) = app.editor.end(token)
     fun testPanel(id: String, previewHandleId: String?) {
         if (status.value.connected) app.editor.test(PanelTestRequest(id, previewHandleId)) else tell(R.string.preview_unavailable)
@@ -108,7 +115,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun loadPacks() { viewModelScope.launch { iconPacks.value = app.icons.packs() } }
     fun export(uri: Uri) {
-        val snapshot = configuration.value ?: return
+        val snapshot = app.configuration.state.value ?: return
         viewModelScope.launch {
             backupBusy.value = true
             try {
@@ -154,5 +161,5 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
                 accessibilityEnabled.value.toString(), status.value.toString(), app.getString(popupCheck.value), app.diagnostics.details.value))
         }
     }
-    override fun onCleared() { app.contentResolver.unregisterContentObserver(permissionObserver); super.onCleared() }
+    override fun onCleared() { closeEditing(); app.contentResolver.unregisterContentObserver(permissionObserver); super.onCleared() }
 }

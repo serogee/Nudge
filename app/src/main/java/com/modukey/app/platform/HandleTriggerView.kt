@@ -15,6 +15,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var settings = TriggerSettings()
     private var edge = Edge.RIGHT
     private var editing = false
+    private var previewQuarterTurns = 0
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val guide = Path()
@@ -38,15 +39,19 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             insets
         }
     }
-    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean) {
-        if (this.edge != edge || this.editing != editing || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs) {
+    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0) {
+        val turns = if (editing) previewQuarterTurns.mod(4) else 0
+        if (this.edge != edge || this.editing != editing || this.previewQuarterTurns != turns || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
+            this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs) {
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
         this.settings = settings; this.edge = edge; this.editing = editing
+        this.previewQuarterTurns = turns
         importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
         isClickable = !editing; geometry(); updateSoftHide(); invalidate()
     }
-    private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs, ViewConfiguration.get(context).scaledTouchSlop.toFloat())
+    private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs,
+        ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs)
     fun cancelGesture() { gesture.cancel(); softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry() }
     fun setPanelOpen(open: Boolean) {
         if (panelOpen == open) return
@@ -87,13 +92,21 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     }
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { cancelGesture(); geometry() }
     private fun geometry() {
-        EdgeHighlightShape.path(width.toFloat(), height.toFloat(), edge, guide)
-        val b = TriggerGeometry.indicator(width.toFloat(), height.toFloat(), settings, edge)
+        val logicalWidth = if (previewQuarterTurns % 2 == 0) width.toFloat() else height.toFloat()
+        val logicalHeight = if (previewQuarterTurns % 2 == 0) height.toFloat() else width.toFloat()
+        EdgeHighlightShape.path(logicalWidth, logicalHeight, edge, guide)
+        val b = TriggerGeometry.indicator(logicalWidth, logicalHeight, settings, edge)
         indicator.set(b.x, b.y, b.x + b.width, b.y + b.height)
         radius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(b.width, b.height) / 2)
         systemGestureExclusionRects = if (editing || edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))
     }
     override fun onDraw(canvas: Canvas) {
+        canvas.save()
+        when (previewQuarterTurns) {
+            1 -> { canvas.translate(width.toFloat(), 0f); canvas.rotate(90f) }
+            2 -> { canvas.translate(width.toFloat(), height.toFloat()); canvas.rotate(180f) }
+            3 -> { canvas.translate(0f, height.toFloat()); canvas.rotate(270f) }
+        }
         if (editing) { paint.color = 0x554E7E21; canvas.drawPath(guide, paint) }
         if (if (softHide.active) softHide.revealed else settings.indicatorVisible) {
             paint.color = settings.indicatorColor.toInt(); paint.alpha = (settings.indicatorOpacity * 255).toInt()
@@ -102,6 +115,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             canvas.translate(if (edge == Edge.LEFT) travel else if (edge == Edge.RIGHT) -travel else 0f, if (edge == Edge.BOTTOM) -travel else 0f)
             canvas.drawRoundRect(indicator, radius, radius, paint); canvas.restore()
         }
+        canvas.restore()
     }
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {

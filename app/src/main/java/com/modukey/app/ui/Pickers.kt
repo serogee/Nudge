@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,10 +27,10 @@ import com.modukey.app.platform.IconPackInfo
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(ButtonAction.entries.filter { includeEmpty || it != ButtonAction.EMPTY }) { action ->
                 Surface(onClick = { choose(action) }, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Column(Modifier.padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.fillMaxWidth().padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
                         ButtonGraphic(PanelButton(action = action), "", Modifier.size(28.dp))
-                        Text(t(label(action)), style = MaterialTheme.typography.labelLarge)
+                        Text(t(label(action)), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -61,18 +63,40 @@ import com.modukey.app.platform.IconPackInfo
 @Composable fun ExclusionsDialog(handle:HandleConfig,vm:NudgeViewModel,dismiss:()->Unit) {
     val apps by vm.launchableApps.collectAsStateWithLifecycle(); val loaded by vm.appsLoaded.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest=dismiss,title={ Text(t(R.string.excluded_apps)) },text={ Column {
-        OutlinedTextField(query,{ query=it },label={ Text(t(R.string.search_apps)) },singleLine=true)
-        LazyColumn(Modifier.heightIn(max=400.dp)) {
+    val excluded = handle.trigger.excludedPackages
+    val installed = remember(apps) { apps.distinctBy { it.packageName } }
+    val ordered = remember(installed, query, excluded) {
+        installed.filter { it.label.contains(query, true) || it.packageName.contains(query, true) }
+            .sortedByDescending { it.packageName in excluded }
+    }
+    val missing = remember(installed, excluded, query) {
+        (excluded - installed.map { it.packageName }.toSet()).filter { it.contains(query, true) }.sorted()
+    }
+    AlertDialog(onDismissRequest=dismiss,title={ Text(t(R.string.excluded_apps)) },text={ Column(Modifier.fillMaxWidth()) {
+        OutlinedTextField(query,{ query=it },label={ Text(t(R.string.search_apps)) },singleLine=true,modifier=Modifier.fillMaxWidth())
+        LazyColumn(Modifier.fillMaxWidth().heightIn(max=400.dp)) {
             if(!loaded) item { CircularProgressIndicator() }
-            items(apps.distinctBy { it.packageName }.filter { it.label.contains(query,true)||it.packageName.contains(query,true) },key={ it.packageName }) { app ->
-                Row(Modifier.fillMaxWidth().clickable(role=Role.Checkbox) { vm.editTrigger(handle.id) { current -> current.copy(excludedPackages=if(app.packageName in current.excludedPackages) current.excludedPackages-app.packageName else current.excludedPackages+app.packageName) } }.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                    Checkbox(app.packageName in handle.trigger.excludedPackages,null)
-                    Column { Text(app.label); Text(app.packageName,style=MaterialTheme.typography.labelSmall) }
+            if(loaded) items(missing,key={ it }) { pkg ->
+                TextButton(onClick={ vm.editTrigger(handle.id) { it.copy(excludedPackages=it.excludedPackages-pkg) } }) {
+                    Icon(AppIcons.Apps, null, Modifier.size(40.dp)); Spacer(Modifier.width(12.dp))
+                    Text(t(R.string.remove)+": "+pkg)
                 }
             }
-            val missing=handle.trigger.excludedPackages-apps.map { it.packageName }.toSet()
-            if(loaded) items(missing.toList(),key={ it }) { pkg -> TextButton(onClick={ vm.editTrigger(handle.id) { it.copy(excludedPackages=it.excludedPackages-pkg) } }) { Text(t(R.string.remove)+": "+pkg) } }
+            items(ordered,key={ it.packageName }) { app ->
+                val selected = app.packageName in excluded
+                Row(Modifier.fillMaxWidth().toggleable(value = selected, role = Role.Checkbox, onValueChange = { checked ->
+                    vm.editTrigger(handle.id) { current -> current.copy(excludedPackages =
+                        if (checked) current.excludedPackages + app.packageName else current.excludedPackages - app.packageName) }
+                }).padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Checkbox(selected,null)
+                    val icon = remember(app.packageName, app.activityName) { PanelButton(action = ButtonAction.OPEN_APP, appPackage = app.packageName, appActivity = app.activityName) }
+                    ButtonGraphic(icon, "", Modifier.size(40.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(app.label)
+                        Text(app.packageName,style=MaterialTheme.typography.labelSmall,maxLines=1,overflow=TextOverflow.Ellipsis)
+                    }
+                }
+            }
         }
     } },confirmButton={ TextButton(onClick=dismiss) { Text(t(R.string.done)) } })
 }

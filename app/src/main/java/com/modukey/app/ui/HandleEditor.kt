@@ -5,8 +5,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,10 +16,10 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit) {
+@Composable fun HandleEditor(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, tab: Int, selectTab: (Int) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit, landscape: Boolean, selectOrientation: (Boolean) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
-    var landscape by rememberSaveable(h.id) { mutableStateOf(false) }
+    val draft by vm.draft.collectAsStateWithLifecycle()
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -31,12 +29,9 @@ import kotlin.math.roundToInt
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            EditorHeader(context.handleLabel(config, h), draft?.changed == true, R.string.rename_handle,
+                rename = { name = h.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing) {
                 HandleBadge(h, context.handleLabel(config, h))
-                Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                EditIcon(AppIcons.Edit, R.string.rename_handle) { name = h.name; renaming = true }
             }
             AnimatedVisibility(!collapsed) {
                 Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
@@ -53,7 +48,7 @@ import kotlin.math.roundToInt
                         val bounds = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, s, landscape)
                         val others = config.handles.filter { it.id != h.id && it.enabled }.map { it.trigger }
                         Section(R.string.preview) {
-                            OrientationChoices(landscape) { landscape = it }
+                            OrientationChoices(landscape, selectOrientation)
                             PhonePreview(s, landscape, others)
                             Help(R.string.preview_help)
                             Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
@@ -95,7 +90,16 @@ import kotlin.math.roundToInt
                     }
                     1 -> {
                         Section(R.string.gestures) {
-                            GestureSlot.entries.forEach { slot -> GestureBindingRow(config, slot, h.target(slot), vm) { value -> vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) } } }
+                            GestureSlot.entries.forEach { slot ->
+                                GestureBindingRow(config, slot, h.target(slot), vm) { value -> vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) } }
+                                when (slot) {
+                                    GestureSlot.SWIPE_HOLD -> SettingSlider(R.string.swipe_hold_time, s.swipeHoldTimeMs.toFloat(), 300f..3000f,
+                                        t(R.string.ms_value, s.swipeHoldTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = value.toLong()) } }
+                                    GestureSlot.HOLD -> SettingSlider(R.string.hold_time, s.holdTimeMs.toFloat(), 300f..3000f,
+                                        t(R.string.ms_value, s.holdTimeMs.toInt()), default = 500f) { value -> vm.editTrigger(h.id) { it.copy(holdTimeMs = value.toLong()) } }
+                                    else -> Unit
+                                }
+                            }
                             Help(R.string.gesture_help); Help(R.string.hold_help)
                         }
                         Section(R.string.settings) {

@@ -73,6 +73,25 @@ class PanelHostTest {
         val g = PanelGeometry.calculate(Bounds(0f, 0f, 400f, 700f), 1f, p.portrait, 0, Bounds(384f, 200f, 16f, 120f), edge)
         return PanelSpec(p, p.portrait, g, editing, edge)
     }
+    @Test fun `editing preview rotates its content and bounds without enabling input or sound observers`() {
+        val f = fixture()
+        val logical = spec(editing = true)
+        val b = logical.geometry.bounds
+        f.host.show(logical.copy(geometry = logical.geometry.copy(bounds = Bounds(0f, 100f, b.height, b.width)), previewQuarterTurns = 1))
+        idle(100)
+        val root = f.windows.attached.single() as PanelRoot
+        val content = root.getChildAt(0)
+        assertEquals(90f, content.rotation)
+        assertEquals(b.width.toInt(), content.layoutParams.width)
+        assertEquals(b.height.toInt(), content.layoutParams.height)
+        assertEquals(b.height, content.translationX)
+        assertTrue(f.windows.params.getValue(root).flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE != 0)
+        assertEquals(0, f.snapshots())
+        f.host.show(logical.copy(previewQuarterTurns = 0))
+        idle(100)
+        assertSame(root, f.windows.attached.single())
+        assertEquals(0f, content.rotation); assertEquals(0f, content.translationX)
+    }
     @Test fun `exit retains rendered content disables input and disposes after the animation`() {
         val f = fixture()
         f.host.show(spec()); idle(250)

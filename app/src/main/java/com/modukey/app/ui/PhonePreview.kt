@@ -1,7 +1,5 @@
 package com.modukey.app.ui
 
-import android.view.WindowInsets
-import android.view.WindowManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -13,30 +11,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.modukey.app.core.*
 import com.modukey.app.platform.EdgeHighlightShape
-import kotlin.math.max
 import kotlin.math.min
 
 @Composable
 fun PhonePreview(settings: TriggerSettings, landscape: Boolean, others: List<TriggerSettings> = emptyList()) {
     val context = LocalContext.current
-    val config = androidx.compose.ui.platform.LocalConfiguration.current
-    val metrics = remember(config) { context.getSystemService(WindowManager::class.java).currentWindowMetrics }
-    val density = LocalDensity.current.density
-    val actualLandscape = metrics.bounds.width() > metrics.bounds.height()
-    val short = min(metrics.bounds.width(), metrics.bounds.height()).toFloat()
-    val long = max(metrics.bounds.width(), metrics.bounds.height()).toFloat()
-    val screenW = if (landscape) long else short
-    val screenH = if (landscape) short else long
-    val safe = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
-    val mandatory = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.mandatorySystemGestures())
-    val insets = if (actualLandscape == landscape) Insets(safe.left.toFloat(), safe.top.toFloat(), safe.right.toFloat(), max(safe.bottom, mandatory.bottom).toFloat())
-        else Insets(top = 28 * density, bottom = 24 * density)
+    val screen = rememberPreviewSpace(landscape)
+    val screenW = screen.width; val screenH = screen.height; val density = screen.density; val insets = screen.insets
     val placement = settings.placement(landscape)
     val bounds = TriggerGeometry.bounds(screenW, screenH, density, insets, settings, landscape)
     val highlightPath = remember(bounds.width, bounds.height, placement.edge) {

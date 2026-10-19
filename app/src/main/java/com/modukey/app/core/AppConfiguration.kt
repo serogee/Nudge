@@ -18,13 +18,13 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, EMPTY }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, SCREENSHOT, EMPTY }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
 
 enum class IconContainer { DEFAULT, CONTAINER, STANDALONE }
-enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS }
+enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS, NUDGE }
 
 data class IconReference(val packageName: String = "", val drawable: String = "", val builtIn: BuiltInIcon? = null)
 data class PanelButton(
