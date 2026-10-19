@@ -14,6 +14,10 @@ Cancel and Save share a pill-shaped control, with Cancel on the left. A gap sepa
 
 Handle icons keep a bold initial inside a rounded square. A small inset pill marks the saved left, right, or bottom edge.
 
+Drag a list grip to reorder handles, panels, or buttons. Hold near the top or bottom to scroll. The same item stays selected until release or cancellation. Touch outside the grip to scroll normally. Accessibility move actions remain available.
+
+The launch icon uses a centered N with padding inside a rounded container. Its side pills reveal from their centers. The middle pill reveals upright, then rotates as the side pills move into position. The native sequence ends after 600 ms. Disabled system animations skip the wait. Backgrounding removes the launch view.
+
 Mini previews and on-phone guides show pending changes immediately. Normal gestures use saved settings when Nudge is in the background. Pending edits survive activity recreation and temporary backgrounding. They are not included in backups or disk saves until you select Save. Closing the app process discards the draft.
 
 Before leaving an editor with pending changes, select Save, Discard, or Keep editing. Save inside a name, gesture, or button dialog updates the editor draft. Use the top Save control to apply that draft. List switches and list management actions still apply immediately.
@@ -41,6 +45,8 @@ On the lock screen, the picker first requests normal system unlock. Cancelled au
 Each assignment owns its action settings. Editing it does not change a panel button or another gesture. Direct actions close the current Nudge panel. App and settings actions use the same normal system unlock step as panel buttons. A removed or changed assignment cannot continue after unlock. Sound-mode actions show required Do Not Disturb access on Home, including when no panel uses them.
 
 Close panels and Screenshot are available as panel buttons and direct actions. Close panels dismisses Nudge's open panel and resets its swipe sequence. It does not dismiss Android's volume popup. With no Nudge panel open, it has no effect.
+
+Notifications opens the native notification shade. Control panel opens native Quick Settings, called Control center on some phones. Some devices use the same panel for both requests. Nudge removes its interactive panel before submitting either request. Failed requests show an error. Android controls availability on the lock screen. No extra permission is needed beyond the connected accessibility service. Verify the exact behavior on your HyperOS build.
 
 Screenshot removes the interactive Nudge panel, waits two display frames, and requests Android's native screenshot action. Android controls capture, saving, and restrictions. Nudge does not read or store the image. Screen-off and service shutdown cancel pending requests. Requests add no idle timer or observer. Editing guides still follow their preview switch.
 
