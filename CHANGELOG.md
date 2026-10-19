@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add Pause handles and Hide visible handles switches above Add handle. Retain saved handle settings.
+- Toggle visible bars from panels, gestures, and Home shortcuts without disabling handle input. Retain the hide override across restarts.
 - Set a return brightness for each Max/Min action. Optionally restore a valid previous level and automatic mode.
 - Select Jump to touch or proportional Slide to adjust for the brightness slider from Home.
 - Set brightness slider corner radius and hide its background for a full-width track.
@@ -23,7 +25,8 @@
 ### Changed
 
 - Measure brightness vertical position from the bottom. Preserve existing physical placement during migration.
-- Store the new controls in backup schema 11. Preserve earlier settings on import.
+- Store the new controls in backup schema 12. Preserve earlier settings on import.
+- Put Toggle handles immediately after Close panels in the action picker.
 
 ## 0.4.0 - 2026-10-19
 
