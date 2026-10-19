@@ -6,6 +6,8 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 @StringRes fun label(value: Any): Int = when (value) {
+    BrightnessTouchBehavior.JUMP_TO_TOUCH -> R.string.brightness_jump_to_touch
+    BrightnessTouchBehavior.SLIDE_TO_ADJUST -> R.string.brightness_slide_to_adjust
     BrightnessSide.OPPOSITE_VOLUME -> R.string.opposite_volume; BrightnessSide.LEFT, VolumeSide.LEFT -> R.string.left
     BrightnessSide.RIGHT, VolumeSide.RIGHT -> R.string.right; BrightnessSide.CUSTOM -> R.string.slider_custom
     HoldExecution.ON_RELEASE -> R.string.hold_on_release; HoldExecution.AFTER_TIME -> R.string.hold_after_time

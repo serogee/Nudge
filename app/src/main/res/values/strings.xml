@@ -365,7 +365,15 @@
     <string name="brightness_up">Increase brightness</string>
     <string name="brightness_down">Decrease brightness</string>
     <string name="brightness_step_help">Change brightness by five percent. This turns off automatic brightness.</string>
-    <string name="brightness_help">Tap again to restore the previous brightness and automatic mode. A manual change or app restart clears the restore value.</string>
+    <string name="brightness_help">Only a Nudge action activates this button. Manual changes clear its active state. Tap the active button to restore brightness.</string>
+    <string name="brightness_use_previous">Use previous brightness</string>
+    <string name="brightness_previous_help">Restore the previous level and automatic mode. Maximum brightness and this action\'s own limit are unavailable.</string>
+    <string name="brightness_return_value">Return brightness</string>
+    <string name="brightness_touch_behavior">Touch behavior</string>
+    <string name="brightness_jump_to_touch">Jump to touch</string>
+    <string name="brightness_slide_to_adjust">Slide to adjust</string>
+    <string name="brightness_touch_behavior_help">Jump to touch sets brightness at the touch position. Slide to adjust changes the current level with your drag distance.</string>
+    <string name="brightness_return_help">Use this level when Use previous brightness is off or the previous level is unavailable. This level uses manual brightness.</string>
     <string name="brightness_access_required">Allow Modify system settings. Then tap the brightness button again.</string>
     <string name="brightness_already_set">Brightness is already at this limit.</string>
     <string name="brightness_failed">Cannot change brightness. Check Modify system settings and try again.</string>
