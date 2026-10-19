@@ -142,7 +142,7 @@ Toggle handles is available as a panel button and direct gesture action. Select 
 
 The action pauses currently enabled handles without changing their saved Enable switches. Its tile shows On when all selected handles are available through this pause control. Tap again to resume. If only some are paused, tapping resumes the group. Existing panels remain usable while their handle is paused. Saved disabling, the master switch, and normal eligibility rules still close panels.
 
-The **Pause handles** switch is above **Add handle**. Switch it on to pause all enabled handles. Switch it off to clear every pause, including a handle paused by its own gesture. The switch is on if any handles are paused. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+The **Pause handles** switch is above **Add handle**. Both global switches scroll with the handle list, so editing remains reachable on small displays. Switch it on to pause all enabled handles. Switch it off to clear every pause, including a handle paused by its own gesture. The switch is on if any handles are paused. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
 
 The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
 
