@@ -26,13 +26,15 @@ class ReorderScrollInterfaceTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @After fun cleanup() { (rule.activity.application as NudgeApplication).onTerminate() }
 
-    @Test fun `one held pointer can reorder down and back up through offscreen rows without dropping`() {
+    @Test fun `one held pointer can reorder down and back up through offscreen rows without dropping`() = verifyHeldReorder(false)
+    @Test fun aScrollableHeaderDoesNotChangeReorderIndicesOrReleaseTheHeldItem() = verifyHeldReorder(true)
+    private fun verifyHeldReorder(withHeader: Boolean) {
         val values = mutableStateOf(List(20) { "Item $it" })
         var finishes = 0
         rule.activity.setContent { NudgeTheme {
             ReorderableList(values.value, { it }, { it }, Modifier.height(260.dp).fillMaxWidth().testTag("list"),
                 moveTo = { key, target -> values.value = values.value.toMutableList().apply { add(target, removeAt(indexOf(key))) } },
-                finish = { finishes++ }) { item, _ -> Text(item, Modifier.height(72.dp)) }
+                finish = { finishes++ }, header = if (withHeader) ({ Text("Controls", Modifier.height(110.dp)) }) else null) { item, _ -> Text(item, Modifier.height(72.dp)) }
         } }
         val list = rule.onNodeWithTag("list")
         val bounds = list.fetchSemanticsNode().boundsInRoot

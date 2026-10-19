@@ -380,9 +380,9 @@
     <string name="toggle_handles">Toggle handles</string>
     <string name="toggle_handle_visibility">Toggle handle visibility</string>
     <string name="pause_handles">Pause handles</string>
-    <string name="pause_handles_help">Pause enabled handles without changing their Enable switches. Switch off to resume. An app restart also resumes them.</string>
+    <string name="pause_handles_help">Stop gestures. Keep saved Enable switches.</string>
     <string name="hide_visible_handles">Hide visible handles</string>
-    <string name="hide_visible_handles_help">Hide all visible handles until switched off. Gestures still work. Saved visibility settings and editing previews stay unchanged.</string>
+    <string name="hide_visible_handles_help">Keep gestures and saved visibility settings.</string>
     <string name="handle_toggle_scope">Handles to toggle</string>
     <string name="all_handles">All handles</string>
     <string name="current_handle">This handle</string>

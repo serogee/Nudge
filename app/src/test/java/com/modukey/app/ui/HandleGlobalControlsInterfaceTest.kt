@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], qualifiers = "mdpi")
 class HandleGlobalControlsInterfaceTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     private val app get() = rule.activity.application as NudgeApplication
@@ -54,6 +54,15 @@ class HandleGlobalControlsInterfaceTest {
         rule.runOnIdle { assertTrue(app.handlePauses.state.value.isEmpty()); app.configuration.update { it.copy(enabled = false) } }
         rule.onNodeWithContentDescription("Pause handles").assertIsNotEnabled()
         rule.onNodeWithContentDescription("Hide visible handles").assertIsEnabled().performClick()
+        rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators) }
+    }
+    @Test fun controlsScrollAwayAndHandleEditingRemainsReachableOnASmallDisplay() {
+        ready()
+        rule.onNodeWithContentDescription("Hide visible handles").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onAllNodesWithContentDescription("Edit").onFirst().performScrollTo().performClick()
+        rule.onNodeWithTag("editor-header").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Back").performClick()
         rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators) }
     }
     @Test fun pickerKeepsBothHandleActionsAfterClosePanels() {

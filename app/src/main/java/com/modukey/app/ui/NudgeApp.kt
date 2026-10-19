@@ -180,33 +180,34 @@ import com.modukey.app.platform.*
     var deleting by remember { mutableStateOf<String?>(null) }
     Text(t(R.string.manage_handles), style = MaterialTheme.typography.headlineMedium)
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Toggle(R.string.pause_handles, R.string.pause_handles_help, paused.isNotEmpty(),
-                enabled = paused.isNotEmpty() || (config.enabled && config.handles.any { it.enabled }), change = vm::pauseHandles)
-            Toggle(R.string.hide_visible_handles, R.string.hide_visible_handles_help, config.hideHandleIndicators, default = false, change = vm::hideVisibleHandles)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t(R.string.handles), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
-            }
-            Help(R.string.manage_handles_help)
-            if (config.handles.isEmpty()) Help(R.string.no_handles)
-            ReorderableList(config.handles, { it.id }, { context.handleLabel(config, it) }, Modifier.weight(1f),
-                moveTo = vm::reorderHandle, finish = vm::flush) { h, _ ->
-                Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.padding(12.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            HandleBadge(h, context.handleLabel(config, h))
-                            Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Switch(h.enabled, { value -> vm.editHandle(h.id) { it.copy(enabled = value) }; vm.flush() },
-                                modifier = Modifier.semanticsDescription(context.getString(R.string.enable_handle)))
-                        }
-                        if (service.handles[h.id] == HandleAvailability.ERROR) Text(t(R.string.overlay_error), style = MaterialTheme.typography.bodySmall)
-                        if (h.id in paused) Text(t(R.string.paused), style = MaterialTheme.typography.bodySmall)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                            EditIcon(AppIcons.Edit, R.string.edit) { edit(h.id) }
-                            EditIcon(AppIcons.Duplicate, R.string.duplicate) { vm.duplicate(h.id) }
-                            EditIcon(AppIcons.Delete, R.string.delete) { deleting = h.id }
-                        }
+        ReorderableList(config.handles, { it.id }, { context.handleLabel(config, it) }, Modifier.fillMaxSize().padding(12.dp),
+            moveTo = vm::reorderHandle, finish = vm::flush, header = {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Toggle(R.string.pause_handles, R.string.pause_handles_help, paused.isNotEmpty(),
+                        enabled = paused.isNotEmpty() || (config.enabled && config.handles.any { it.enabled }), change = vm::pauseHandles)
+                    Toggle(R.string.hide_visible_handles, R.string.hide_visible_handles_help, config.hideHandleIndicators, default = false, change = vm::hideVisibleHandles)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(t(R.string.handles), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
+                    }
+                    Help(R.string.manage_handles_help)
+                    if (config.handles.isEmpty()) Help(R.string.no_handles)
+                }
+        }) { h, _ ->
+            Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(12.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        HandleBadge(h, context.handleLabel(config, h))
+                        Text(context.handleLabel(config, h), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Switch(h.enabled, { value -> vm.editHandle(h.id) { it.copy(enabled = value) }; vm.flush() },
+                            modifier = Modifier.semanticsDescription(context.getString(R.string.enable_handle)))
+                    }
+                    if (service.handles[h.id] == HandleAvailability.ERROR) Text(t(R.string.overlay_error), style = MaterialTheme.typography.bodySmall)
+                    if (h.id in paused) Text(t(R.string.paused), style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                        EditIcon(AppIcons.Edit, R.string.edit) { edit(h.id) }
+                        EditIcon(AppIcons.Duplicate, R.string.duplicate) { vm.duplicate(h.id) }
+                        EditIcon(AppIcons.Delete, R.string.delete) { deleting = h.id }
                     }
                 }
             }

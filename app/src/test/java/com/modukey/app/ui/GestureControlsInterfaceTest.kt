@@ -39,7 +39,8 @@ class GestureControlsInterfaceTest {
 
     private fun editGestures() {
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Gestures").performClick()
     }
 
@@ -140,7 +141,8 @@ class GestureControlsInterfaceTest {
         val app = ready()
         rule.runOnIdle { app.configuration.update { it.copy(panels = listOf(SavedPanel(name = "Tools"))) } }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onAllNodesWithText("Visual Preview (Non-interactive)").assertCountEquals(2)
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
@@ -187,7 +189,8 @@ class GestureControlsInterfaceTest {
         }
         val saved = rule.runOnIdle { app.configuration.preview.value }
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Landscape").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(true, app.editor.state.value?.landscape); assertEquals(saved, app.configuration.preview.value) }
         rule.activityRule.scenario.recreate(); rule.waitForIdle()

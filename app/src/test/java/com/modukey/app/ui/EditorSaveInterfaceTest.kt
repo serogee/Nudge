@@ -35,7 +35,8 @@ class EditorSaveInterfaceTest {
     }
     private fun openHandle() {
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
     }
     private fun openPanel() {
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
@@ -166,7 +167,8 @@ class EditorSaveInterfaceTest {
         rule.onNodeWithText("Discard").performClick()
         rule.onNodeWithText("Manage Handles").assertExists()
         rule.runOnIdle { assertEquals(original, app.configuration.preview.value); assertNull(app.configuration.draft.value) }
-        rule.onNodeWithContentDescription("Edit").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
+        rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
         rule.runOnIdle { rule.activity.onBackPressedDispatcher.onBackPressed() }
         rule.onNodeWithText("Save changes?").assertIsDisplayed()
