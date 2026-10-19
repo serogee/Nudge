@@ -6,6 +6,17 @@ import org.junit.Test
 class HandlePausesTest {
     private val config = AppConfiguration(enabled = true, handles = listOf(
         HandleConfig(id = "owner", enabled = true), HandleConfig(id = "other", enabled = true), HandleConfig(id = "disabled")))
+    @Test fun explicitPauseAndResumeAreIdempotentAndRetainSavedSwitches() {
+        val pauses = HandlePauses()
+        pauses.toggle(HandleToggleScope.CURRENT, "owner", config)
+        pauses.setAll(true, config); pauses.setAll(true, config)
+        assertEquals(setOf("owner", "other"), pauses.state.value)
+        assertEquals(listOf(true, true, false), config.handles.map { it.enabled })
+        pauses.setAll(false, config); pauses.setAll(false, config)
+        assertTrue(pauses.state.value.isEmpty())
+        pauses.setAll(true, config.copy(enabled = false))
+        assertTrue(pauses.state.value.isEmpty())
+    }
     @Test fun `all current and others pause independently without changing saved enable switches`() {
         for ((scope, targets) in listOf(HandleToggleScope.ALL to setOf("owner", "other"),
             HandleToggleScope.CURRENT to setOf("owner"), HandleToggleScope.OTHERS to setOf("other"))) {
