@@ -134,6 +134,7 @@ class NudgeInterfaceTest {
             assertEquals(1,app.configuration.preview.value!!.handles.size)
         }
         rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.onAllNodesWithContentDescription("Rename panel").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Tools").assertExists()
         rule.onNodeWithContentDescription("Delete panel").performScrollTo().assertIsDisplayed().performClick()

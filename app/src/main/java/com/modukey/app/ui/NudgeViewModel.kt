@@ -30,6 +30,8 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val draft = app.configuration.draft
     val error = app.configuration.error
     val status = app.status.state
+    val pausedHandles = app.handlePauses.state
+    fun resumeHandles() = app.handlePauses.clear()
     val accessibilityEnabled = MutableStateFlow(false)
     val policyAccess = MutableStateFlow(false)
     val launchableApps = MutableStateFlow<List<LaunchableApp>>(emptyList())
@@ -47,6 +49,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     private val downloadController = ApkDownloadController(downloadBackend, viewModelScope)
     val apkDownload = downloadController.state
     val preparingUpdate = MutableStateFlow(false)
+    val savingEditor = MutableStateFlow(false)
     private val permissionObserver = object : ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) = refreshPermissions() }
     init {
         app.contentResolver.registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES), false, permissionObserver)
@@ -80,8 +83,21 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun resetHandle(id: String) { editHandle(id) { HandleConfig(id = it.id, name = it.name, enabled = it.enabled) }; flush() }
     fun flush() = app.configuration.flush()
     fun retrySaving() = app.configuration.retry()
-    fun saveEditing() = app.configuration.saveDraft()
-    fun cancelEditing() = app.configuration.cancelDraft()
+    fun saveEditing() { saveEditingThen {} }
+    fun saveEditingThen(saved: () -> Unit) {
+        if (savingEditor.value || draft.value == null) return
+        savingEditor.value = true
+        app.configuration.saveDraft { success -> viewModelScope.launch {
+            savingEditor.value = false
+            android.widget.Toast.makeText(app, if (success) R.string.changes_saved else R.string.save_failed, android.widget.Toast.LENGTH_SHORT).show()
+            if (success) saved()
+        } }
+    }
+    fun cancelEditing() {
+        if (savingEditor.value) return
+        app.configuration.cancelDraft()
+        android.widget.Toast.makeText(app, R.string.changes_cancelled, android.widget.Toast.LENGTH_SHORT).show()
+    }
     fun closeEditing() = app.configuration.closeDraft()
     fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true, landscape: Boolean? = null) {
         if (panelId != null) app.configuration.openPanel(panelId) else if (handleId != null) app.configuration.openHandle(handleId)

@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowToast
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "mdpi")
@@ -40,6 +41,29 @@ class EditorSaveInterfaceTest {
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
     }
+    private fun waitForSave() {
+        rule.waitUntil(10_000) { rule.onAllNodes(hasContentDescription("Rename handle") or hasContentDescription("Rename panel"))
+            .fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun `paired header actions show feedback and restore rename while keeping the editor open`() {
+        val app = ready(); openHandle()
+        rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
+        val cancel = rule.onNodeWithContentDescription("Cancel").fetchSemanticsNode().boundsInRoot
+        val save = rule.onNodeWithContentDescription("Save").fetchSemanticsNode().boundsInRoot
+        assertTrue(cancel.right < save.left)
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.runOnIdle { assertEquals(rule.activity.getString(R.string.changes_cancelled), ShadowToast.getTextOfLatestToast()) }
+        rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Close editor").assertDoesNotExist()
+        rule.onNodeWithText("Make handle visible").performClick()
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { ShadowToast.getTextOfLatestToast() == rule.activity.getString(R.string.changes_saved) }
+        rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Back").performClick()
+        rule.onNodeWithText("Manage Handles").assertExists()
+        rule.runOnIdle { assertNull(app.configuration.draft.value); assertTrue(app.configuration.state.value!!.handles.single().trigger.indicatorVisible) }
+    }
 
     @Test fun `thickness slider uses dp and saves independently of touch depth and length`() {
         val app = ready()
@@ -57,10 +81,12 @@ class EditorSaveInterfaceTest {
             assertEquals(6f, app.configuration.state.value!!.handles.single().trigger.indicatorThicknessDp)
         }
         rule.onNodeWithContentDescription("Save").performClick()
+        waitForSave()
         rule.onNodeWithContentDescription("Touch depth").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(32f) }
         rule.onNodeWithContentDescription("Cancel").performClick()
         rule.onNodeWithContentDescription("Reset Handle thickness").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Save").performClick()
+        waitForSave()
         rule.runOnIdle {
             val saved = app.configuration.state.value!!.handles.single().trigger
             assertEquals(4f, saved.indicatorThicknessDp); assertEquals(8f, saved.depthDp); assertEquals(.73f, saved.indicatorLengthFraction)
@@ -84,6 +110,7 @@ class EditorSaveInterfaceTest {
         rule.runOnIdle { assertEquals(original, app.configuration.preview.value) }
         rule.onNodeWithText("Make handle visible").performClick()
         rule.onNodeWithContentDescription("Save").performClick()
+        waitForSave()
         rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
         rule.runOnIdle {
             assertTrue(app.configuration.state.value!!.handles.single().trigger.indicatorVisible)
@@ -116,6 +143,7 @@ class EditorSaveInterfaceTest {
         rule.runOnIdle { assertEquals(panel.normalized(), app.configuration.preview.value!!.panel(panel.id)) }
         changePanel()
         rule.onNodeWithContentDescription("Save").performClick()
+        waitForSave()
         rule.runOnIdle {
             val saved = app.configuration.state.value!!.panel(panel.id)!!
             assertEquals("Quick tools", saved.name)

@@ -57,6 +57,7 @@ import com.modukey.app.platform.*
     var previewLandscape by rememberSaveable(handleId, panelId) { mutableStateOf(false) }
     var handleTab by rememberSaveable(handleId) { mutableIntStateOf(0) }
     fun navigate(action: () -> Unit) {
+        if (vm.savingEditor.value) return
         if (draft?.changed == true) pendingNavigation = action
         else { vm.closeEditing(); action() }
     }
@@ -117,9 +118,9 @@ import com.modukey.app.platform.*
         pendingNavigation?.let { destination ->
             AlertDialog(onDismissRequest = { pendingNavigation = null }, title = { Text(t(R.string.unsaved_changes)) },
                 text = { Text(t(R.string.unsaved_changes_help)) },
-                confirmButton = { TextButton(onClick = { vm.saveEditing(); vm.closeEditing(); pendingNavigation = null; destination() }) { Text(t(R.string.save)) } },
+                confirmButton = { TextButton(onClick = { pendingNavigation = null; vm.saveEditingThen { vm.closeEditing(); destination() } }) { Text(t(R.string.save)) } },
                 dismissButton = { Row {
-                    TextButton(onClick = { vm.closeEditing(); pendingNavigation = null; destination() }) { Text(t(R.string.discard)) }
+                    TextButton(onClick = { vm.cancelEditing(); vm.closeEditing(); pendingNavigation = null; destination() }) { Text(t(R.string.discard)) }
                     TextButton(onClick = { pendingNavigation = null }) { Text(t(R.string.keep_editing)) }
                 } })
         }
@@ -173,6 +174,7 @@ import com.modukey.app.platform.*
 @Composable private fun HandlesScreen(config: AppConfiguration, vm: NudgeViewModel, edit: (String) -> Unit) {
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
+    val paused by vm.pausedHandles.collectAsStateWithLifecycle()
     var deleting by remember { mutableStateOf<String?>(null) }
     Text(t(R.string.manage_handles), style = MaterialTheme.typography.headlineMedium)
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
@@ -182,6 +184,10 @@ import com.modukey.app.platform.*
                 FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
             }
             Help(R.string.manage_handles_help)
+            if (paused.isNotEmpty()) {
+                Help(R.string.handles_paused_help)
+                FilledTonalButton(onClick = vm::resumeHandles) { Icon(AppIcons.Handle, null); Spacer(Modifier.width(8.dp)); Text(t(R.string.resume_handles)) }
+            }
             if (config.handles.isEmpty()) Help(R.string.no_handles)
             ReorderableList(config.handles, { it.id }, { context.handleLabel(config, it) }, Modifier.weight(1f),
                 moveTo = vm::reorderHandle, finish = vm::flush) { h, _ ->
@@ -194,6 +200,7 @@ import com.modukey.app.platform.*
                                 modifier = Modifier.semanticsDescription(context.getString(R.string.enable_handle)))
                         }
                         if (service.handles[h.id] == HandleAvailability.ERROR) Text(t(R.string.overlay_error), style = MaterialTheme.typography.bodySmall)
+                        if (h.id in paused) Text(t(R.string.paused), style = MaterialTheme.typography.bodySmall)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                             EditIcon(AppIcons.Edit, R.string.edit) { edit(h.id) }
                             EditIcon(AppIcons.Duplicate, R.string.duplicate) { vm.duplicate(h.id) }
