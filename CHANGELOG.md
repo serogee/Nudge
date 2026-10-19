@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- Add Maximum brightness and Minimum brightness to panel buttons and direct gesture actions.
+- Restore the previous brightness and automatic mode on a second tap, unless brightness changed externally.
+- Toggle All handles, This handle, or Other handles without changing saved Enable switches.
+- Show active handle-toggle states and provide Resume handles above the handle list.
+
+### Changed
+
+- Show bold handle initials with a small inset pill beside the configured edge.
+- Group Cancel and Save inside a pill-shaped control. Keep the editor open and restore rename after saving or cancelling.
+- Confirm saves after storage completes and show Save/Cancel toasts.
+
 ### Fixed
 
 - Download update APKs through Android Download Manager instead of passing the direct file link to Chrome.
