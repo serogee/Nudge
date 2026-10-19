@@ -87,7 +87,7 @@ class UnlockActionActivity : ComponentActivity() {
                 window.decorView.postDelayed(pickerFallback, 2_000)
                 return
             }
-            PanelActions.launchUnlocked(this, requireNotNull(button), requireNotNull(request).policy)
+            PanelActions.launchUnlocked(this, requireNotNull(button), requireNotNull(request).policy, request.writeSettings)
         } catch (_: RuntimeException) {
             Toast.makeText(this, if (picker) R.string.input_method_picker_failed else R.string.action_failed, Toast.LENGTH_SHORT).show()
         }

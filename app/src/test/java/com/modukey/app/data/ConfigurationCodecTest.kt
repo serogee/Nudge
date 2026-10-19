@@ -10,6 +10,20 @@ import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationCodecTest {
+    @Test fun `new actions and per-button handle scopes survive backup duplication and schema five upgrade`() {
+        val buttons = listOf(PanelButton(action = ButtonAction.BRIGHTNESS_MAXIMUM), PanelButton(action = ButtonAction.BRIGHTNESS_MINIMUM)) +
+            HandleToggleScope.entries.map { PanelButton(action = ButtonAction.TOGGLE_HANDLES, handleScope = it) }
+        val panel = SavedPanel(settings = PanelConfig(buttons = buttons))
+        val handle = HandleConfig(bindings = mapOf(GestureSlot.HOLD to GestureTarget.direct(buttons.last().copy(id = newId()))))
+        val config = AppConfiguration(handles = listOf(handle), panels = listOf(panel)).normalized()
+        assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        val copy = AppConfiguration().addCopies(config)
+        assertEquals(buttons.map { it.handleScope }, copy.panels.single().settings.buttons.map { it.handleScope })
+        assertEquals(HandleToggleScope.OTHERS, copy.handles.last().target(GestureSlot.HOLD).action!!.handleScope)
+        val old = JSONObject(ConfigurationCodec.encode(AppConfiguration())).put("schema", 5).toString()
+        assertEquals(AppConfiguration().normalized(), ConfigurationCodec.decode(old))
+        assertEquals(6, JSONObject(ConfigurationCodec.upgrade(old)).getInt("schema"))
+    }
     private fun legacy() = checkNotNull(javaClass.classLoader!!.getResourceAsStream("configuration-v1.json")).bufferedReader().use { it.readText() }
 
     @Test fun `fresh configuration has no panels and handle duplication shares assigned panels`() {

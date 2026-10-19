@@ -16,7 +16,9 @@ import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 import com.modukey.app.core.*
 
-data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringer: Int = AudioManager.RINGER_MODE_NORMAL, val dnd: Boolean = false, val ownDnd: Boolean = false)
+data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringer: Int = AudioManager.RINGER_MODE_NORMAL, val dnd: Boolean = false, val ownDnd: Boolean = false,
+    val maximumBrightness: Boolean = false, val minimumBrightness: Boolean = false, val enabledHandleIds: Set<String> = emptySet(),
+    val pausedHandleIds: Set<String> = emptySet(), val ownerHandleId: String? = null, val handlesEnabled: Boolean = false)
 data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
     fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
@@ -32,7 +34,11 @@ class PanelActions(private val service: AccessibilityService,
         val own = if (Build.VERSION.SDK_INT >= 35 && notification.isNotificationPolicyAccessGranted) {
             notification.automaticZenRules.keys.any { notification.getAutomaticZenRuleState(it) == Condition.STATE_TRUE }
         } else dnd
-        SoundState(audio.getStreamVolume(AudioManager.STREAM_MUSIC), audio.isStreamMute(AudioManager.STREAM_MUSIC), audio.ringerMode, dnd, own)
+        val brightness = app.brightness.status()
+        val config = app.configuration.state.value
+        SoundState(audio.getStreamVolume(AudioManager.STREAM_MUSIC), audio.isStreamMute(AudioManager.STREAM_MUSIC), audio.ringerMode, dnd, own,
+            brightness.maximum, brightness.minimum, config?.handles?.filter { it.enabled }?.mapTo(mutableSetOf()) { it.id }.orEmpty(),
+            app.handlePauses.state.value, handlesEnabled = config?.enabled == true)
     } catch (_: RuntimeException) { SoundState() }
 
     override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?): ActionResult = try {
@@ -52,6 +58,22 @@ class PanelActions(private val service: AccessibilityService,
                 ActionResult()
             }
             ButtonAction.MEDIA_MUTE -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, 0); ActionResult() }
+            ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM -> {
+                when (app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM)) {
+                    BrightnessResult.CHANGED -> ActionResult()
+                    BrightnessResult.ALREADY_SET -> ActionResult(message = R.string.brightness_already_set)
+                    BrightnessResult.NEED_ACCESS -> {
+                        launch(handleId, button, testing, gestureSlot = gestureSlot, writeSettings = true)
+                        ActionResult(close = true, message = R.string.brightness_access_required)
+                    }
+                    BrightnessResult.FAILED -> ActionResult(message = R.string.brightness_failed, succeeded = false)
+                }
+            }
+            ButtonAction.TOGGLE_HANDLES -> {
+                val config = app.configuration.state.value
+                if (config != null && app.handlePauses.toggle(button.handleScope, handleId.takeIf { it.isNotBlank() }, config)) ActionResult()
+                else ActionResult(message = R.string.handle_toggle_unavailable, succeeded = false)
+            }
             ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND -> {
                 if (!notification.isNotificationPolicyAccessGranted) {
                     launch(handleId, button, testing, policy = true, gestureSlot = gestureSlot)
@@ -72,18 +94,19 @@ class PanelActions(private val service: AccessibilityService,
     } catch (_: ActivityNotFoundException) { ActionResult(message = R.string.app_missing, succeeded = false) }
     catch (_: RuntimeException) { ActionResult(message = R.string.action_failed, succeeded = false) }
 
-    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false, gestureSlot: GestureSlot? = null) {
+    private fun launch(handleId: String, button: PanelButton, testing: Boolean, policy: Boolean = false, gestureSlot: GestureSlot? = null, writeSettings: Boolean = false) {
         if (!service.getSystemService(PowerManager::class.java).isInteractive) return
         val locked = service.getSystemService(KeyguardManager::class.java).isKeyguardLocked
         if (button.action == ButtonAction.INPUT_METHOD_PICKER || locked) {
-            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked))
+            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked, writeSettings = writeSettings))
             service.startActivity(Intent(service, UnlockActionActivity::class.java).putExtra("token", token)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
-        } else launchUnlocked(service, button, policy)
+        } else launchUnlocked(service, button, policy, writeSettings)
     }
     companion object {
-        fun launchUnlocked(context: Context, button: PanelButton, policy: Boolean = false) {
-            val intent = if (policy) Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) else when (button.action) {
+        fun launchUnlocked(context: Context, button: PanelButton, policy: Boolean = false, writeSettings: Boolean = false) {
+            val intent = if (writeSettings) Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:${context.packageName}"))
+            else if (policy) Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) else when (button.action) {
                 ButtonAction.PHONE_SETTINGS -> Intent(Settings.ACTION_SETTINGS)
                 ButtonAction.NUDGE_SETTINGS -> Intent(context, MainActivity::class.java)
                 ButtonAction.OPEN_APP -> {
@@ -99,7 +122,7 @@ class PanelActions(private val service: AccessibilityService,
 }
 
 data class PendingLaunch(val handleId: String, val button: PanelButton, val testing: Boolean, val policy: Boolean, val gestureSlot: GestureSlot? = null,
-    val fromLockScreen: Boolean = true) {
+    val fromLockScreen: Boolean = true, val writeSettings: Boolean = false) {
     // Recheck the exact source after authentication. Deleted or changed assignments must not launch.
     fun currentButton(config: AppConfiguration): PanelButton? {
         val current = if (gestureSlot != null) config.handle(handleId)?.target(gestureSlot)?.action

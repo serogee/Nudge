@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 5 stores visible handle thickness in dp and converts older percentages once. */
+/** Schema 6 adds brightness and handle toggles. Older layouts and thickness values retain their migrations. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 5
+    const val SCHEMA = 6
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
@@ -116,11 +116,13 @@ object ConfigurationCodec {
     private fun button(b: JSONObject) = PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),
-        b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")))
+        b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")),
+        enumValueOf(b.optString("handleScope", "ALL")))
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
         .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name).put("emptyAppearance", b.emptyAppearance.name)
+        .put("handleScope", b.handleScope.name)
     private fun panel(p: JSONObject, schema: Int) = PanelConfig(
         buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),
