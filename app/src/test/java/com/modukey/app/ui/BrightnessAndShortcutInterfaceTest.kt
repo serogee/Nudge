@@ -5,6 +5,8 @@ import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.modukey.app.MainActivity
@@ -62,7 +64,10 @@ class BrightnessAndShortcutInterfaceTest {
         val vm = NudgeViewModel(app)
         var notice: Int? = null
         rule.activity.lifecycleScope.launch { vm.notices.collect { notice = it } }
-        rule.activity.setContent { NudgeTheme { HomeShortcutsSection(app.configuration.state.value!!, vm) } }
+        rule.activity.setContent {
+            val current by app.configuration.state.collectAsStateWithLifecycle()
+            NudgeTheme { HomeShortcutsSection(checkNotNull(current), vm) }
+        }
         rule.waitUntil(10_000) { vm.shortcutSupported.value == true }
         rule.onNodeWithText("Add shortcut").performClick()
         rule.onNodeWithText("Volume up").performClick()
