@@ -26,6 +26,18 @@ object AppIcons {
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
     val Add = icon("Add") { moveTo(4f,12f); lineTo(20f,12f); moveTo(12f,4f); lineTo(12f,20f) }
     val Minus = icon("Minus") { moveTo(5f,12f); lineTo(19f,12f) }
+    val BrightnessMaximum = icon("Maximum brightness") {
+        moveTo(17f,12f); curveTo(17f,19f,7f,19f,7f,12f); curveTo(7f,5f,17f,5f,17f,12f)
+        moveTo(12f,2f); lineTo(12f,4f); moveTo(12f,20f); lineTo(12f,22f)
+        moveTo(2f,12f); lineTo(4f,12f); moveTo(20f,12f); lineTo(22f,12f)
+        moveTo(5f,5f); lineTo(6.5f,6.5f); moveTo(17.5f,17.5f); lineTo(19f,19f)
+        moveTo(5f,19f); lineTo(6.5f,17.5f); moveTo(17.5f,6.5f); lineTo(19f,5f)
+    }
+    val BrightnessMinimum = icon("Minimum brightness") {
+        moveTo(16f,12f); curveTo(16f,17.5f,8f,17.5f,8f,12f); curveTo(8f,6.5f,16f,6.5f,16f,12f)
+        moveTo(12f,3f); lineTo(12f,4f); moveTo(12f,20f); lineTo(12f,21f)
+        moveTo(3f,12f); lineTo(4f,12f); moveTo(20f,12f); lineTo(21f,12f)
+    }
     val ClosePanels = icon("Close panels") {
         moveTo(6f,3f); lineTo(21f,3f); lineTo(21f,18f)
         moveTo(3f,6f); lineTo(18f,6f); lineTo(18f,21f); lineTo(3f,21f); close()
