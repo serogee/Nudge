@@ -26,6 +26,19 @@ class HandleWindowHostTest {
         override fun updateViewLayout(view: View, params: ViewGroup.LayoutParams) { check(view in registered); registered[view] = params }
         override fun removeViewImmediate(view: View) { check(registered.remove(view) != null); removes++ }
     }
+    @Test fun visibilityUpdatesKeepTheSameBoundedTouchableWindow() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        val host = HandleWindowHost(app, windows, {}, {}) {}
+        val first = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(indicatorVisible = true), Edge.LEFT, false)
+        host.attach(first)
+        val view = windows.registered.keys.single()
+        val params = windows.registered.getValue(view)
+        host.update(first.copy(hideIndicator = true)); host.update(first)
+        assertSame(view, windows.registered.keys.single())
+        assertSame(params, windows.registered.getValue(view))
+        assertEquals(1, windows.adds); assertEquals(0, windows.removes)
+        host.detach()
+    }
     @Test fun `clearing or reordering pending windows never leaves a second active handle`() {
         val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
         val views = mutableMapOf<String, HandleTriggerView>()

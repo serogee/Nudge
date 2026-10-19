@@ -18,6 +18,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var settings = TriggerSettings()
     private var edge = Edge.RIGHT
     private var editing = false
+    private var hideIndicator = false
     private var previewQuarterTurns = 0
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -50,7 +51,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             insets
         }
     }
-    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0) {
+    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0, hideIndicator: Boolean = false) {
         val turns = if (editing) previewQuarterTurns.mod(4) else 0
         if (this.edge != edge || this.editing != editing || this.previewQuarterTurns != turns || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
             this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs ||
@@ -59,6 +60,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
         this.settings = settings; this.edge = edge; this.editing = editing
+        this.hideIndicator = hideIndicator && !editing
+        if (this.hideIndicator) { animator?.cancel(); animator = null; bounce = 0f }
         this.previewQuarterTurns = turns
         importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
         isClickable = !editing; geometry(); updateSoftHide(); invalidate()
@@ -92,7 +95,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private fun completeGesture(kind: GestureKind) {
         if (softHide.gesture(SystemClock.uptimeMillis())) {
             onReveal()
-            if (ValueAnimator.areAnimatorsEnabled()) {
+            if (!hideIndicator && ValueAnimator.areAnimatorsEnabled()) {
                 animator?.cancel()
                 animator = ValueAnimator.ofFloat(0f, 1f, -.15f, 0f).apply {
                     duration = 220
@@ -127,7 +130,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             3 -> { canvas.translate(0f, height.toFloat()); canvas.rotate(270f) }
         }
         if (editing) { paint.color = 0x554E7E21; canvas.drawPath(guide, paint) }
-        if (if (softHide.active) softHide.revealed else settings.indicatorVisible) {
+        if (!hideIndicator && (if (softHide.active) softHide.revealed else settings.indicatorVisible)) {
             paint.color = settings.indicatorColor.toInt(); paint.alpha = (settings.indicatorOpacity * 255).toInt()
             val travel = bounce * 4 * resources.displayMetrics.density
             canvas.save()
