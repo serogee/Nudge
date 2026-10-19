@@ -169,6 +169,7 @@ class EditorSaveInterfaceTest {
         rule.runOnIdle { rule.activity.onBackPressedDispatcher.onBackPressed() }
         rule.onNodeWithText("Save changes?").assertIsDisplayed()
         rule.onNodeWithText("Save").performClick()
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Manage Handles").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Manage Handles").assertExists()
         rule.runOnIdle { assertTrue(app.configuration.state.value!!.handles.single().trigger.indicatorVisible) }
     }
