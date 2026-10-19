@@ -6,6 +6,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
 import com.modukey.app.core.EditorSession
+import com.modukey.app.core.HandlePauses
+import com.modukey.app.platform.BrightnessController
 import com.modukey.app.data.ConfigurationController
 import com.modukey.app.data.DataStoreConfigurationRepository
 import com.modukey.app.platform.IconRepository
@@ -25,6 +27,8 @@ class NudgeApplication : Application() {
     fun migratedPanelName(name: String, handle: Int, panel: Int): String = getString(R.string.migrated_panel_name,
         name.ifBlank { getString(R.string.handle_name, handle + 1) }, panel + 1)
     val editor = EditorSession()
+    val handlePauses = HandlePauses()
+    val brightness by lazy { BrightnessController(this) }
     val icons by lazy { IconRepository(this) }
     val unlocks = UnlockRequests()
     val diagnostics by lazy { LocalDiagnostics(this, scope) }
@@ -40,6 +44,7 @@ class NudgeApplication : Application() {
     override fun onTerminate() {
         // Used by emulated application lifecycles; Android ends a real process without this callback.
         scope.cancel()
+        brightness.close()
         super.onTerminate()
     }
 }
