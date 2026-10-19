@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 9 adds independent gesture timing, distances, and vibration preferences. */
+/** Schema 10 adds per-action brightness return preferences. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 9
+    const val SCHEMA = 10
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
@@ -150,12 +150,15 @@ object ConfigurationCodec {
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),
         b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")),
-        enumValueOf(b.optString("handleScope", "ALL")))
+        enumValueOf(b.optString("handleScope", "ALL")),
+        b.optJSONObject("brightnessReturn")?.let { BrightnessReturnSettings(it.optBoolean("usePrevious", true), it.float("fraction", .5f)) }
+            ?: BrightnessReturnSettings())
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
         .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name).put("emptyAppearance", b.emptyAppearance.name)
         .put("handleScope", b.handleScope.name)
+        .put("brightnessReturn", JSONObject().put("usePrevious", b.brightnessReturn.usePrevious).put("fraction", b.brightnessReturn.fraction))
     private fun panel(p: JSONObject, schema: Int) = PanelConfig(
         buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),

@@ -6,7 +6,7 @@ enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false) {
     val isNone get() = panelId == null && !volume && action == null && !brightness
-    fun normalized() = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.copy(showVolumePopup = false)) else this
+    fun normalized() = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
         val NONE = GestureTarget()
@@ -35,7 +35,10 @@ data class PanelButton(
     val iconContainer: IconContainer = IconContainer.DEFAULT,
     val emptyAppearance: EmptyAppearance = EmptyAppearance.SLASH,
     val handleScope: HandleToggleScope = HandleToggleScope.ALL,
-)
+    val brightnessReturn: BrightnessReturnSettings = BrightnessReturnSettings(),
+) {
+    fun normalized() = copy(brightnessReturn = brightnessReturn.normalized())
+}
 data class PanelLayout(
     val mode: PanelMode = PanelMode.FIXED,
     val direction: PanelDirection = PanelDirection.VERTICAL,
@@ -77,7 +80,7 @@ data class PanelConfig(
     val iconOpacity: Float = 1f,
 ) {
     fun layout(landscape: Boolean) = if (landscape && landscapeOverride) this.landscape else portrait
-    fun normalized() = copy(portrait = portrait.normalized(), landscape = landscape.normalized(),
+    fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized(), landscape = landscape.normalized(),
         opacity = opacity.valid(0.98f).coerceIn(0f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
@@ -110,7 +113,7 @@ data class AppConfiguration(
 ) {
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
-        return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80)) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+        return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
             h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
                 if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
             }) }
