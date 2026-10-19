@@ -34,16 +34,17 @@ class BrightnessControllerTest {
         companion object {
             var allowed = false
             var failedSetting: String? = null
+            var onWrite: (() -> Unit)? = null
             @JvmStatic @Implementation fun canWrite(context: Context): Boolean = allowed
             @JvmStatic @Implementation(methodName = "putInt") fun writeInt(resolver: ContentResolver, name: String, value: Int): Boolean =
-                name != failedSetting && ReflectionHelpers.callStaticMethod(ShadowSettings.ShadowSystem::class.java, "putInt",
+                name != failedSetting && ReflectionHelpers.callStaticMethod<Boolean>(ShadowSettings.ShadowSystem::class.java, "putInt",
                     ClassParameter.from(ContentResolver::class.java, resolver), ClassParameter.from(String::class.java, name),
-                    ClassParameter.from(Int::class.javaPrimitiveType, value))
+                    ClassParameter.from(Int::class.javaPrimitiveType, value)).also { if (it) onWrite?.invoke() }
         }
     }
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     private val resolver get() = app.contentResolver
-    @After fun cleanup() { Writes.allowed = false; Writes.failedSetting = null; app.onTerminate() }
+    @After fun cleanup() { Writes.allowed = false; Writes.failedSetting = null; Writes.onWrite = null; app.onTerminate() }
     private fun set(level: Int, automatic: Boolean) {
         Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, level)
         Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, if (automatic) 1 else 0)
@@ -51,6 +52,18 @@ class BrightnessControllerTest {
     }
     private fun level() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS)
     private fun mode() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE)
+    @Test fun synchronousPanelSnapshotsCannotClearPresetsDuringOwnWrites() {
+        Writes.allowed = true; set(100, true)
+        Writes.onWrite = { app.brightness.status() }
+        app.brightness.toggle(BrightnessPreset.MAXIMUM)
+        app.brightness.toggle(BrightnessPreset.MINIMUM)
+        assertTrue(app.brightness.status().minimum)
+        app.brightness.toggle(BrightnessPreset.MINIMUM)
+        assertTrue(app.brightness.status().maximum)
+        app.brightness.toggle(BrightnessPreset.MAXIMUM)
+        assertEquals(100, level()); assertEquals(1, mode())
+        assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+    }
     @Test fun sliderUsesPublicRangeAndPresetsHaveOwnedActiveStates() {
         Writes.allowed = true; set(100, false)
         app.brightness.setFraction(.25f); assertEquals(65, level())
