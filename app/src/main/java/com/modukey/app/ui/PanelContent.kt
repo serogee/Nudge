@@ -85,13 +85,14 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
         ButtonAction.DND -> state.dnd
         ButtonAction.BRIGHTNESS_MAXIMUM -> state.maximumBrightness
         ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
+        ButtonAction.BRIGHTNESS_AUTOMATIC -> state.automaticBrightness
         ButtonAction.TOGGLE_HANDLES -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
             state.handlesEnabled && targets.isNotEmpty() && targets.none { it in state.pausedHandleIds }
         }
         else -> false
     }
     val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND,
-        ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.TOGGLE_HANDLES)
+        ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_AUTOMATIC, ButtonAction.TOGGLE_HANDLES)
     val description = if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
     val shape = iconShape(panel)
     val container = if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_ICON) true else when (button.iconContainer) {
@@ -138,6 +139,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.CONTROL_PANEL -> Icon(AppIcons.ControlPanel, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_UP -> Icon(AppIcons.BrightnessUp, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_DOWN -> Icon(AppIcons.BrightnessDown, null, modifier, tint = tint)
+        ButtonAction.BRIGHTNESS_AUTOMATIC -> Icon(AppIcons.BrightnessAutomatic, null, modifier, tint = tint)
         else -> Canvas(modifier) {
             val u = size.minDimension / 24f
             fun p(x: Float, y: Float) = Offset(x * u, y * u)

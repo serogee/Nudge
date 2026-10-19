@@ -32,6 +32,7 @@ object ButtonVectors {
         ButtonAction.SCREENSHOT -> AppIcons.Screenshot; ButtonAction.NOTIFICATIONS -> AppIcons.Notifications; ButtonAction.CONTROL_PANEL -> AppIcons.ControlPanel
         ButtonAction.BRIGHTNESS_MAXIMUM -> AppIcons.BrightnessMaximum; ButtonAction.BRIGHTNESS_MINIMUM -> AppIcons.BrightnessMinimum
         ButtonAction.BRIGHTNESS_UP -> AppIcons.BrightnessUp; ButtonAction.BRIGHTNESS_DOWN -> AppIcons.BrightnessDown
+        ButtonAction.BRIGHTNESS_AUTOMATIC -> AppIcons.BrightnessAutomatic
         ButtonAction.TOGGLE_HANDLES -> AppIcons.Handle; ButtonAction.OPEN_APP -> AppIcons.Apps; ButtonAction.EMPTY -> AppIcons.Empty
     }
 }

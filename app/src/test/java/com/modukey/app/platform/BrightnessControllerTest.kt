@@ -51,6 +51,34 @@ class BrightnessControllerTest {
     }
     private fun level() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS)
     private fun mode() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE)
+    @Test fun automaticToggleKeepsLevelAndHandlesDenialAndFailedWrites() {
+        set(100, false)
+        assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.toggleAutomatic())
+        assertEquals(100, level()); assertEquals(0, mode())
+        Writes.allowed = true
+        assertEquals(BrightnessResult.CHANGED, app.brightness.toggleAutomatic())
+        assertTrue(app.brightness.status().automatic); assertEquals(100, level())
+        assertEquals(BrightnessResult.CHANGED, app.brightness.toggleAutomatic())
+        assertFalse(app.brightness.status().automatic); assertEquals(100, level())
+        Writes.failedSetting = Settings.System.SCREEN_BRIGHTNESS_MODE
+        assertEquals(BrightnessResult.FAILED, app.brightness.toggleAutomatic())
+        assertEquals(0, mode()); assertEquals(100, level())
+    }
+    @Test fun automaticPanelActionSharesModeAndPermissionHandling() {
+        val service = Robolectric.buildService(EdgeAccessibilityService::class.java).create().get()
+        shadowOf(service.getSystemService(PowerManager::class.java)).setIsInteractive(true)
+        shadowOf(service.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
+        val actions = PanelActions(service)
+        val button = PanelButton(action = ButtonAction.BRIGHTNESS_AUTOMATIC)
+        set(100, false)
+        assertTrue(actions.execute("owner", button, false).close)
+        assertEquals(Settings.ACTION_MANAGE_WRITE_SETTINGS, shadowOf(service).nextStartedActivity.action)
+        Writes.allowed = true
+        val result = actions.execute("owner", button, false)
+        assertTrue(result.succeeded); assertFalse(result.close); assertTrue(actions.snapshot().automaticBrightness)
+        actions.execute("owner", button, false)
+        assertFalse(actions.snapshot().automaticBrightness); assertEquals(100, level())
+    }
     @Test fun `permission denial leaves brightness and mode unchanged`() {
         set(100, true)
         assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.toggle(BrightnessPreset.MAXIMUM))

@@ -21,6 +21,7 @@ import com.modukey.app.core.*
     ButtonAction.INPUT_METHOD_PICKER -> R.string.input_method_picker
     ButtonAction.CLOSE_PANELS -> R.string.close_panels; ButtonAction.SCREENSHOT -> R.string.screenshot
     ButtonAction.BRIGHTNESS_MAXIMUM -> R.string.brightness_maximum; ButtonAction.BRIGHTNESS_MINIMUM -> R.string.brightness_minimum
+    ButtonAction.BRIGHTNESS_AUTOMATIC -> R.string.brightness_automatic
     ButtonAction.TOGGLE_HANDLES -> R.string.toggle_handles
     ButtonAction.NOTIFICATIONS -> R.string.notifications; ButtonAction.CONTROL_PANEL -> R.string.control_panel
     ButtonAction.BRIGHTNESS_UP -> R.string.brightness_up; ButtonAction.BRIGHTNESS_DOWN -> R.string.brightness_down

@@ -12,7 +12,7 @@ import com.modukey.app.core.BrightnessValue
 import kotlin.math.roundToInt
 
 enum class BrightnessResult { CHANGED, ALREADY_SET, NEED_ACCESS, FAILED }
-data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false)
+data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false, val automatic: Boolean = false)
 
 /** Observe the two brightness settings only while a restore value exists. Never poll or wake the display. */
 class BrightnessController(context: Context) {
@@ -30,10 +30,21 @@ class BrightnessController(context: Context) {
     }
     fun status(): BrightnessStatus = try {
         val current = read(); session.observe(current); observeIfNeeded()
-        BrightnessStatus(!current.automatic && current.level == maximum, !current.automatic && current.level == minimum)
+        BrightnessStatus(!current.automatic && current.level == maximum, !current.automatic && current.level == minimum, current.automatic)
     } catch (_: RuntimeException) { BrightnessStatus() }
     val canWrite get() = Settings.System.canWrite(app)
     fun fraction(): Float = runCatching { ((read().level - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f) }.getOrDefault(.5f)
+    fun toggleAutomatic(): BrightnessResult {
+        if (!canWrite) return BrightnessResult.NEED_ACCESS
+        return try {
+            val before = read()
+            val mode = if (before.automatic) Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL else Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+            // Change only mode. Android controls the actual level while automatic brightness is active.
+            if (!Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)) BrightnessResult.FAILED
+            else if (read().automatic == before.automatic) BrightnessResult.FAILED
+            else { session.clear(); observeIfNeeded(); BrightnessResult.CHANGED }
+        } catch (_: RuntimeException) { BrightnessResult.FAILED }
+    }
     fun adjust(increase: Boolean): BrightnessResult {
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return try {
