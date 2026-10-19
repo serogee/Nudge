@@ -46,6 +46,7 @@ import com.modukey.app.core.*
                     Help(R.string.handle_toggle_help)
                 }
                 if (draft.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) Help(R.string.brightness_help)
+                if (draft.action == ButtonAction.BRIGHTNESS_AUTOMATIC) Help(R.string.brightness_automatic_action_help)
                 if (draft.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) Help(R.string.brightness_step_help)
                 if (draft.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) Help(R.string.native_panel_help)
                 if (draft.action == ButtonAction.EMPTY) {
