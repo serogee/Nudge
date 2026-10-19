@@ -1,6 +1,6 @@
 # Handles and panels
 
-This guide covers the prepared 0.3.1 release. Version 0.3.0 is published. Earlier release artifacts remain unchanged. The archived 0.2.0 APK has the earlier per-handle panels. Physical Redmi Note 12 / HyperOS checks remain pending.
+This guide covers the current development interface. Earlier release artifacts remain unchanged. Physical Redmi Note 12 / HyperOS checks remain pending.
 
 ## Handles
 
@@ -10,7 +10,7 @@ In the development interface, drag a card's left grip to change its priority. Se
 
 Handle and panel editors keep changes in a temporary draft. The top pencil changes to Save and Cancel after an edit. Save applies all changes in that editor. Cancel restores its saved settings. Long titles use an ellipsis so both controls stay visible.
 
-Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
+Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Their compact height keeps the title container unchanged. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
 
 Handle icons keep a bold initial inside a rounded square. A small inset pill marks the saved left, right, or bottom edge.
 
@@ -53,13 +53,17 @@ Screenshot removes the interactive Nudge panel, waits two display frames, and re
 There is no setting to hide handles during every screenshot method. Android's supported APIs do not provide a reliable pre-capture signal for all device methods. The [screenshot detection API](https://developer.android.com/about/versions/14/features/screenshot-detection) is activity-scoped and reports supported captures after they occur. Visible handles can appear in screenshots, including those requested through Nudge.
 
 - Tap: release within 250 ms without moving beyond touch slop.
-- Hold: hold still for the selected Hold time, then release.
+- Hold: hold still for the selected Hold time. Run at the deadline or after release.
 - Swipe: move inward at least 24 dp and release within 600 ms by default.
-- Swipe and hold: reach the swipe threshold within its time limit, hold still for the selected Swipe and hold time, then release.
+- Swipe and hold: reach its own distance within its own time limit. Hold still, then run at the deadline or after release.
 
-Each handle saves both hold times independently. Each accepts 300 to 3000 ms and defaults to 500 ms. Reset restores only that control. The swipe hold interval starts when the swipe reaches its threshold. Moving beyond touch slop restarts that interval. Existing configurations and older backups use 500 ms for both controls.
+Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
 
-Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Hold gestures do not run until release. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
+Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
+
+Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+
+Pulling a panel shifts a non-interactive preview slightly inward, up to 12 dp. The preview stays in place during a hold. Releasing a completed gesture opens the assigned panel and settles it over 180 ms. An immediate swipe-and-hold action keeps its panel suspended until release. Preview buttons do not execute actions. Disabled system animations skip the motion.
 
 A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
