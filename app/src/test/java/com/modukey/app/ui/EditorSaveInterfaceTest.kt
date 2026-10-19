@@ -1,12 +1,15 @@
 package com.modukey.app.ui
 
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.lifecycle.Lifecycle
 import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
+import com.modukey.app.R
 import com.modukey.app.core.*
 import org.junit.After
 import org.junit.Assert.*
@@ -36,6 +39,32 @@ class EditorSaveInterfaceTest {
     private fun openPanel() {
         rule.onNode(hasText("Panels") and hasClickAction()).performClick()
         rule.onNodeWithContentDescription("Edit panel").performScrollTo().performClick()
+    }
+
+    @Test fun `thickness slider uses dp and saves independently of touch depth and length`() {
+        val app = ready()
+        rule.runOnIdle { app.configuration.update { it.editHandle("first-handle") { h -> h.copy(trigger = h.trigger.copy(
+            indicatorVisible = true, depthDp = 24f, indicatorThicknessDp = 6f, indicatorLengthFraction = .73f)) } } }
+        openHandle()
+        val thickness = rule.onNodeWithContentDescription("Handle thickness")
+        thickness.performScrollTo().assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(6f, 0f..32f)))
+        thickness.performSemanticsAction(SemanticsActions.SetProgress) { it(18f) }
+        rule.onNodeWithText(rule.activity.getString(R.string.dp_value, 18)).assertExists()
+        rule.onNodeWithContentDescription("Touch depth").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(8f) }
+        rule.runOnIdle {
+            val draft = app.configuration.preview.value!!.handles.single().trigger
+            assertEquals(18f, draft.indicatorThicknessDp); assertEquals(8f, draft.depthDp); assertEquals(.73f, draft.indicatorLengthFraction)
+            assertEquals(6f, app.configuration.state.value!!.handles.single().trigger.indicatorThicknessDp)
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.onNodeWithContentDescription("Touch depth").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(32f) }
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.onNodeWithContentDescription("Reset Handle thickness").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.runOnIdle {
+            val saved = app.configuration.state.value!!.handles.single().trigger
+            assertEquals(4f, saved.indicatorThicknessDp); assertEquals(8f, saved.depthDp); assertEquals(.73f, saved.indicatorLengthFraction)
+        }
     }
 
     @Test fun `handle changes replace rename with save and cancel and apply only on save`() {

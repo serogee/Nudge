@@ -95,7 +95,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         val logicalWidth = if (previewQuarterTurns % 2 == 0) width.toFloat() else height.toFloat()
         val logicalHeight = if (previewQuarterTurns % 2 == 0) height.toFloat() else width.toFloat()
         EdgeHighlightShape.path(logicalWidth, logicalHeight, edge, guide)
-        val b = TriggerGeometry.indicator(logicalWidth, logicalHeight, settings, edge)
+        val b = TriggerGeometry.indicator(logicalWidth, logicalHeight, settings, edge, resources.displayMetrics.density)
         indicator.set(b.x, b.y, b.x + b.width, b.y + b.height)
         radius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(b.width, b.height) / 2)
         systemGestureExclusionRects = if (editing || edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))

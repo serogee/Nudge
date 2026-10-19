@@ -4,7 +4,7 @@ import android.app.Application
 import android.media.AudioManager
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
-import com.modukey.app.data.IndicatorThicknessFractionMigration
+import com.modukey.app.data.IndicatorThicknessDpMigration
 import com.modukey.app.core.EditorSession
 import com.modukey.app.data.ConfigurationController
 import com.modukey.app.data.DataStoreConfigurationRepository
@@ -16,7 +16,7 @@ import com.modukey.app.platform.ServiceStatusStore
 import kotlinx.coroutines.*
 
 private val Application.preferences by preferencesDataStore("trigger_settings", produceMigrations = {
-    listOf(IndicatorFractionMigration(), IndicatorThicknessFractionMigration())
+    listOf(IndicatorFractionMigration(), IndicatorThicknessDpMigration())
 })
 
 class NudgeApplication : Application() {

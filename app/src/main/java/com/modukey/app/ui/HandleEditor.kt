@@ -81,7 +81,8 @@ import kotlin.math.roundToInt
                         Section(R.string.visible_handle) {
                             Toggle(R.string.make_handle_visible, R.string.visible_help, s.indicatorVisible, default = false) { value -> vm.editTrigger(h.id) { it.copy(indicatorVisible = value) } }
                             SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
-                            SettingSlider(R.string.indicator_thickness, s.indicatorThicknessFraction, 0f..1f, t(R.string.touch_depth_percent, (s.indicatorThicknessFraction*100).roundToInt()), s.indicatorVisible, default = .25f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessFraction = value) } }
+                            SettingSlider(R.string.indicator_thickness, s.indicatorThicknessDp, 0f..32f, t(R.string.dp_value, s.indicatorThicknessDp.roundToInt()), s.indicatorVisible, default = 4f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessDp = value) } }
+                            Help(R.string.indicator_thickness_help)
                             PercentSlider(R.string.opacity, s.indicatorOpacity, s.indicatorVisible, default = .65f) { value -> vm.editTrigger(h.id) { it.copy(indicatorOpacity = value) } }
                             SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..16f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), s.indicatorVisible, default = 2f) { value -> vm.editTrigger(h.id) { it.copy(cornerRadiusDp = value) } }
                             ColorPicker(s.indicatorColor, s.indicatorVisible, default = TriggerSettings().indicatorColor) { value -> vm.editTrigger(h.id) { it.copy(indicatorColor = value) } }

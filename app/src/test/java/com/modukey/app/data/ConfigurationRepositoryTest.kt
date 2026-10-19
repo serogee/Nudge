@@ -28,6 +28,28 @@ class ConfigurationRepositoryTest {
         val store=PreferenceDataStoreFactory.create(storage=storage,scope=CoroutineScope(Dispatchers.IO+job))
         try { block(store) } finally { job.cancelAndJoin() }
     }
+    @Test fun `percentage document migrates atomically and retains dp thickness after reopening`()=runTest {
+        val file=folder.newFile("thickness.preferences_pb")
+        val key=stringPreferencesKey("configuration.v1")
+        val old=JSONObject(ConfigurationCodec.encode(AppConfiguration())).put("schema",4)
+        old.getJSONArray("handles").getJSONObject(0).getJSONObject("trigger").apply {
+            remove("indicatorThicknessDp"); put("indicatorThickness",.75); put("depth",24)
+        }
+        session(file) { store ->
+            store.edit { it[key]=old.toString(); it[stringPreferencesKey("future.field")]="keep" }
+            val repo=DataStoreConfigurationRepository(store)
+            val loaded=repo.configuration.first()
+            assertEquals(18f,loaded.handles.single().trigger.indicatorThicknessDp)
+            assertEquals(5,JSONObject(store.data.first()[key]!!).getInt("schema"))
+            repo.write(loaded.editHandle(loaded.handles.single().id) { it.copy(trigger=it.trigger.copy(depthDp=8f)) })
+        }
+        session(file) { store ->
+            val loaded=DataStoreConfigurationRepository(store).configuration.first()
+            assertEquals(18f,loaded.handles.single().trigger.indicatorThicknessDp)
+            assertEquals(8f,loaded.handles.single().trigger.depthDp)
+            assertEquals("keep",store.data.first()[stringPreferencesKey("future.field")])
+        }
+    }
     @Test fun `panel upgrade persists one complete document and stable references across reopening`()=runTest {
         val file=folder.newFile("panels.preferences_pb")
         val key=stringPreferencesKey("configuration.v1")

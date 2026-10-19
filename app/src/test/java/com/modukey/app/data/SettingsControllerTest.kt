@@ -57,7 +57,7 @@ class SettingsControllerTest {
         c.flush()
         runCurrent()
         c.update { it.copy(indicatorOpacity = 0.2f) }
-        c.update { it.copy(indicatorThicknessFraction = 0.7f) }
+        c.update { it.copy(indicatorThicknessDp = 0.7f) }
         c.update { it.copy(portrait = it.portrait.copy(edge = Edge.BOTTOM)) }
         c.update { it.copy(portrait = it.portrait.copy(position = 0.2f)) }
         c.update { it.copy(lengthDp = 190f) }
@@ -66,13 +66,13 @@ class SettingsControllerTest {
         assertEquals(190f, c.state.value!!.lengthDp)
         assertEquals(Placement(Edge.BOTTOM, 0.2f), c.state.value!!.portrait)
         assertEquals(0.2f, c.state.value!!.indicatorOpacity)
-        assertEquals(0.7f, c.state.value!!.indicatorThicknessFraction)
+        assertEquals(0.7f, c.state.value!!.indicatorThicknessDp)
         c.flush()
         advanceTimeBy(3_000)
         runCurrent()
         assertEquals(190f, store.disk.value.lengthDp)
         assertEquals(30f, store.disk.value.depthDp)
-        assertEquals(0.7f, store.disk.value.indicatorThicknessFraction)
+        assertEquals(0.7f, store.disk.value.indicatorThicknessDp)
         assertEquals(Placement(Edge.BOTTOM, 0.2f), store.disk.value.portrait)
         assertEquals(store.disk.value, c.state.value)
         store.disk.value = TriggerSettings()
@@ -84,16 +84,16 @@ class SettingsControllerTest {
         val store = SlowStore().apply { fail = true }
         val c = SettingsController(store, backgroundScope)
         runCurrent()
-        c.update { it.copy(lockScreenEnabled = true, indicatorLengthFraction = 0.42f, indicatorThicknessFraction = 0.37f, includePrereleases = true) }
+        c.update { it.copy(lockScreenEnabled = true, indicatorLengthFraction = 0.42f, indicatorThicknessDp = 0.37f, includePrereleases = true) }
         c.flush()
         runCurrent()
         assertNotNull(c.error.value)
         assertTrue(c.state.value!!.lockScreenEnabled)
         assertEquals(0.42f, c.state.value!!.indicatorLengthFraction)
-        assertEquals(0.37f, c.state.value!!.indicatorThicknessFraction)
+        assertEquals(0.37f, c.state.value!!.indicatorThicknessDp)
         c.update { it.copy(depthDp = 29f) }
         c.update { it.copy(indicatorLengthFraction = 0.91f) }
-        c.update { it.copy(indicatorThicknessFraction = 0.81f) }
+        c.update { it.copy(indicatorThicknessDp = 0.81f) }
         store.fail = false
         c.retry()
         runCurrent()
@@ -101,7 +101,7 @@ class SettingsControllerTest {
         assertEquals(c.state.value, store.disk.value)
         assertTrue(store.disk.value.lockScreenEnabled)
         assertEquals(0.91f, store.disk.value.indicatorLengthFraction)
-        assertEquals(0.81f, store.disk.value.indicatorThicknessFraction)
+        assertEquals(0.81f, store.disk.value.indicatorThicknessDp)
         assertEquals(29f, store.disk.value.depthDp)
         assertFalse(store.disk.value.indicatorVisible)
         assertFalse(store.disk.value.landscapeEnabled)
