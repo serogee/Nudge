@@ -22,6 +22,7 @@ data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringe
 data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
     fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
+    fun executeShortcut(shortcut: HomeShortcut): ActionResult = execute(shortcut.handleId.orEmpty(), shortcut.button, false)
     fun showBrightness(handleId: String, slot: GestureSlot): ActionResult = ActionResult(succeeded = false)
     fun snapshot(): SoundState
 }
@@ -29,6 +30,7 @@ class PanelActions(private val service: AccessibilityService,
     private val screenshot: () -> Boolean = { service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT) },
     private val systemPanel: (Int) -> Boolean = { service.performGlobalAction(it) },
     private val brightnessPopup: (String) -> Boolean = { false }) : ActionExecutor {
+    private var shortcutSource: HomeShortcut? = null
     private val app get() = service.application as NudgeApplication
     private val audio = service.getSystemService(AudioManager::class.java)
     private val notification = service.getSystemService(NotificationManager::class.java)
@@ -102,6 +104,12 @@ class PanelActions(private val service: AccessibilityService,
     } catch (_: ActivityNotFoundException) { ActionResult(message = R.string.app_missing, succeeded = false) }
     catch (_: RuntimeException) { ActionResult(message = R.string.action_failed, succeeded = false) }
 
+    override fun executeShortcut(shortcut: HomeShortcut): ActionResult {
+        val config = app.configuration.state.value
+        if (config?.shortcuts?.firstOrNull { it.id == shortcut.id } != shortcut || !shortcut.available(config)) return ActionResult(message = R.string.shortcut_missing, succeeded = false)
+        shortcutSource = shortcut
+        return try { execute(shortcut.handleId.orEmpty(), shortcut.button, false) } finally { shortcutSource = null }
+    }
     override fun showBrightness(handleId: String, slot: GestureSlot): ActionResult {
         val target = app.configuration.state.value?.handle(handleId)?.target(slot) ?: return ActionResult(succeeded = false)
         if (!target.brightness) return ActionResult(succeeded = false)
@@ -116,7 +124,7 @@ class PanelActions(private val service: AccessibilityService,
         if (!service.getSystemService(PowerManager::class.java).isInteractive) return
         val locked = service.getSystemService(KeyguardManager::class.java).isKeyguardLocked
         if (button.action == ButtonAction.INPUT_METHOD_PICKER || locked) {
-            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked, writeSettings = writeSettings, brightnessTarget = brightnessTarget))
+            val token = app.unlocks.put(PendingLaunch(handleId, button, testing, policy, gestureSlot, fromLockScreen = locked, writeSettings = writeSettings, brightnessTarget = brightnessTarget, shortcutId = shortcutSource?.id))
             service.startActivity(Intent(service, UnlockActionActivity::class.java).putExtra("token", token)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
         } else launchUnlocked(service, button, policy, writeSettings)
@@ -140,9 +148,10 @@ class PanelActions(private val service: AccessibilityService,
 }
 
 data class PendingLaunch(val handleId: String, val button: PanelButton, val testing: Boolean, val policy: Boolean, val gestureSlot: GestureSlot? = null,
-    val fromLockScreen: Boolean = true, val writeSettings: Boolean = false, val brightnessTarget: GestureTarget? = null) {
+    val fromLockScreen: Boolean = true, val writeSettings: Boolean = false, val brightnessTarget: GestureTarget? = null, val shortcutId: String? = null) {
     // Recheck the exact source after authentication. Deleted or changed assignments must not launch.
     fun currentButton(config: AppConfiguration): PanelButton? {
+        if (shortcutId != null) return config.shortcuts.firstOrNull { it.id == shortcutId && it.available(config) }?.button?.takeIf { it == button }
         if (brightnessTarget != null) return button.takeIf { writeSettings && gestureSlot != null && brightnessTarget.brightness && config.handle(handleId)?.target(gestureSlot) == brightnessTarget }
         val current = if (gestureSlot != null) config.handle(handleId)?.target(gestureSlot)?.action
             else config.panels.asSequence().flatMap { it.settings.buttons }.firstOrNull { it.id == button.id }

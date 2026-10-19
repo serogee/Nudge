@@ -76,7 +76,7 @@ class UnlockActionActivity : ComponentActivity() {
         val button = config?.let { request?.currentButton(it) }
         val picker = button?.action == ButtonAction.INPUT_METHOD_PICKER
         val available = request != null && config != null && button != null && app.status.state.value.connected &&
-            (request.testing || (handle != null && config.enabled && handle.enabled && (!requireLockAvailability || handle.trigger.lockScreenEnabled))) &&
+            (request.shortcutId != null || request.testing || (handle != null && config.enabled && handle.enabled && (!requireLockAvailability || handle.trigger.lockScreenEnabled))) &&
             getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
         if (!available) { finish(); return }
         try {

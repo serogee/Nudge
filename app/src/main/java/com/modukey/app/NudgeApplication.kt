@@ -5,6 +5,7 @@ import android.media.AudioManager
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
+import com.modukey.app.core.ShortcutRuntime
 import com.modukey.app.core.BrightnessPreview
 import com.modukey.app.core.EditorSession
 import com.modukey.app.core.HandlePauses
@@ -29,6 +30,7 @@ class NudgeApplication : Application() {
         name.ifBlank { getString(R.string.handle_name, handle + 1) }, panel + 1)
     val editor = EditorSession()
     val brightnessPreview = BrightnessPreview()
+    val shortcuts = ShortcutRuntime()
     val handlePauses = HandlePauses()
     val brightness by lazy { BrightnessController(this) }
     val icons by lazy { IconRepository(this) }

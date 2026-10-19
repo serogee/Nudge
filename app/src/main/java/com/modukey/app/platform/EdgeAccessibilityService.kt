@@ -112,6 +112,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
             }, ContextCompat.RECEIVER_NOT_EXPORTED)
             registered = true
+            app.shortcuts.bind(this, ::runShortcut)
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
@@ -338,6 +339,17 @@ class EdgeAccessibilityService : AccessibilityService() {
         val info = serviceInfo ?: return
         if (info.eventTypes != events) { info.eventTypes = events; serviceInfo = info }
     }
+    private fun runShortcut(id: String): Boolean {
+        if (scope == null || !getSystemService(PowerManager::class.java).isInteractive || getSystemService(KeyguardManager::class.java).isKeyguardLocked) return false
+        val config = app.configuration.state.value ?: return false
+        val shortcut = config.shortcuts.firstOrNull { it.id == id } ?: return false
+        if (!shortcut.available(config)) return false
+        hideBrightness(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows()
+        val result = actions?.executeShortcut(shortcut) ?: return false
+        result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+        refresh()
+        return true
+    }
     private fun showBrightness(handleId: String): Boolean {
         val config = app.configuration.state.value ?: return false
         val handle = config.handle(handleId) ?: return false
@@ -352,6 +364,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         brightnessHost?.hide()
     }
     private fun stopSession() {
+        app.shortcuts.unbind(this)
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
         systemPanels?.cancel(); systemPanels = null
