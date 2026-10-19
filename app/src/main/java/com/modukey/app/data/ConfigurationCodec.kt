@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 4 adds control appearance and preserves placement when Y becomes positive upward. */
+/** Schema 5 stores visible handle thickness in dp and converts older percentages once. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 4
+    const val SCHEMA = 5
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
@@ -54,7 +54,7 @@ object ConfigurationCodec {
                         }
                     }
                 }
-                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger")), targets, h.optLong("volumeSequenceMs", 3_000))
+                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000))
             }
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
@@ -80,12 +80,14 @@ object ConfigurationCodec {
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
         .put("offsetX", p.offsetXDp).put("offsetY", p.offsetYDp)
-    private fun trigger(t: JSONObject) = TriggerSettings(
+    private fun trigger(t: JSONObject, schema: Int) = TriggerSettings(
         portrait = placement(t.getJSONObject("portrait")), landscape = placement(t.getJSONObject("landscape")),
         landscapeEnabled = t.optBoolean("landscapeEnabled"), landscapeOverrideEnabled = t.optBoolean("landscapeOverride"),
         lockScreenEnabled = t.optBoolean("lockScreen"), lengthDp = t.float("length", 120f), depthDp = t.float("depth", 16f),
         indicatorVisible = t.optBoolean("visible"), indicatorLengthFraction = t.float("indicatorLength", 2f / 3f),
-        indicatorThicknessFraction = t.float("indicatorThickness", .25f), indicatorColor = t.optLong("color", 0xFFB8D982),
+        indicatorThicknessDp = if (schema >= 5) t.float("indicatorThicknessDp", 4f)
+            else thicknessDpFromFraction(t.float("indicatorThickness", .25f), t.float("depth", 16f)),
+        indicatorColor = t.optLong("color", 0xFFB8D982),
         indicatorOpacity = t.float("opacity", .65f), cornerRadiusDp = t.float("corner", 2f),
         swipeDistanceDp = t.float("swipeDistance", 24f), swipeTimeoutMs = t.optLong("swipeTime", 600), haptics = t.optBoolean("haptics"),
         excludedPackages = t.optJSONArray("excluded")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
@@ -97,7 +99,7 @@ object ConfigurationCodec {
         val trigger = JSONObject().put("portrait", placement(s.portrait)).put("landscape", placement(s.landscape))
             .put("landscapeEnabled", s.landscapeEnabled).put("landscapeOverride", s.landscapeOverrideEnabled).put("lockScreen", s.lockScreenEnabled)
             .put("length", s.lengthDp).put("depth", s.depthDp).put("visible", s.indicatorVisible)
-            .put("indicatorLength", s.indicatorLengthFraction).put("indicatorThickness", s.indicatorThicknessFraction)
+            .put("indicatorLength", s.indicatorLengthFraction).put("indicatorThicknessDp", s.indicatorThicknessDp)
             .put("color", s.indicatorColor).put("opacity", s.indicatorOpacity).put("corner", s.cornerRadiusDp)
             .put("swipeDistance", s.swipeDistanceDp).put("swipeTime", s.swipeTimeoutMs).put("haptics", s.haptics)
             .put("excluded", array(s.excludedPackages.sorted())).put("longerTouchLength", s.longerTouchLength)

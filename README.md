@@ -126,6 +126,8 @@ Version 0.1.1 migrates the old indicator length once to `oldIndicatorLengthDp / 
 
 Version 0.1.2 migrates indicator thickness once to `oldIndicatorThicknessDp / oldTouchDepthDp`, capped at 100% where it already filled the touch depth. Existing saved thickness and depth use their old validity limits before conversion. Later touch-depth changes keep this percentage, and all unrelated preferences are retained.
 
+Version 0.3.1 restores visible handle thickness in dp, with a 4 dp default and a 0?32 dp control. Earlier percentages convert once using the saved touch depth. Length remains a percentage. Smaller touch areas constrain drawing without changing saved thickness. New backups use schema 5; older backups remain importable.
+
 ## Device verification
 
 Keep device results in the local, Git-ignored checklist at `plans/compatibility.md` (formerly `docs/compatibility.md`). This file is not included in a fresh clone. An AOSP emulator or Robolectric cannot establish HyperOS compatibility. With a connected, authorized phone, run:
@@ -141,15 +143,15 @@ Official references: [accessibility overlays](https://developer.android.com/refe
 
 ## 0.3.1 preparation and publication
 
-Version 0.3.0, code 7, is published on GitHub. Version 0.3.1, code 8, has reviewed notes on the feature branch. Its baseline is `v0.3.0`. Earlier release entries, tags, and APKs remain unchanged.
+Version 0.3.0, code 7, is published on GitHub. Version 0.3.1, code 8, is the current working release. Its reviewed notes use `v0.3.0` as the baseline. GitHub publication remains pending. Earlier release entries, tags, and APKs remain unchanged.
 
-Push the preparation commits before merging the pull request on GitHub:
+Prepare and commit the version and reviewed notes on a feature branch. Merge through GitHub, or merge locally when the user authorizes it. For a GitHub pull request, push the preparation commits first:
 
 ```powershell
-git push -u origin feat/gesture-picker-hold-controls
+git push -u origin HEAD
 ```
 
-After the GitHub merge, run these commands from this repository. Start with a clean working tree:
+After a GitHub merge, update local main with the commands below. After an authorized local merge, main already contains the changes; skip the pull. Start the release build only from a clean main checkout:
 
 ```powershell
 git switch main
@@ -169,11 +171,19 @@ adb install -r .\releases\0.3.1\Nudge-0.3.1.apk
 
 Check retained settings, accessibility connection, gestures, editor Save and Cancel, rotation, and panel utilities. Record actual Redmi/HyperOS results in the ignored `plans/compatibility.md`. Physical-device and overnight battery checks remain pending until performed.
 
-When the build and update checks are satisfactory, push only the new tag:
+When the build and update checks are satisfactory, publish the existing local tag. If the merge is already on GitHub:
 
 ```powershell
 git push origin v0.3.1
 ```
+
+If the merge was local, push main and the tag together so GitHub has the release source:
+
+```powershell
+git push origin main v0.3.1
+```
+
+A successful `Release.ps1 -CreateTag` run leaves the APK, checksum, notes, and build metadata ready in `releases/0.3.1/`. The tag and metadata identify the exact main commit. Reuse verified files for that commit; do not recreate its tag.
 
 Then [draft a GitHub release](https://github.com/serogee/Nudge/releases/new), select the existing `v0.3.1` tag, and use title **Nudge 0.3.1**. Paste `releases/0.3.1/Nudge-0.3.1-notes.md` into the description. Upload the APK, `.apk.sha256`, `.json`, and notes file from `releases/0.3.1/`. Publish after all assets are attached. For a stable release, leave the pre-release option off and set it as latest. See [GitHub release instructions](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
 

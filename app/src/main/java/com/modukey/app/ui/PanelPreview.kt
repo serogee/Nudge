@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
             drawRoundRect(Color(0xFFE9EDDF), o, Size(screen.width*factor,screen.height*factor), CornerRadius(18f))
             withTransform({ translate(o.x+handle.x*factor,o.y+handle.y*factor); scale(factor,factor,Offset.Zero) }) { drawPath(path,Color(0x554E7E21)) }
             if(trigger.indicatorVisible) {
-                val indicator=TriggerGeometry.indicator(handle.width,handle.height,trigger,edge)
+                val indicator=TriggerGeometry.indicator(handle.width,handle.height,trigger,edge,screen.density)
                 val radius=min(trigger.cornerRadiusDp*screen.density,min(indicator.width,indicator.height)/2)*factor
                 drawRoundRect(Color(trigger.indicatorColor).copy(alpha=trigger.indicatorOpacity),o+Offset((handle.x+indicator.x)*factor,(handle.y+indicator.y)*factor),Size(indicator.width*factor,indicator.height*factor),CornerRadius(radius))
             }

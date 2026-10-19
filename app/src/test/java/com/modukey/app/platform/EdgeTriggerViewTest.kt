@@ -29,7 +29,7 @@ class EdgeTriggerViewTest {
         }
         view.configure(TriggerSettings(), Edge.RIGHT, false)
         assertTrue(renderedPixels().all { it == 0 })
-        val zeroThickness = TriggerSettings(indicatorVisible = true, indicatorThicknessFraction = 0f)
+        val zeroThickness = TriggerSettings(indicatorVisible = true, indicatorThicknessDp = 0f)
         view.configure(zeroThickness, Edge.RIGHT, false)
         assertTrue(renderedPixels().all { it == 0 })
         view.configure(zeroThickness, Edge.RIGHT, true)

@@ -16,7 +16,7 @@ Before leaving an editor with pending changes, select Save, Discard, or Keep edi
 
 Each handle owns its touch area, visible handle, gestures, exclusions, and lock-screen option. Duplicating a handle creates an independent disabled handle. Panel assignments continue to refer to the same panels. Deleting or resetting a handle does not delete any panel.
 
-In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length and thickness use percentages of the touch area. Turning off Make handle visible keeps saved appearance values and disables those controls.
+In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length uses a percentage of touch length. Handle thickness uses dp and defaults to 4 dp. Changing touch depth keeps that thickness. A smaller touch area limits drawing without changing the saved value. Turning off Make handle visible keeps saved appearance values and disables those controls.
 
 The sticky Visual Preview (Non-interactive) switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability.
 
@@ -161,3 +161,5 @@ Pass touch through and keep open adds a third outside-touch policy. The panel an
 Empty button adds a grid cell with no action. Its Appearance dropdown selects No icon (container only), No button (blank space), or Slash icon. Each cell owns its appearance. Blank spaces retain capacity and remain inside the panel touch area. Empty cells do not become runtime click targets.
 
 Button drags beyond touch slop cancel clicking until the next press, including when the pointer returns to the same button. Scrolling remains available. The unexpected panel dismissal investigation is deferred to a separate task; app-change detection is unchanged.
+
+Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.

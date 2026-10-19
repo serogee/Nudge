@@ -36,7 +36,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             depthDp = p[floatPreferencesKey("depth")] ?: 16f,
             indicatorVisible = p[booleanPreferencesKey("indicator.visible")] ?: false,
             indicatorLengthFraction = p[floatPreferencesKey("indicator.fraction")] ?: legacyIndicatorFraction(p),
-            indicatorThicknessFraction = p[floatPreferencesKey("indicator.thickness.fraction")] ?: legacyThicknessFraction(p),
+            indicatorThicknessDp = p[floatPreferencesKey("indicator.thickness.dp")] ?: legacyThicknessDp(p),
             indicatorColor = p[longPreferencesKey("indicator.color")] ?: defaults.indicatorColor,
             indicatorOpacity = p[floatPreferencesKey("indicator.opacity")] ?: 0.65f,
             cornerRadiusDp = p[floatPreferencesKey("indicator.radius")] ?: 2f,
@@ -62,7 +62,9 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         p[floatPreferencesKey("depth")] = s.depthDp
         p[booleanPreferencesKey("indicator.visible")] = s.indicatorVisible
         p[floatPreferencesKey("indicator.fraction")] = s.indicatorLengthFraction
-        p[floatPreferencesKey("indicator.thickness.fraction")] = s.indicatorThicknessFraction
+        p[floatPreferencesKey("indicator.thickness.dp")] = s.indicatorThicknessDp
+        p.remove(floatPreferencesKey("indicator.thickness.fraction"))
+        p.remove(floatPreferencesKey("indicator.thickness"))
         p[longPreferencesKey("indicator.color")] = s.indicatorColor
         p[floatPreferencesKey("indicator.opacity")] = s.indicatorOpacity
         p[floatPreferencesKey("indicator.radius")] = s.cornerRadiusDp
@@ -92,21 +94,27 @@ class IndicatorFractionMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() = Unit
 }
 
-private fun legacyThicknessFraction(p: Preferences): Float {
+internal fun thicknessDpFromFraction(fraction: Float, depth: Float): Float =
+    (if (fraction.isFinite()) fraction else .25f).coerceIn(0f, 1f) *
+        (if (depth.isFinite()) depth else 16f).coerceIn(8f, 32f)
+
+private fun legacyThicknessDp(p: Preferences): Float {
+    val depth = (p[floatPreferencesKey("depth")] ?: 16f)
+        .let { if (it.isFinite()) it else 16f }.coerceIn(8f, 32f)
+    p[floatPreferencesKey("indicator.thickness.fraction")]?.let { return thicknessDpFromFraction(it, depth) }
     // Apply the old independent limits before converting, including corrupt stored values.
     val thickness = (p[floatPreferencesKey("indicator.thickness")] ?: 4f)
         .let { if (it.isFinite()) it else 4f }.coerceIn(1f, 32f)
-    val depth = (p[floatPreferencesKey("depth")] ?: 16f)
-        .let { if (it.isFinite()) it else 16f }.coerceIn(8f, 32f)
-    return (thickness / depth).coerceIn(0f, 1f)
+    return minOf(thickness, depth)
 }
 
-/** Preserve the previous rendered proportion, then keep the percentage independent of depth. */
-class IndicatorThicknessFractionMigration : DataMigration<Preferences> {
+/** Preserve the visible thickness once, then keep its dp value independent of touch depth. */
+class IndicatorThicknessDpMigration : DataMigration<Preferences> {
     override suspend fun shouldMigrate(currentData: Preferences) =
-        currentData[floatPreferencesKey("indicator.thickness.fraction")] == null
+        currentData[floatPreferencesKey("indicator.thickness.dp")] == null
     override suspend fun migrate(currentData: Preferences): Preferences = currentData.toMutablePreferences().apply {
-        this[floatPreferencesKey("indicator.thickness.fraction")] = legacyThicknessFraction(currentData)
+        this[floatPreferencesKey("indicator.thickness.dp")] = legacyThicknessDp(currentData)
+        remove(floatPreferencesKey("indicator.thickness.fraction"))
         remove(floatPreferencesKey("indicator.thickness"))
     }
     override suspend fun cleanUp() = Unit
