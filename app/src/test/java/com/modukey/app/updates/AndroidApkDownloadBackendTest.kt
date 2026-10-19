@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Environment
 import androidx.test.core.app.ApplicationProvider
+import com.modukey.app.BuildConfig
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -20,7 +21,10 @@ import java.io.File
 class AndroidApkDownloadBackendTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
     private val manager get() = app.getSystemService(DownloadManager::class.java)
-    private val target = ApkTarget("v0.3.2", "https://github.com/serogee/Nudge/releases/download/v0.3.2/Nudge-0.3.2.apk")
+    private val updateVersion = BuildConfig.VERSION_NAME.substringBefore('-').split('.').let {
+        "${it[0]}.${it[1]}.${it[2].toInt() + 1}"
+    }
+    private val target = ApkTarget("v$updateVersion", "https://github.com/serogee/Nudge/releases/download/v$updateVersion/Nudge-$updateVersion.apk")
 
     @Before fun clearDownloadRecord() {
         app.getSharedPreferences("apk_download", Context.MODE_PRIVATE).edit().clear().commit()
