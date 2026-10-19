@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- Download update APKs through Android Download Manager instead of passing the direct file link to Chrome.
+- Show download progress, retry and cancel controls, and retain the download ID after reopening Nudge.
+- Check the APK package, version, and signing identity before offering installation. Android requires installation confirmation.
+
 ## 0.3.1 - 2026-10-19
 
 Changes since v0.3.0, the latest published release. Version code increases from 7 to 8.
