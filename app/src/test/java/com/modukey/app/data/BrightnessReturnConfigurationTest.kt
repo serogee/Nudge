@@ -28,7 +28,7 @@ class BrightnessReturnConfigurationTest {
         val old = JSONObject(ConfigurationCodec.encode(config)).put("schema", 9)
         old.getJSONArray("panels").getJSONObject(0).getJSONArray("buttons").getJSONObject(0).remove("brightnessReturn")
         val upgraded = ConfigurationCodec.upgrade(old.toString())
-        assertEquals(10, JSONObject(upgraded).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(upgraded).getInt("schema"))
         assertEquals(config, ConfigurationCodec.decode(upgraded))
     }
 

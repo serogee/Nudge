@@ -2,6 +2,7 @@ package com.modukey.app.core
 
 enum class BrightnessSide { OPPOSITE_VOLUME, LEFT, RIGHT, CUSTOM }
 enum class VolumeSide { LEFT, RIGHT }
+enum class BrightnessTouchBehavior { JUMP_TO_TOUCH, SLIDE_TO_ADJUST }
 
 /** System UI does not expose the volume window's bounds. These are adjustable starting dimensions. */
 data class BrightnessPopupSettings(
@@ -15,6 +16,7 @@ data class BrightnessPopupSettings(
     val fillOpacity: Float = 1f, val iconOpacity: Float = 1f,
     val timeoutMs: Long = 3_000,
     val cornerRadiusDp: Float = 32f, val showBackground: Boolean = true, val showAutomaticToggle: Boolean = true,
+    val touchBehavior: BrightnessTouchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH,
 ) {
     fun normalized() = copy(cornerRadiusDp = cornerRadiusDp.finite(32f).coerceIn(0f, 64f), widthDp = widthDp.finite(64f).coerceIn(48f, 128f), heightDp = heightDp.finite(240f).coerceIn(120f, 480f),
         x = x.finite(.5f).coerceIn(0f, 1f), y = y.finite(.65f).coerceIn(0f, 1f),
