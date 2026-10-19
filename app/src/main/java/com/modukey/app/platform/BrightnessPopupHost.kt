@@ -9,6 +9,10 @@ import android.provider.Settings
 import android.view.*
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.SeekBar
+import android.widget.FrameLayout
+import android.widget.ToggleButton
+import android.graphics.drawable.GradientDrawable
+import android.content.res.ColorStateList
 import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
@@ -24,7 +28,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     private val handler = Handler(Looper.getMainLooper())
     private val timeout = Runnable { dismissed() }
     private val observer = object : ContentObserver(handler) {
-        override fun onChange(selfChange: Boolean) { view?.updateLevel(brightness.fraction()) }
+        override fun onChange(selfChange: Boolean) { view?.updateLevel(brightness.fraction(), brightness.status().automatic) }
     }
     val visible get() = view != null
     fun show(settings: BrightnessPopupSettings, screen: ScreenSpace, editing: Boolean): Boolean {
@@ -40,9 +44,14 @@ internal class BrightnessPopupHost(private val context: Context, private val man
                     if (result == BrightnessResult.FAILED || result == BrightnessResult.NEED_ACCESS) {
                         dismissed(); failure(if (result == BrightnessResult.NEED_ACCESS) R.string.brightness_access_required else R.string.brightness_failed)
                     }
-                }, { active -> handler.removeCallbacks(timeout); if (!active && view != null && !preview) handler.postDelayed(timeout, timeoutMs) }, dismissed)
+                }, { active -> handler.removeCallbacks(timeout); if (!active && view != null && !preview) handler.postDelayed(timeout, timeoutMs) }, dismissed, {
+                    val result = brightness.toggleAutomatic()
+                    if (result == BrightnessResult.NEED_ACCESS || result == BrightnessResult.FAILED)
+                        failure(if (result == BrightnessResult.NEED_ACCESS) R.string.brightness_access_required else R.string.brightness_failed)
+                    view?.updateLevel(brightness.fraction(), brightness.status().automatic)
+                })
                 view = next
-                next.configure(settings, editing, brightness.fraction())
+                next.configure(settings, editing, brightness.fraction(), brightness.status().automatic)
                 manager.addView(next, p); layout = p
                 if (!editing) {
                     context.contentResolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, observer)
@@ -51,7 +60,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
                     restartTimeout()
                 }
             } else {
-                current.configure(settings, editing, brightness.fraction())
+                current.configure(settings, editing, brightness.fraction(), brightness.status().automatic)
                 val before = layout
                 if (before?.x != p.x || before.y != p.y || before.width != p.width || before.height != p.height) {
                     current.cancelInput(); manager.updateViewLayout(current, p); layout = p
@@ -82,9 +91,83 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     }
 }
 
+/** Keep the mode button separate from slider input and accessibility progress actions. */
+@SuppressLint("ViewConstructor", "ClickableViewAccessibility")
+internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
+    private val touching: (Boolean) -> Unit, dismiss: () -> Unit, automatic: () -> Unit = {}) : FrameLayout(context) {
+    private val slider = BrightnessTrackView(context, change, touching, dismiss)
+    private val mode = ToggleButton(context).apply {
+        textOn = context.getString(R.string.brightness_automatic_short)
+        textOff = textOn; text = textOn
+        contentDescription = context.getString(R.string.brightness_automatic)
+        minimumWidth = 0; minimumHeight = 0; minWidth = 0; minHeight = 0
+        setPadding(0, 0, 0, 0)
+        setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> touching(true)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> touching(false)
+            }
+            false
+        }
+        setOnClickListener { automatic() }
+    }
+    private var settings = BrightnessPopupSettings()
+    private var buttonStyle: BrightnessPopupSettings? = null
+    private var buttonAutomatic: Boolean? = null
+    init { addView(slider); addView(mode) }
+    fun configure(s: BrightnessPopupSettings, editing: Boolean, fraction: Float, automatic: Boolean = false) {
+        val resized = settings.showAutomaticToggle != s.showAutomaticToggle
+        settings = s
+        slider.configure(s, editing, fraction)
+        mode.visibility = if (s.showAutomaticToggle) VISIBLE else GONE
+        mode.isEnabled = !editing
+        mode.isFocusable = !editing
+        mode.importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
+        updateLevel(fraction, automatic)
+        if (resized) requestLayout()
+    }
+    fun updateLevel(fraction: Float, automatic: Boolean = false) {
+        slider.updateLevel(fraction)
+        mode.isChecked = automatic
+        val s = settings
+        if (buttonStyle == s && buttonAutomatic == automatic) return
+        buttonStyle = s; buttonAutomatic = automatic
+        val color = if (automatic) s.fill else s.track
+        val alpha = if (automatic) s.fillOpacity else s.trackOpacity
+        mode.backgroundTintList = null
+        mode.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.argb((alpha * 255).roundToInt(), Color.red(color.toInt()), Color.green(color.toInt()), Color.blue(color.toInt())))
+        }
+        mode.setTextColor(ColorStateList.valueOf(s.icon.toInt()).withAlpha((s.iconOpacity * 255).roundToInt()))
+    }
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec); val h = MeasureSpec.getSize(heightMeasureSpec)
+        setMeasuredDimension(w, h)
+        val extra = BrightnessPopupGeometry.automaticSpace(h.toFloat(), resources.displayMetrics.density, settings.showAutomaticToggle).roundToInt()
+        slider.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h - extra, MeasureSpec.EXACTLY))
+        if (settings.showAutomaticToggle) {
+            val size = minOf(w, extra, (48f * resources.displayMetrics.density).roundToInt())
+            mode.measure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY))
+        }
+    }
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val extra = BrightnessPopupGeometry.automaticSpace(height.toFloat(), resources.displayMetrics.density, settings.showAutomaticToggle).roundToInt()
+        slider.layout(0, 0, width, height - extra)
+        if (settings.showAutomaticToggle) {
+            val size = minOf(width, extra, (48f * resources.displayMetrics.density).roundToInt())
+            val x = (width - size) / 2
+            mode.layout(x, height - size, x + size, height)
+        }
+    }
+    override fun onTouchEvent(event: MotionEvent): Boolean = if (event.y <= slider.bottom) slider.onTouchEvent(event) else false
+    fun cancelInput() { slider.cancelInput(); if (mode.isPressed) touching(false); mode.isPressed = false }
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = slider.onKeyUp(keyCode, event)
+}
+
 /** Input and drawing use the same inner track. Writes are coalesced to one per display frame. */
 @SuppressLint("ViewConstructor") // Created by the service with input callbacks; never inflated from XML.
-internal class BrightnessPopupView(context: Context, private val change: (Float) -> Unit,
+internal class BrightnessTrackView(context: Context, private val change: (Float) -> Unit,
     private val touching: (Boolean) -> Unit, private val dismiss: () -> Unit) : View(context) {
     private var settings = BrightnessPopupSettings()
     private var preview = false
@@ -107,12 +190,15 @@ internal class BrightnessPopupView(context: Context, private val change: (Float)
         if (dirty) invalidate()
     }
     fun updateLevel(fraction: Float) { if (!dragging && level != fraction) { level = fraction; invalidate() } }
-    private fun trackBounds() = track.apply { val inset = width * .1f; set(inset, inset, width - inset, height - inset) }
+    private fun trackBounds() = track.apply { val inset = if (settings.showBackground) width * .1f else 0f; set(inset, inset, width - inset, height - inset) }
     override fun onDraw(canvas: Canvas) {
         val s = settings
         fun color(value: Long, opacity: Float) { paint.color = value.toInt(); paint.alpha = (opacity * 255).roundToInt() }
-        color(s.background, s.backgroundOpacity); canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), width / 2f, width / 2f, paint)
-        val t = trackBounds(); val radius = t.width() / 2f
+        val outerRadius = (s.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(width, height) / 2f)
+        if (s.showBackground) {
+            color(s.background, s.backgroundOpacity); canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), outerRadius, outerRadius, paint)
+        }
+        val t = trackBounds(); val radius = (outerRadius - t.left).coerceIn(0f, minOf(t.width(), t.height()) / 2f)
         color(s.track, s.trackOpacity); canvas.drawRoundRect(t, radius, radius, paint)
         clip.rewind(); clip.addRoundRect(t, radius, radius, Path.Direction.CW)
         val save = canvas.save(); canvas.clipPath(clip)

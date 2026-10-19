@@ -2,6 +2,12 @@ package com.modukey.app.ui
 
 import android.content.pm.ShortcutManager
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
+import com.modukey.app.R
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +51,36 @@ class BrightnessAndShortcutInterfaceTest {
             assertEquals(240f, app.configuration.state.value!!.brightnessPopup.heightDp)
             assertEquals(AppConfiguration().normalized().handles, app.configuration.state.value!!.handles)
         }
+    }
+    @Test fun brightnessAppearanceControlsKeepSavedColorsWhileBackgroundIsHidden() {
+        ready(); val vm = NudgeViewModel(app)
+        rule.activity.setContent {
+            val current by app.configuration.state.collectAsStateWithLifecycle()
+            NudgeTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+                BrightnessPopupSettingsSection(checkNotNull(current), vm)
+            } }
+        }
+        rule.onNodeWithContentDescription(rule.activity.getString(R.string.expand_setup)).performClick()
+        rule.onNodeWithContentDescription("Corner radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(18f) }
+        rule.onNodeWithContentDescription("Show slider background").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Background opacity").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithContentDescription("Show automatic brightness toggle").performScrollTo().performClick()
+        rule.runOnIdle {
+            val s = app.configuration.state.value!!.brightnessPopup
+            assertEquals(18f, s.cornerRadiusDp); assertFalse(s.showBackground); assertFalse(s.showAutomaticToggle)
+            assertEquals(BrightnessPopupSettings().background, s.background)
+        }
+    }
+    @Test fun automaticBrightnessCanBeAssignedAsADirectAction() {
+        ready(); val vm = NudgeViewModel(app)
+        val target = mutableStateOf(GestureTarget.NONE)
+        rule.activity.setContent { NudgeTheme { GestureBindingRow(AppConfiguration(), GestureSlot.HOLD, target.value, vm) { target.value = it } } }
+        rule.onNodeWithText("No action").performClick()
+        rule.onNodeWithText("Action: Direct action").performClick()
+        rule.onNode(hasScrollToIndexAction()).performScrollToIndex(ButtonAction.BRIGHTNESS_AUTOMATIC.ordinal)
+        rule.onNodeWithText("Automatic brightness").performClick()
+        rule.onNodeWithText("Save").performClick()
+        rule.runOnIdle { assertEquals(ButtonAction.BRIGHTNESS_AUTOMATIC, target.value.action?.action) }
     }
     @Test fun gestureActionChangesRetainBothPopupOptions() {
         ready(); val vm = NudgeViewModel(app)

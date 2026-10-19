@@ -1,6 +1,11 @@
 package com.modukey.app.platform
 
 import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.widget.ToggleButton
+import org.robolectric.annotation.GraphicsMode
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
@@ -35,7 +40,7 @@ class BrightnessPopupTest {
     @Test fun finalReleaseWritesLatestLevelAndCancelledInputDoesNotFlush() {
         val writes = mutableListOf<Float>()
         val view = BrightnessPopupView(app, writes::add, {}, {})
-        view.layout(0, 0, 64, 240); view.configure(BrightnessPopupSettings(), false, .5f)
+        view.layout(0, 0, 64, 296); view.configure(BrightnessPopupSettings(), false, .5f)
         listOf(MotionEvent.ACTION_DOWN to 200f, MotionEvent.ACTION_MOVE to 150f, MotionEvent.ACTION_UP to 6f).forEach { (action, y) -> event(action, y).let { view.onTouchEvent(it); it.recycle() } }
         assertEquals(1, writes.size); assertEquals(1f, writes.single(), .01f)
         writes.clear()
@@ -59,6 +64,39 @@ class BrightnessPopupTest {
             host.hide(); host.hide()
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(20)); assertEquals(1, dismissed)
         } finally { host.hide(); controller.pause().stop().destroy() }
+    }
+    @Test fun automaticButtonIsSeparateFromSliderInputAndHiddenInSettings() {
+        var automatic = 0
+        val writes = mutableListOf<Float>()
+        val root = BrightnessPopupView(app, writes::add, {}, {}, { automatic++ })
+        root.configure(BrightnessPopupSettings(), false, .5f, true)
+        root.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(296, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, 64, 296)
+        val mode = root.getChildAt(1) as ToggleButton
+        assertTrue(mode.isChecked); assertEquals(48, mode.height)
+        mode.performClick(); assertEquals(1, automatic); assertTrue(writes.isEmpty())
+        root.configure(BrightnessPopupSettings(), true, .5f, false)
+        assertFalse(mode.isEnabled)
+        root.configure(BrightnessPopupSettings(showAutomaticToggle = false), false, .5f)
+        assertEquals(View.GONE, mode.visibility)
+        root.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, 64, 240)
+        assertEquals(240, root.getChildAt(0).height)
+    }
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun fullWidthTrackAndCornerRadiusMatchTheDrawnPixels() {
+        fun image(settings: BrightnessPopupSettings): Bitmap {
+            val view = BrightnessPopupView(app, {}, {}, {})
+            view.configure(settings.copy(showAutomaticToggle = false), true, .5f)
+            view.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, 64, 240)
+            return Bitmap.createBitmap(64, 240, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+        }
+        val base = BrightnessPopupSettings(cornerRadiusDp = 0f)
+        assertEquals(base.background.toInt(), image(base).getPixel(1, 180))
+        assertEquals(base.fill.toInt(), image(base.copy(showBackground = false)).getPixel(1, 180))
+        assertEquals(255, Color.alpha(image(base).getPixel(0, 0)))
+        assertEquals(0, Color.alpha(image(base.copy(cornerRadiusDp = 32f)).getPixel(0, 0)))
     }
     @Test fun oldPreviewOwnerCannotClearReplacementSession() {
         val preview = BrightnessPreview(); val old = Any(); val current = Any()
