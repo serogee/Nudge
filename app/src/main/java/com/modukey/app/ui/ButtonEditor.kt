@@ -14,13 +14,13 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 /** A button is saved once. Cancel cannot leave a partly configured app action. */
-@Composable fun ButtonEditor(button: PanelButton, panel: PanelConfig, vm: NudgeViewModel, dismiss: () -> Unit, save: (PanelButton) -> Unit) {
+@Composable fun ButtonEditor(button: PanelButton, panel: PanelConfig, vm: NudgeViewModel, dismiss: () -> Unit, includeEmpty: Boolean = true, save: (PanelButton) -> Unit) {
     var draft by remember(button.id) { mutableStateOf(button) }
     var page by remember(button.id) { mutableIntStateOf(if (button.action == ButtonAction.OPEN_APP && button.appPackage.isBlank()) 2 else 0) }
     val context = LocalContext.current
     val packs by vm.iconPacks.collectAsStateWithLifecycle()
     when(page) {
-        1 -> ActionPicker({ page = 0 }) { action -> draft = draft.copy(action = action); page = if (action == ButtonAction.OPEN_APP) 2 else 0 }
+        1 -> ActionPicker({ page = 0 }, includeEmpty = includeEmpty) { action -> draft = draft.copy(action = action); page = if (action == ButtonAction.OPEN_APP) 2 else 0 }
         2 -> AppPicker(vm, { page = 0 }) { app -> draft = draft.copy(appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label); page = 0 }
         3 -> IconPicker(packs, { page = 0 }, draft.icon) { icon -> draft = draft.copy(icon = icon); page = 0 }
         else -> AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.edit_button)) }, text = {
@@ -59,7 +59,7 @@ import com.modukey.app.core.*
                 OptionRow(t(R.string.icon_container), IconContainer.entries, draft.iconContainer, IconContainer.DEFAULT) { draft = draft.copy(iconContainer = it) }
                 }
             }
-        }, confirmButton = { Button(onClick = { save(draft) }, enabled = draft.action != ButtonAction.OPEN_APP || draft.appPackage.isNotBlank()) { Text(t(R.string.save)) } },
+        }, confirmButton = { Button(onClick = { save(draft) }, enabled = (includeEmpty || draft.action != ButtonAction.EMPTY) && (draft.action != ButtonAction.OPEN_APP || draft.appPackage.isNotBlank())) { Text(t(R.string.save)) } },
             dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })
     }
 }
