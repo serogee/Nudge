@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add native Notifications and Control panel actions to panel buttons and direct gestures.
+- Reveal the launch icon pills from their centers, then move and rotate them into the N mark.
 - Add Maximum brightness and Minimum brightness to panel buttons and direct gesture actions.
 - Restore the previous brightness and automatic mode on a second tap, unless brightness changed externally.
 - Toggle All handles, This handle, or Other handles without changing saved Enable switches.
@@ -17,6 +19,8 @@
 
 ### Fixed
 
+- Keep the selected handle, panel, or button during reorder scrolling. Make edge scrolling gradual in both directions.
+- Center the launch mark with padding. Keep its rounded container inside Android's splash icon safe area.
 - Download update APKs through Android Download Manager instead of passing the direct file link to Chrome.
 - Show download progress, retry and cancel controls, and retain the download ID after reopening Nudge.
 - Check the APK package, version, and signing identity before offering installation. Android requires installation confirmation.
