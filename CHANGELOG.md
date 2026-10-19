@@ -4,6 +4,8 @@
 
 ### Added
 
+- Set a return brightness for each Max/Min action. Optionally restore a valid previous level and automatic mode.
+- Select Jump to touch or proportional Slide to adjust for the brightness slider from Home.
 - Set brightness slider corner radius and hide its background for a full-width track.
 - Show an optional Automatic brightness button below the slider, enabled by default. Add the same action to panels, gestures, and shortcuts.
 - Set independent haptic switches and strengths for Swipe, Swipe and hold, Hold, and Tap.
@@ -14,14 +16,14 @@
 
 - Keep the editor title container at the same height when Cancel and Save appear.
 - Use the public brightness scale and retain owned min/max states. Restore the prior level and mode on a second tap.
-- Clear preset active states after manual brightness changes. Protect restore values during Nudge's own writes.
+- Clear preset active states after manual brightness changes, including unchanged endpoints and quick drags back to a limit. Protect restore values during Nudge's own writes.
 - Keep small finger drift and release jitter from restarting a completed swipe-and-hold interval.
 - Send gesture feedback through the vibrator with the required permission and hardware strength fallback.
 
 ### Changed
 
 - Measure brightness vertical position from the bottom. Preserve existing physical placement during migration.
-- Store the new controls in backup schema 9. Preserve earlier settings on import.
+- Store the new controls in backup schema 11. Preserve earlier settings on import.
 
 ## 0.4.0 - 2026-10-19
 
