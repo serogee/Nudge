@@ -83,6 +83,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
 }
 
 /** Input and drawing use the same inner track. Writes are coalesced to one per display frame. */
+@SuppressLint("ViewConstructor") // Created by the service with input callbacks; never inflated from XML.
 internal class BrightnessPopupView(context: Context, private val change: (Float) -> Unit,
     private val touching: (Boolean) -> Unit, private val dismiss: () -> Unit) : View(context) {
     private var settings = BrightnessPopupSettings()
@@ -94,6 +95,7 @@ internal class BrightnessPopupView(context: Context, private val change: (Float)
     private var scheduled = false
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val track = RectF()
+    private val clip = Path()
     private val frame = Runnable { scheduled = false; pending?.let { pending = null; change(it) } }
     private var backDispatcher: android.window.OnBackInvokedDispatcher? = null
     private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { dismiss() } else null
@@ -112,7 +114,7 @@ internal class BrightnessPopupView(context: Context, private val change: (Float)
         color(s.background, s.backgroundOpacity); canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), width / 2f, width / 2f, paint)
         val t = trackBounds(); val radius = t.width() / 2f
         color(s.track, s.trackOpacity); canvas.drawRoundRect(t, radius, radius, paint)
-        val clip = Path().apply { addRoundRect(t, radius, radius, Path.Direction.CW) }
+        clip.rewind(); clip.addRoundRect(t, radius, radius, Path.Direction.CW)
         val save = canvas.save(); canvas.clipPath(clip)
         color(s.fill, s.fillOpacity); canvas.drawRect(t.left, t.bottom - level.coerceIn(0f, 1f) * t.height(), t.right, t.bottom, paint); canvas.restoreToCount(save)
         color(s.icon, s.iconOpacity); paint.style = Paint.Style.STROKE; paint.strokeWidth = width * .028f; paint.strokeCap = Paint.Cap.ROUND
