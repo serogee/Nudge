@@ -21,6 +21,7 @@ import com.modukey.app.core.*
     ButtonAction.BRIGHTNESS_MAXIMUM -> R.string.brightness_maximum; ButtonAction.BRIGHTNESS_MINIMUM -> R.string.brightness_minimum
     ButtonAction.TOGGLE_HANDLES -> R.string.toggle_handles
     ButtonAction.NOTIFICATIONS -> R.string.notifications; ButtonAction.CONTROL_PANEL -> R.string.control_panel
+    ButtonAction.BRIGHTNESS_UP -> R.string.brightness_up; ButtonAction.BRIGHTNESS_DOWN -> R.string.brightness_down
     HandleToggleScope.ALL -> R.string.all_handles; HandleToggleScope.CURRENT -> R.string.current_handle; HandleToggleScope.OTHERS -> R.string.other_handles
     ButtonAction.EMPTY -> R.string.empty_button
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash

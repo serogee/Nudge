@@ -9,6 +9,7 @@ import android.provider.Settings
 import com.modukey.app.core.BrightnessPreset
 import com.modukey.app.core.BrightnessSession
 import com.modukey.app.core.BrightnessValue
+import kotlin.math.roundToInt
 
 enum class BrightnessResult { CHANGED, ALREADY_SET, NEED_ACCESS, FAILED }
 data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false)
@@ -31,6 +32,30 @@ class BrightnessController(context: Context) {
         val current = read(); session.observe(current); observeIfNeeded()
         BrightnessStatus(!current.automatic && current.level == maximum, !current.automatic && current.level == minimum)
     } catch (_: RuntimeException) { BrightnessStatus() }
+    val canWrite get() = Settings.System.canWrite(app)
+    fun fraction(): Float = runCatching { ((read().level - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f) }.getOrDefault(.5f)
+    fun adjust(increase: Boolean): BrightnessResult {
+        if (!canWrite) return BrightnessResult.NEED_ACCESS
+        return try {
+            val step = ((maximum - minimum) * .05f).roundToInt().coerceAtLeast(1)
+            setLevel((read().level + if (increase) step else -step).coerceIn(minimum, maximum))
+        } catch (_: RuntimeException) { BrightnessResult.FAILED }
+    }
+    fun setFraction(value: Float): BrightnessResult {
+        if (!value.isFinite()) return BrightnessResult.FAILED
+        if (!canWrite) return BrightnessResult.NEED_ACCESS
+        return try { setLevel(minimum + ((maximum - minimum) * value.coerceIn(0f, 1f)).roundToInt()) }
+        catch (_: RuntimeException) { BrightnessResult.FAILED }
+    }
+    private fun setLevel(level: Int): BrightnessResult {
+        val before = read(); val after = BrightnessValue(level, false)
+        if (before == after) return BrightnessResult.ALREADY_SET
+        session.clear(); observeIfNeeded()
+        if (write(after) && read() == after) return BrightnessResult.CHANGED
+        val partial = read()
+        if (partial != before && partial.level in setOf(before.level, after.level)) write(before)
+        return BrightnessResult.FAILED
+    }
 
     fun toggle(preset: BrightnessPreset): BrightnessResult {
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS

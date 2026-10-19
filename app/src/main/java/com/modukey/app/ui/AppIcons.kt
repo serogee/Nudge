@@ -46,6 +46,16 @@ object AppIcons {
         moveTo(12f,3f); lineTo(12f,4f); moveTo(12f,20f); lineTo(12f,21f)
         moveTo(3f,12f); lineTo(4f,12f); moveTo(20f,12f); lineTo(21f,12f)
     }
+    val BrightnessUp = icon("Increase brightness") {
+        moveTo(13f,11f); curveTo(13f,17f,5f,17f,5f,11f); curveTo(5f,5f,13f,5f,13f,11f)
+        moveTo(9f,2f); lineTo(9f,4f); moveTo(9f,18f); lineTo(9f,20f); moveTo(1f,11f); lineTo(3f,11f)
+        moveTo(16f,15f); lineTo(22f,15f); moveTo(19f,12f); lineTo(19f,18f)
+    }
+    val BrightnessDown = icon("Decrease brightness") {
+        moveTo(13f,11f); curveTo(13f,17f,5f,17f,5f,11f); curveTo(5f,5f,13f,5f,13f,11f)
+        moveTo(9f,2f); lineTo(9f,4f); moveTo(9f,18f); lineTo(9f,20f); moveTo(1f,11f); lineTo(3f,11f)
+        moveTo(16f,15f); lineTo(22f,15f)
+    }
     val ClosePanels = icon("Close panels") {
         moveTo(6f,3f); lineTo(21f,3f); lineTo(21f,18f)
         moveTo(3f,6f); lineTo(18f,6f); lineTo(18f,21f); lineTo(3f,21f); close()

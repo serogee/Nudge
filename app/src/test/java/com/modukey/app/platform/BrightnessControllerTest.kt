@@ -56,6 +56,23 @@ class BrightnessControllerTest {
         assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.toggle(BrightnessPreset.MAXIMUM))
         assertEquals(100, level()); assertEquals(1, mode())
     }
+    @Test fun `manual steps and slider writes respect limits and clear old restore values`() {
+        Writes.allowed = true; set(100, true)
+        assertEquals(BrightnessResult.CHANGED, app.brightness.adjust(true))
+        assertTrue(level() > 100); assertEquals(0, mode())
+        app.brightness.adjust(false); assertEquals(100, level())
+        app.brightness.toggle(BrightnessPreset.MAXIMUM)
+        app.brightness.setFraction(.3f); val changed = level()
+        app.brightness.toggle(BrightnessPreset.MAXIMUM); app.brightness.toggle(BrightnessPreset.MAXIMUM)
+        assertEquals(changed, level())
+        assertEquals(BrightnessResult.CHANGED, app.brightness.setFraction(-1f)); assertEquals(0f, app.brightness.fraction())
+        assertEquals(BrightnessResult.ALREADY_SET, app.brightness.adjust(false))
+        app.brightness.setFraction(2f); assertEquals(1f, app.brightness.fraction())
+        assertEquals(BrightnessResult.ALREADY_SET, app.brightness.adjust(true))
+        assertEquals(BrightnessResult.FAILED, app.brightness.setFraction(Float.NaN))
+        Writes.allowed = false
+        assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.adjust(true))
+    }
     @Test fun `brightness actions request system access and retain their source behind keyguard`() {
         val service = Robolectric.buildService(EdgeAccessibilityService::class.java).create().get()
         shadowOf(service.getSystemService(PowerManager::class.java)).setIsInteractive(true)

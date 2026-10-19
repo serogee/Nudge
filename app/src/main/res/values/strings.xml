@@ -365,6 +365,9 @@
     <string name="native_panel_failed">Cannot open the system panel on this screen.</string>
     <string name="brightness_maximum">Maximum brightness</string>
     <string name="brightness_minimum">Minimum brightness</string>
+    <string name="brightness_up">Increase brightness</string>
+    <string name="brightness_down">Decrease brightness</string>
+    <string name="brightness_step_help">Change brightness by five percent. This turns off automatic brightness.</string>
     <string name="brightness_help">Tap again to restore the previous brightness and automatic mode. A manual change or app restart clears the restore value.</string>
     <string name="brightness_access_required">Allow Modify system settings. Then tap the brightness button again.</string>
     <string name="brightness_already_set">Brightness is already at this limit.</string>

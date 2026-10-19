@@ -62,8 +62,10 @@ class PanelActions(private val service: AccessibilityService,
                 ActionResult()
             }
             ButtonAction.MEDIA_MUTE -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, 0); ActionResult() }
-            ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM -> {
-                when (app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM)) {
+            ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN -> {
+                val result = if (button.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) app.brightness.adjust(button.action == ButtonAction.BRIGHTNESS_UP)
+                    else app.brightness.toggle(if (button.action == ButtonAction.BRIGHTNESS_MAXIMUM) BrightnessPreset.MAXIMUM else BrightnessPreset.MINIMUM)
+                when (result) {
                     BrightnessResult.CHANGED -> ActionResult()
                     BrightnessResult.ALREADY_SET -> ActionResult(message = R.string.brightness_already_set)
                     BrightnessResult.NEED_ACCESS -> {

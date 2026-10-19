@@ -72,6 +72,7 @@ import com.modukey.app.core.*
                 Help(R.string.handle_toggle_help)
             }
             if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item { Help(R.string.brightness_help) }
+            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) item { Help(R.string.brightness_step_help) }
             if (draft.action?.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) item { Help(R.string.native_panel_help) }
             if (draft.action?.action == ButtonAction.OPEN_APP) item {
                 OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
