@@ -63,6 +63,12 @@ Lock-screen availability is configured per handle and defaults off. All configur
 
 Backups use the system file picker and include panels, gesture links, hidden buttons, and icon references. Add imports disabled handle copies and independent panel copies, preserving shared links within the imported group. Replace requires confirmation and leaves the master switch off. Older backups migrate on import. Icon packs must be installed separately.
 
+## Global handle controls
+
+In Handles, **Pause handles** and **Hide visible handles** are above **Add handle**. Pause stops input without changing saved Enable switches. Switch it off to resume all paused handles. Hiding removes only the visible bars; gestures remain available. Hiding stays active across restarts and retains each handle's saved appearance. Editing previews remain available.
+
+Use **Toggle handle visibility** from a panel, direct gesture, or Home shortcut for the same hide control. In the action picker, **Toggle handles** follows **Close panels**, followed by **Toggle handle visibility**.
+
 ## Brightness slider and Home screen shortcuts
 
 Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum have independent **Return brightness** values. Enable **Use previous brightness** to restore a valid previous level and automatic mode. Otherwise, the return level defaults to 50% in manual mode. Previous maximum brightness is unavailable; Minimum also rejects its own minimum. Manual changes never activate either button, even at a limit.

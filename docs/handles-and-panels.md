@@ -142,7 +142,11 @@ Toggle handles is available as a panel button and direct gesture action. Select 
 
 The action pauses currently enabled handles without changing their saved Enable switches. Its tile shows On when all selected handles are available through this pause control. Tap again to resume. If only some are paused, tapping resumes the group. Existing panels remain usable while their handle is paused. Saved disabling, the master switch, and normal eligibility rules still close panels.
 
-Use Resume handles above the Handles list to clear all pauses. This also recovers a handle paused by its own gesture. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+The **Pause handles** switch is above **Add handle**. Switch it on to pause all enabled handles. Switch it off to clear every pause, including a handle paused by its own gesture. The switch is on if any handles are paused. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+
+The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
+
+**Toggle handle visibility** applies the same override from a panel button, direct gesture, or Home shortcut. Its tile is On when visibility is allowed and Off while bars are hidden. It keeps an open panel usable. Restoring visibility shows only bars enabled in each handle's settings. **Toggle handles** follows **Close panels** in the action picker; **Toggle handle visibility** is next.
 
 Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
@@ -192,7 +196,7 @@ Button drags beyond touch slop cancel clicking until the next press, including w
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
 
-Development backups use schema 11 for per-action brightness return preferences and slider touch behavior. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
+Development backups use schema 12 for per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
 
 ## Brightness touch behavior
 
