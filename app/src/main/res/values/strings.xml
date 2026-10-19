@@ -359,6 +359,10 @@
     <string name="input_method_picker">Input Method</string>
     <string name="close_panels">Close panels</string>
     <string name="screenshot">Screenshot</string>
+    <string name="notifications">Notifications</string>
+    <string name="control_panel">Control panel</string>
+    <string name="native_panel_help">Open the native system panel. Some phones use one panel for both actions.</string>
+    <string name="native_panel_failed">Cannot open the system panel on this screen.</string>
     <string name="brightness_maximum">Maximum brightness</string>
     <string name="brightness_minimum">Minimum brightness</string>
     <string name="brightness_help">Tap again to restore the previous brightness and automatic mode. A manual change or app restart clears the restore value.</string>
