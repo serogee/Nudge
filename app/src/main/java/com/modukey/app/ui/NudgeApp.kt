@@ -160,6 +160,7 @@ import com.modukey.app.platform.*
             OutlinedButton(onClick = { vm.confirmPopup(false) }) { Text(t(R.string.popup_missing)) }
         }
     }
+    BrightnessPopupSettingsSection(config, vm)
     Help(R.string.touch_help)
     HyperOsSetup(vm, openSettings)
 }

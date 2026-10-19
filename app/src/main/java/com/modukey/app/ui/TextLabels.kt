@@ -6,6 +6,8 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 @StringRes fun label(value: Any): Int = when (value) {
+    BrightnessSide.OPPOSITE_VOLUME -> R.string.opposite_volume; BrightnessSide.LEFT, VolumeSide.LEFT -> R.string.left
+    BrightnessSide.RIGHT, VolumeSide.RIGHT -> R.string.right; BrightnessSide.CUSTOM -> R.string.slider_custom
     Edge.LEFT -> R.string.left; Edge.RIGHT -> R.string.right; Edge.BOTTOM -> R.string.bottom
     GestureSlot.SWIPE_1 -> R.string.swipe_1; GestureSlot.SWIPE_2 -> R.string.swipe_2; GestureSlot.SWIPE_3 -> R.string.swipe_3
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
@@ -40,15 +42,11 @@ fun Context.buttonLabel(button: PanelButton): String = if (button.action == Butt
 fun Context.handleLabel(config: AppConfiguration, handle: HandleConfig): String = handle.name.ifBlank { getString(R.string.handle_name, config.handles.indexOfFirst { it.id == handle.id } + 1) }
 fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(R.string.untitled_panel) }
 fun Context.targetLabel(config: AppConfiguration, target: GestureTarget): String {
-    target.action?.let {
-        val name = getString(R.string.action_target, buttonLabel(it))
-        return if (target.volume) getString(R.string.panel_with_volume, name) else name
-    }
-    val panel = config.panel(target.panelId)
-    return if (panel != null) {
-        val name = getString(R.string.panel_target, panelLabel(panel))
-        if (target.volume) getString(R.string.panel_with_volume, name) else name
-    } else getString(if (target.volume) R.string.volume_popup else R.string.no_action)
+    var name = target.action?.let { getString(R.string.action_target, buttonLabel(it)) }
+        ?: config.panel(target.panelId)?.let { getString(R.string.panel_target, panelLabel(it)) }
+    name = if (target.volume) name?.let { getString(R.string.panel_with_volume, it) } ?: getString(R.string.volume_popup) else name
+    return if (target.brightness) name?.let { getString(R.string.target_with_brightness, it) } ?: getString(R.string.brightness_slider)
+        else name ?: getString(R.string.no_action)
 }
 
 @StringRes fun availabilityLabel(value: HandleAvailability?, enabled: Boolean) = when(value) {

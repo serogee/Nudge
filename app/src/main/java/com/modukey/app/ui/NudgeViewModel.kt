@@ -134,6 +134,11 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         if (configuration.value?.includePrereleases == value) return
         updateChecker.clear(); edit { it.copy(includePrereleases = value) }; flush()
     }
+    fun previewBrightness(token: Any, enabled: Boolean) { if (enabled) app.brightnessPreview.begin(token) else app.brightnessPreview.end(token) }
+    fun openBrightnessAccess() {
+        try { app.startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        catch (_: RuntimeException) { tell(R.string.action_failed) }
+    }
     fun testVolume() { popupCheck.value = if (app.volume.show() == VolumeResult.Requested) R.string.volume_requested else R.string.volume_failed }
     fun confirmPopup(visible: Boolean) { popupCheck.value = if (visible) R.string.volume_confirmed else R.string.volume_not_shown }
     fun tell(resource: Int) { messages.trySend(resource) }

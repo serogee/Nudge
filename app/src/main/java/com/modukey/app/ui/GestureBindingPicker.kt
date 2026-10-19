@@ -42,7 +42,7 @@ import com.modukey.app.core.*
             ActionPicker({ page = 0 }, includeEmpty = false) { selected ->
                 val action = (draft.action ?: PanelButton()).copy(action = selected, showVolumePopup = false)
                 if (selected == ButtonAction.OPEN_APP) { pendingApp = action; vm.loadApps(); page = 2 }
-                else { draft = GestureTarget(volume = draft.volume, action = action); page = 0 }
+                else { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action); page = 0 }
             }
             return
         }
@@ -50,22 +50,23 @@ import com.modukey.app.core.*
             AppPicker(vm, { pendingApp = null; page = 0 }) { app ->
                 val action = (pendingApp ?: draft.action ?: PanelButton(action = ButtonAction.OPEN_APP)).copy(
                     appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label)
-                draft = GestureTarget(volume = draft.volume, action = action)
+                draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action)
                 pendingApp = null; page = 0
             }
             return
         }
         3 -> {
-            PanelTargetPicker(config, { page = 0 }) { id -> draft = GestureTarget.panel(id, draft.volume); page = 0 }
+            PanelTargetPicker(config, { page = 0 }) { id -> draft = GestureTarget.panel(id, draft.volume).copy(brightness = draft.brightness); page = 0 }
             return
         }
     }
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.gesture_action)) }, text = {
         LazyColumn(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(volume = draft.volume) } }
+            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume) } }
             item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
             item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it) } }
+            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false) { draft = draft.copy(brightness = it) } }
             if (draft.action?.action == ButtonAction.TOGGLE_HANDLES) item {
                 val action = requireNotNull(draft.action)
                 OptionRow(t(R.string.handle_toggle_scope), HandleToggleScope.entries, action.handleScope, HandleToggleScope.ALL) { draft = draft.copy(action = action.copy(handleScope = it)) }
