@@ -48,14 +48,14 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
         }
     }
 }
-@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, default: Boolean? = null, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, default: Boolean? = null, enabled: Boolean = true, change: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
-            SettingTitle(t(title), reset = if (default != null && checked != default) ({ change(default) }) else null)
+            SettingTitle(t(title), enabled = enabled, reset = if (default != null && checked != default) ({ change(default) }) else null)
             detail?.let { Help(it) }
         }
         val description = t(title)
-        Switch(checked = checked, onCheckedChange = change, modifier = Modifier.semantics { contentDescription = description })
+        Switch(checked = checked, onCheckedChange = change, enabled = enabled, modifier = Modifier.semantics { contentDescription = description })
     }
 }
 @Composable fun SettingSlider(@StringRes title: Int, value: Float, range: ClosedFloatingPointRange<Float>, display: String,

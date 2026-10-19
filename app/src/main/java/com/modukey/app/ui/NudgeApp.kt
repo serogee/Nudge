@@ -181,15 +181,14 @@ import com.modukey.app.platform.*
     Text(t(R.string.manage_handles), style = MaterialTheme.typography.headlineMedium)
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Toggle(R.string.pause_handles, R.string.pause_handles_help, paused.isNotEmpty(),
+                enabled = paused.isNotEmpty() || (config.enabled && config.handles.any { it.enabled }), change = vm::pauseHandles)
+            Toggle(R.string.hide_visible_handles, R.string.hide_visible_handles_help, config.hideHandleIndicators, default = false, change = vm::hideVisibleHandles)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(t(R.string.handles), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
             }
             Help(R.string.manage_handles_help)
-            if (paused.isNotEmpty()) {
-                Help(R.string.handles_paused_help)
-                FilledTonalButton(onClick = vm::resumeHandles) { Icon(AppIcons.Handle, null); Spacer(Modifier.width(8.dp)); Text(t(R.string.resume_handles)) }
-            }
             if (config.handles.isEmpty()) Help(R.string.no_handles)
             ReorderableList(config.handles, { it.id }, { context.handleLabel(config, it) }, Modifier.weight(1f),
                 moveTo = vm::reorderHandle, finish = vm::flush) { h, _ ->

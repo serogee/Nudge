@@ -8,12 +8,13 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 11 adds brightness slider touch behavior. */
+/** Schema 12 adds a global visible-handle override and its action. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 11
+    const val SCHEMA = 12
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
+        .put("hideHandleIndicators", config.hideHandleIndicators)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
         .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
         .put("brightnessPopup", brightness(config.brightnessPopup))
@@ -68,7 +69,8 @@ object ConfigurationCodec {
             require(buttons.all { it.id.isNotBlank() } && buttons.map { it.id }.distinct().size == buttons.size)
             val panelIds = panels.map { it.id }.toSet()
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
-            AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts).normalized()
+            AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts,
+                hideHandleIndicators = root.optBoolean("hideHandleIndicators")).normalized()
         }
     }
     private inline fun <T> guarded(block: () -> T): T = try { block() }

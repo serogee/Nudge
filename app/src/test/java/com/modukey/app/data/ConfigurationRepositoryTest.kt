@@ -28,6 +28,24 @@ class ConfigurationRepositoryTest {
         val store=PreferenceDataStoreFactory.create(storage=storage,scope=CoroutineScope(Dispatchers.IO+job))
         try { block(store) } finally { job.cancelAndJoin() }
     }
+    @Test fun globalVisibilityOverrideSurvivesReopeningWithoutChangingHandlePreferences()=runTest {
+        val file=folder.newFile("visibility.preferences_pb")
+        val configuration=AppConfiguration(hideHandleIndicators=true,handles=listOf(
+            HandleConfig(id="visible",enabled=true,trigger=TriggerSettings(indicatorVisible=true)),
+            HandleConfig(id="invisible",enabled=false,trigger=TriggerSettings(indicatorVisible=false)))).normalized()
+        session(file) { DataStoreConfigurationRepository(it).write(configuration) }
+        session(file) { store ->
+            val repo=DataStoreConfigurationRepository(store)
+            val restored=repo.configuration.first()
+            assertEquals(configuration,restored)
+            repo.write(restored.copy(hideHandleIndicators=false))
+        }
+        session(file) { store ->
+            val restored=DataStoreConfigurationRepository(store).configuration.first()
+            assertFalse(restored.hideHandleIndicators)
+            assertEquals(configuration.handles,restored.handles)
+        }
+    }
     @Test fun `percentage document migrates atomically and retains dp thickness after reopening`()=runTest {
         val file=folder.newFile("thickness.preferences_pb")
         val key=stringPreferencesKey("configuration.v1")

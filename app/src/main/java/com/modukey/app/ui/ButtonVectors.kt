@@ -34,5 +34,6 @@ object ButtonVectors {
         ButtonAction.BRIGHTNESS_UP -> AppIcons.BrightnessUp; ButtonAction.BRIGHTNESS_DOWN -> AppIcons.BrightnessDown
         ButtonAction.BRIGHTNESS_AUTOMATIC -> AppIcons.BrightnessAutomatic
         ButtonAction.TOGGLE_HANDLES -> AppIcons.Handle; ButtonAction.OPEN_APP -> AppIcons.Apps; ButtonAction.EMPTY -> AppIcons.Empty
+        ButtonAction.TOGGLE_HANDLE_VISIBILITY -> AppIcons.HandleVisibility
     }
 }

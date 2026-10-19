@@ -327,7 +327,8 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (guide || (selected == null && reasons[h.id] == HandleAvailability.ACTIVE)) {
                 val space = if (guide) guideScreen else s
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, h.trigger, space.landscape)
-                desired[h.id] = HandleWindowSpec(if (guide) preview?.toDisplay(b) ?: b else b, h.trigger, h.trigger.placement(space.landscape).edge, guide, if (guide) preview?.quarterTurns ?: 0 else 0)
+                desired[h.id] = HandleWindowSpec(if (guide) preview?.toDisplay(b) ?: b else b, h.trigger, h.trigger.placement(space.landscape).edge, guide, if (guide) preview?.quarterTurns ?: 0 else 0,
+                    hideIndicator = config.hideHandleIndicators && !guide)
             }
             if (selected != null) reasons[h.id] = HandleAvailability.EDITING
         }

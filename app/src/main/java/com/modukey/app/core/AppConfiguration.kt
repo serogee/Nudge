@@ -18,7 +18,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, TOGGLE_HANDLES, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, TOGGLE_HANDLES, TOGGLE_HANDLE_VISIBILITY, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
@@ -110,6 +110,7 @@ data class AppConfiguration(
     val panels: List<SavedPanel> = emptyList(),
     val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
     val shortcuts: List<HomeShortcut> = emptyList(),
+    val hideHandleIndicators: Boolean = false,
 ) {
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
