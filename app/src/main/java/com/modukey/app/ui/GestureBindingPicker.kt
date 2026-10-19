@@ -66,6 +66,12 @@ import com.modukey.app.core.*
             item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
             item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it) } }
+            if (draft.action?.action == ButtonAction.TOGGLE_HANDLES) item {
+                val action = requireNotNull(draft.action)
+                OptionRow(t(R.string.handle_toggle_scope), HandleToggleScope.entries, action.handleScope, HandleToggleScope.ALL) { draft = draft.copy(action = action.copy(handleScope = it)) }
+                Help(R.string.handle_toggle_help)
+            }
+            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item { Help(R.string.brightness_help) }
             if (draft.action?.action == ButtonAction.OPEN_APP) item {
                 OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
                     Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))

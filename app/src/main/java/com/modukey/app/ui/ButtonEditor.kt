@@ -41,6 +41,11 @@ import com.modukey.app.core.*
                 }
                 if (draft.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN))
                     Toggle(R.string.show_volume_popup, R.string.show_volume_help, draft.showVolumePopup, default = false) { draft = draft.copy(showVolumePopup = it) }
+                if (draft.action == ButtonAction.TOGGLE_HANDLES) {
+                    OptionRow(t(R.string.handle_toggle_scope), HandleToggleScope.entries, draft.handleScope, HandleToggleScope.ALL) { draft = draft.copy(handleScope = it) }
+                    Help(R.string.handle_toggle_help)
+                }
+                if (draft.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) Help(R.string.brightness_help)
                 if (draft.action == ButtonAction.EMPTY) {
                     OptionRow(t(R.string.appearance), EmptyAppearance.entries, draft.emptyAppearance, EmptyAppearance.SLASH) { draft = draft.copy(emptyAppearance = it) }
                     Help(R.string.empty_button_help)
