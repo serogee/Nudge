@@ -10,11 +10,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
 @Composable fun BrightnessPopupSettingsSection(config: AppConfiguration, vm: NudgeViewModel) {
+    val service by vm.status.collectAsStateWithLifecycle()
     val s = config.brightnessPopup
     val defaults = remember { BrightnessPopupSettings() }
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -30,7 +32,7 @@ import kotlin.math.roundToInt
     fun edit(change: (BrightnessPopupSettings) -> BrightnessPopupSettings) = vm.edit { it.copy(brightnessPopup = change(it.brightnessPopup)) }
     Section(R.string.brightness_slider) {
         Toggle(R.string.brightness_preview, R.string.brightness_preview_help, preview) { preview = it }
-        if (preview && !vm.status.value.connected) Help(R.string.preview_unavailable)
+        if (preview && !service.connected) Help(R.string.preview_unavailable)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(t(R.string.appearance), Modifier.weight(1f))
             EditIcon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, if (expanded) R.string.collapse_setup else R.string.expand_setup) { expanded = !expanded }
@@ -48,7 +50,7 @@ import kotlin.math.roundToInt
             SettingSlider(R.string.slider_width, s.widthDp, 48f..128f, t(R.string.dp_value, s.widthDp.roundToInt()), default = defaults.widthDp) { v -> edit { it.copy(widthDp = v) } }
             SettingSlider(R.string.slider_height, s.heightDp, 120f..480f, t(R.string.dp_value, s.heightDp.roundToInt()), default = defaults.heightDp) { v -> edit { it.copy(heightDp = v) } }
             SettingSlider(R.string.slider_timeout, s.timeoutMs / 1000f, 1f..10f, t(R.string.seconds_value, s.timeoutMs / 1000f), default = 3f) { v -> edit { it.copy(timeoutMs = (v * 1000).toLong()) } }
-            ColorPicker(s.background, title = R.string.panel_background, default = defaults.background) { v -> edit { it.copy(background = v) } }
+            ColorPicker(s.background, title = R.string.slider_background, default = defaults.background) { v -> edit { it.copy(background = v) } }
             PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
             ColorPicker(s.track, title = R.string.slider_track, default = defaults.track) { v -> edit { it.copy(track = v) } }
             PercentSlider(R.string.slider_track_opacity, s.trackOpacity, default = 1f) { v -> edit { it.copy(trackOpacity = v) } }

@@ -433,7 +433,7 @@
     <string name="slider_icon_opacity">Icon opacity</string>
     <string name="slider_timeout">Slider timeout</string>
     <string name="target_with_brightness">%1$s + Brightness slider</string>
-    <string name="brightness_access">Brightness access</string>
+    <string name="slider_background">Slider background</string>
     <string name="open_brightness_access">Allow brightness changes</string>
     <string name="brightness_access_help">Allow Modify system settings to change brightness. Showing a preview does not need this access.</string>
     <string name="home_shortcuts">Home screen shortcuts</string>
