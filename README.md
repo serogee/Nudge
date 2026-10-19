@@ -63,9 +63,21 @@ Lock-screen availability is configured per handle and defaults off. All configur
 
 Backups use the system file picker and include panels, gesture links, hidden buttons, and icon references. Add imports disabled handle copies and independent panel copies, preserving shared links within the imported group. Replace requires confirmation and leaves the master switch off. Older backups migrate on import. Icon packs must be installed separately.
 
+## Brightness slider and Home screen shortcuts
+
+Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum still restore their previous value unless another control changes brightness.
+
+Enable **Show brightness slider** in a gesture assignment. It works alone or with a panel, direct action, and **Show Volume Popup**. The custom slider opens on the left by default, opposite the usual right-side volume popup. Android does not report Xiaomi's private volume popup bounds. Home provides the volume-side selection, custom placement, width, height, timeout, colors, and opacity. The starting size is 64 ? 240 dp; compare and adjust it on your phone. It approximates MIUI styling, rather than using Xiaomi's native volume window.
+
+Home's preview is non-interactive and ends when Home is left or the app goes into the background. It works with the master switch off when accessibility is connected. The live slider requires **Modify system settings** access. Dragging selects manual brightness; showing a preview does not change brightness. Outside touch and Back dismiss the live slider. It also closes on timeout, screen-off, source ineligibility, and service cleanup. Locked use follows the invoking handle's lock-screen setting and never wakes the phone.
+
+Use **Home ? Home screen shortcuts ? Add shortcut** to choose an action, app, icon, and name. For This handle or Other handles, select the handle that the action uses. Confirm the request in your launcher. A successful request is not proof that you accepted the launcher prompt; Home checks pinned status when you return. Unsupported launchers show guidance. No legacy installation broadcast is used.
+
+Shortcuts require a connected Nudge accessibility service. They can run with Enable Gestures off. Their icons are static; runtime panel buttons keep their active/inactive indicators. A locked launch requests normal system unlock and rechecks the saved action. Missing or deleted actions do not execute. Removing a shortcut in Nudge disables its launcher entry; remove the remaining Home screen icon separately. Backups contain shortcut definitions and slider settings, but cannot grant permissions or add launcher icons. Add handles preserves current global settings and shortcuts; Replace configuration imports them without pinning icons.
+
 ## Battery use and compatibility
 
-One system-bound service manages all handles. There is no polling, wake lock, periodic restart work, foreground service, or idle redraw loop. Gesture timing uses touch timestamps. Panels release their composition and observers when closed. Icons load off the main thread with an 8 MiB bitmap cache. Update checks run only when requested.
+One system-bound service manages all handles. There is no polling, wake lock, periodic restart work, foreground service, or idle redraw loop. Gesture timing uses touch timestamps. Panels release their composition and observers when closed. The brightness slider observes settings only while visible and coalesces drag writes to one per display frame. Its timeout is a single pending callback; there is no repeating timer. Shortcuts run only after a tap or an explicit pin request. Icons load off the main thread with an 8 MiB bitmap cache. Update checks run only when requested.
 
 Physical Redmi Note 12 checks and battery measurements remain pending. Passing automated tests does not prove HyperOS compatibility or zero battery drain. Record the exact model, Android version, HyperOS build, and navigation mode in the local compatibility checklist.
 
