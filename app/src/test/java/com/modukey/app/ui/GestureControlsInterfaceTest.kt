@@ -43,6 +43,26 @@ class GestureControlsInterfaceTest {
         rule.onNodeWithText("Gestures").performClick()
     }
 
+    @Test fun gestureGroupsKeepDistanceTimingAndFeedbackIndependent() {
+        val app = ready(); editGestures()
+        rule.onNodeWithText("Swipe settings").assertExists()
+        rule.onNodeWithText("Swipe and hold settings").assertExists()
+        rule.onNodeWithText("Hold settings").assertExists()
+        rule.onNodeWithText("Tap settings").assertExists()
+        rule.onNodeWithContentDescription("Swipe haptic feedback").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Swipe and hold distance").performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
+        rule.onAllNodesWithText("After release").onFirst().performScrollTo().performClick()
+        rule.onNodeWithText("When hold time ends").performClick()
+        rule.runOnIdle {
+            val s = app.configuration.preview.value!!.handles.single().trigger
+            assertTrue(s.swipeFeedback.enabled); assertFalse(s.swipeHoldFeedback.enabled)
+            assertFalse(s.holdFeedback.enabled); assertFalse(s.tapFeedback.enabled)
+            assertEquals(45f, s.swipeHoldDistanceDp); assertEquals(24f, s.swipeDistanceDp)
+            assertEquals(HoldExecution.AFTER_TIME, s.swipeHoldExecution)
+            assertEquals(HoldExecution.ON_RELEASE, s.holdExecution)
+        }
+    }
     @Test fun `gesture types have prefixes and panel options have separate touch rows`() {
         val app = ready()
         val tools = SavedPanel(name = "Tools")
