@@ -8,14 +8,16 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 6 adds brightness and handle toggles. Older layouts and thickness values retain their migrations. */
+/** Schema 7 adds the brightness slider and pinned shortcut definitions. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 6
+    const val SCHEMA = 7
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
-        .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) })).toString()
+        .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
+        .put("brightnessPopup", brightness(config.brightnessPopup))
+        .put("shortcuts", array(config.shortcuts.map { JSONObject().put("id", it.id).put("name", it.name).put("button", button(it.button)).put("handleId", it.handleId.orEmpty()) })).toString()
 
     fun upgrade(text: String, name: MigratedPanelName = defaultName): String = guarded {
         if (JSONObject(text).getInt("schema") in 1 until SCHEMA) encode(decode(text, checkBackupSize = false, migratedName = name)) else text
@@ -48,7 +50,7 @@ object ConfigurationCodec {
                         else -> GestureTarget.panel(ids[value.last().digitToInt() - 1])
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
-                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null).also { target ->
+                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness")).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
                             require(target.action?.action != ButtonAction.EMPTY)
                         }
@@ -58,11 +60,15 @@ object ConfigurationCodec {
             }
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
-            val buttons = panels.flatMap { it.settings.buttons } + handles.flatMap { h -> h.bindings.values.mapNotNull { it.action } }
+            val shortcuts = root.optJSONArray("shortcuts")?.objects()?.map {
+                HomeShortcut(it.getString("id"), it.optString("name"), button(it.getJSONObject("button")), it.optString("handleId").ifBlank { null })
+            }.orEmpty()
+            require(shortcuts.all { it.id.isNotBlank() && it.button.action != ButtonAction.EMPTY } && shortcuts.map { it.id }.distinct().size == shortcuts.size)
+            val buttons = shortcuts.map { it.button } + panels.flatMap { it.settings.buttons } + handles.flatMap { h -> h.bindings.values.mapNotNull { it.action } }
             require(buttons.all { it.id.isNotBlank() } && buttons.map { it.id }.distinct().size == buttons.size)
             val panelIds = panels.map { it.id }.toSet()
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
-            AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels).normalized()
+            AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, brightness(root.optJSONObject("brightnessPopup") ?: JSONObject()), shortcuts).normalized()
         }
     }
     private inline fun <T> guarded(block: () -> T): T = try { block() }
@@ -107,12 +113,23 @@ object ConfigurationCodec {
             .put("holdTimeMs", s.holdTimeMs).put("swipeHoldTimeMs", s.swipeHoldTimeMs)
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
-            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume)
+            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness)
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)
             .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs)
     }
+    private fun brightness(p: JSONObject) = BrightnessPopupSettings(
+        side = enumValueOf(p.optString("side", "OPPOSITE_VOLUME")), volumeSide = enumValueOf(p.optString("volumeSide", "RIGHT")),
+        widthDp = p.float("width", 64f), heightDp = p.float("height", 240f), x = p.float("x", .5f), y = p.float("y", .35f),
+        background = p.optLong("background", 0xFF202122), track = p.optLong("track", 0xFF3C3C3E), fill = p.optLong("fill", 0xFF999A9C), icon = p.optLong("icon", 0xFFECECEE),
+        backgroundOpacity = p.float("backgroundOpacity", 1f), trackOpacity = p.float("trackOpacity", 1f), fillOpacity = p.float("fillOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
+        timeoutMs = p.optLong("timeoutMs", 3_000))
+    private fun brightness(p: BrightnessPopupSettings) = JSONObject().put("side", p.side.name).put("volumeSide", p.volumeSide.name)
+        .put("width", p.widthDp).put("height", p.heightDp).put("x", p.x).put("y", p.y)
+        .put("background", p.background).put("track", p.track).put("fill", p.fill).put("icon", p.icon)
+        .put("backgroundOpacity", p.backgroundOpacity).put("trackOpacity", p.trackOpacity).put("fillOpacity", p.fillOpacity).put("iconOpacity", p.iconOpacity)
+        .put("timeoutMs", p.timeoutMs)
     private fun button(b: JSONObject) = PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),

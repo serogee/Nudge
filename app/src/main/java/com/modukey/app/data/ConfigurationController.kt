@@ -93,6 +93,7 @@ class ConfigurationController(private val repository: ConfigurationRepository, p
         mutablePreview.value = configuration?.let { mutableDraft.value?.applyTo(it)?.normalized() ?: it }
     }
     fun flush() { debounce?.cancel(); debounce = null; scope.launch { save() } }
+    suspend fun flushNow(): Boolean { debounce?.cancel(); debounce = null; return save() }
     fun retry() { if (mutable.value == null) load() else flush() }
     private suspend fun save(): Boolean = saveLock.withLock {
         val snapshot = mutable.value ?: return@withLock false

@@ -10,6 +10,18 @@ import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationCodecTest {
+    @Test fun sliderShortcutsAndIndependentFlagsRoundTrip() {
+        val action = PanelButton(action = ButtonAction.BRIGHTNESS_DOWN)
+        val h = HandleConfig(bindings = mapOf(GestureSlot.TAP to GestureTarget(volume = true, brightness = true)))
+        val popup = BrightnessPopupSettings(side = BrightnessSide.CUSTOM, widthDp = 88f, heightDp = 310f, x = .2f, y = .7f, fillOpacity = .4f)
+        val c = AppConfiguration(handles = listOf(h), brightnessPopup = popup, shortcuts = listOf(HomeShortcut(name = "Dim", button = action)))
+        assertEquals(c.normalized(), ConfigurationCodec.decode(ConfigurationCodec.encode(c)))
+        assertFalse(h.target(GestureSlot.TAP).isNone)
+        val legacy = JSONObject(ConfigurationCodec.encode(c)).put("schema", 6).apply { remove("brightnessPopup"); remove("shortcuts") }
+        assertEquals(BrightnessPopupSettings(), ConfigurationCodec.decode(legacy.toString()).brightnessPopup)
+        assertTrue(ConfigurationCodec.decode(legacy.toString()).shortcuts.isEmpty())
+    }
+
     @Test fun `new actions and per-button handle scopes survive backup duplication and schema five upgrade`() {
         val buttons = listOf(PanelButton(action = ButtonAction.BRIGHTNESS_MAXIMUM), PanelButton(action = ButtonAction.BRIGHTNESS_MINIMUM),
             PanelButton(action = ButtonAction.NOTIFICATIONS), PanelButton(action = ButtonAction.CONTROL_PANEL)) +
@@ -23,7 +35,7 @@ class ConfigurationCodecTest {
         assertEquals(HandleToggleScope.OTHERS, copy.handles.last().target(GestureSlot.HOLD).action!!.handleScope)
         val old = JSONObject(ConfigurationCodec.encode(AppConfiguration())).put("schema", 5).toString()
         assertEquals(AppConfiguration().normalized(), ConfigurationCodec.decode(old))
-        assertEquals(6, JSONObject(ConfigurationCodec.upgrade(old)).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(ConfigurationCodec.upgrade(old)).getInt("schema"))
     }
     private fun legacy() = checkNotNull(javaClass.classLoader!!.getResourceAsStream("configuration-v1.json")).bufferedReader().use { it.readText() }
 
