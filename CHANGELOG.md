@@ -4,6 +4,11 @@
 
 ### Added
 
+- Add Increase brightness and Decrease brightness actions with five-percent steps.
+- Open a custom MIUI-style brightness slider from gestures, alone or with the native volume popup.
+- Set the slider's side, position, width, height, timeout, colors, and opacity from Home. Preview it without changing brightness.
+- Create Home screen shortcuts for button actions with custom names and icons. Validate saved actions after unlock.
+
 - Add native Notifications and Control panel actions to panel buttons and direct gestures.
 - Reveal the launch icon pills from their centers, then move and rotate them into the N mark.
 - Add Maximum brightness and Minimum brightness to panel buttons and direct gesture actions.
