@@ -118,7 +118,11 @@ In **Info → Updates**, tap **Check for updates**. Nudge reads the [public GitH
 
 If only pre-releases are published, checks with testing off report that no stable release is available. Enable testing to include them. The app does not change GitHub release labels.
 
-When a newer version is available, **Download APK** opens that release's attached `Nudge-<version>.apk` in the external browser or download handler. **View release notes** opens its GitHub page. Downloads and installation require your action; Android confirms installation and checks update signing. A release APK installs separately from a debug copy. Missing APKs, unavailable browsers and missing releases are reported. No account, token, device diagnostics or saved settings are sent with the metadata request. See the [GitHub releases API](https://docs.github.com/en/rest/releases/releases) for the public metadata format.
+When a newer version is available, **Download APK** submits the attached `Nudge-<version>.apk` to Android Download Manager. Nudge shows progress, retry and cancel controls. Android manages the transfer and its notification. The saved download ID restores status after reopening the app. Files stay in Nudge's app-specific download directory; no storage permission is requested. Progress checks run only while Info is resumed and a download is active. There is no updater polling while idle or in the background.
+
+After download, Nudge checks the package, release version, increasing version code, and existing signing key. Tap **Install update** to open Android's installer. If asked, allow Nudge under **Install unknown apps**. Android still requires installation confirmation. Canceling installation retains the verified download for another attempt. A release APK cannot update the separate debug app; install release builds from GitHub separately. The direct update path needs a Redmi/HyperOS device check before release.
+
+**View release notes** continues to open the GitHub release page. Downloads and installation require your action. Missing APKs, failed downloads, unavailable browsers and missing releases are reported. No account, token, device diagnostics or saved settings are sent with the metadata request. See the [GitHub releases API](https://docs.github.com/en/rest/releases/releases) for the public metadata format.
 
 The repository uses Git on `main` with the existing GitHub remote. Releases and uploads remain manual; the release script does not push or publish to a store. The app has no scheduled updater or automatic installer.
 
