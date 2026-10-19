@@ -31,16 +31,24 @@ class BrightnessSessionTest {
             val maximum = apply(session, BrightnessPreset.MAXIMUM, original)
             session.observe(changed); session.observe(maximum)
             assertFalse(session.tracking)
-            assertNull(session.change(BrightnessPreset.MAXIMUM, maximum, 1, 255))
+            assertNotNull(session.change(BrightnessPreset.MAXIMUM, maximum, 1, 255))
             val next = requireNotNull(session.change(BrightnessPreset.MINIMUM, changed, 1, 255))
             assertEquals(changed, next.before); assertFalse(next.restoring)
         }
+    }
+    @Test fun activeStateTracksOwnershipEvenWhenStartingAtTheLimit() {
+        val s = BrightnessSession(); val maximum = BrightnessValue(255, false)
+        assertFalse(s.active(BrightnessPreset.MAXIMUM, maximum))
+        apply(s, BrightnessPreset.MAXIMUM, maximum)
+        assertTrue(s.active(BrightnessPreset.MAXIMUM, maximum))
+        assertEquals(maximum, apply(s, BrightnessPreset.MAXIMUM, maximum))
+        assertFalse(s.active(BrightnessPreset.MAXIMUM, maximum))
     }
     @Test fun `unapplied writes and fresh sessions cannot create restore values`() {
         val session = BrightnessSession()
         assertNotNull(session.change(BrightnessPreset.MAXIMUM, original, 1, 255))
         assertFalse(session.tracking)
-        assertNull(session.change(BrightnessPreset.MAXIMUM, BrightnessValue(255, false), 1, 255))
+        assertNotNull(session.change(BrightnessPreset.MAXIMUM, BrightnessValue(255, false), 1, 255))
         assertEquals(BrightnessValue(12, false), requireNotNull(session.change(BrightnessPreset.MINIMUM, original, 12, 4095)).after)
         apply(session, BrightnessPreset.MAXIMUM, original); session.clear()
         assertFalse(session.tracking)

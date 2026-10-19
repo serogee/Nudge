@@ -1,6 +1,5 @@
 package com.modukey.app.platform
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.database.ContentObserver
 import android.os.Handler
@@ -20,17 +19,23 @@ class BrightnessController(context: Context) {
     private val resolver = app.contentResolver
     private val session = BrightnessSession()
     private var observing = false
-    private val minimum by lazy { resourceBound("config_screenBrightnessSettingMinimum", 1).coerceAtLeast(1) }
-    private val maximum by lazy { resourceBound("config_screenBrightnessSettingMaximum", 255).coerceAtLeast(minimum) }
+    // SCREEN_BRIGHTNESS uses 1..255. Private hardware resources can use a different scale.
+    private val minimum = 1
+    private val maximum = 255
+    private var writing = false
+    private var lastStatus = BrightnessStatus()
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
+            if (writing) return
             runCatching { session.observe(read()) }.onFailure { session.clear() }
             observeIfNeeded()
         }
     }
     fun status(): BrightnessStatus = try {
-        val current = read(); session.observe(current); observeIfNeeded()
-        BrightnessStatus(!current.automatic && current.level == maximum, !current.automatic && current.level == minimum, current.automatic)
+        if (writing) lastStatus else {
+            val current = read(); session.observe(current); observeIfNeeded()
+            BrightnessStatus(session.active(BrightnessPreset.MAXIMUM, current), session.active(BrightnessPreset.MINIMUM, current), current.automatic).also { lastStatus = it }
+        }
     } catch (_: RuntimeException) { BrightnessStatus() }
     val canWrite get() = Settings.System.canWrite(app)
     fun fraction(): Float = runCatching { ((read().level - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f) }.getOrDefault(.5f)
@@ -70,6 +75,7 @@ class BrightnessController(context: Context) {
 
     fun toggle(preset: BrightnessPreset): BrightnessResult {
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS
+        writing = true
         return try {
             val change = session.change(preset, read(), minimum, maximum) ?: return BrightnessResult.ALREADY_SET
             if (!write(change.after)) {
@@ -83,6 +89,7 @@ class BrightnessController(context: Context) {
                 else { session.applied(change); observeIfNeeded(); BrightnessResult.CHANGED }
             }
         } catch (_: RuntimeException) { session.clear(); observeIfNeeded(); BrightnessResult.FAILED }
+        finally { writing = false; status() }
     }
     fun close() { session.clear(); observeIfNeeded() }
     private fun read() = BrightnessValue(Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS, 128),
@@ -104,9 +111,4 @@ class BrightnessController(context: Context) {
             } catch (_: RuntimeException) { runCatching { resolver.unregisterContentObserver(observer) }; session.clear() }
         } else if (!session.tracking && observing) { observing = false; runCatching { resolver.unregisterContentObserver(observer) } }
     }
-    @SuppressLint("DiscouragedApi")
-    private fun resourceBound(name: String, fallback: Int): Int = runCatching {
-        val id = app.resources.getIdentifier(name, "integer", "android")
-        if (id == 0) fallback else app.resources.getInteger(id).takeIf { it in 0..65_535 } ?: fallback
-    }.getOrDefault(fallback)
 }
