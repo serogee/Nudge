@@ -2,32 +2,53 @@
 
 ## Unreleased
 
+## 0.4.1 - 2026-10-19
+
 ### Added
 
-- Add Pause handles and Hide visible handles switches above Add handle. Retain saved handle settings.
-- Toggle visible bars from panels, gestures, and Home shortcuts without disabling handle input. Retain the hide override across restarts.
-- Set a return brightness for each Max/Min action. Optionally restore a valid previous level and automatic mode.
-- Select Jump to touch or proportional Slide to adjust for the brightness slider from Home.
-- Set brightness slider corner radius and hide its background for a full-width track.
-- Show an optional Automatic brightness button below the slider, enabled by default. Add the same action to panels, gestures, and shortcuts.
-- Set independent haptic switches and strengths for Swipe, Swipe and hold, Hold, and Tap.
-- Set a separate swipe distance and time limit for Swipe and hold. Run each hold action at its deadline or after release.
-- Show slight panel pull feedback while dragging or holding, then settle it smoothly after release.
+- define brightness appearance and automatic mode controls (30c95ef)
+- store slider appearance and bottom-based position (c9b59eb)
+- add the automatic brightness action (2e4ac75)
+- render brightness appearance and mode controls (9a45fc6)
+- store independent gesture feedback and hold modes (f6d2269)
+- separate gesture timing and feedback controls (7a60581)
+- apply independent gesture vibration (9539b7b)
+- run native hold actions at the selected time (d960af2)
+- preview panel pulls and settle on release (bd46a12)
+- store per-action brightness return values (b9566c5)
+- store brightness slider touch behavior (088b86b)
+- apply brightness returns and proportional slide input (e1e88ce)
+- expose brightness return and touch controls (a090687)
+- set explicit global pause states (f5b30f2)
+- hide handle bars without removing input windows (4f2b3b4)
+- add a handle visibility icon (e46b375)
+- add global pause and visibility controls (b8031bc)
 
 ### Fixed
 
-- Scroll global handle controls with the list to keep editing reachable on small displays. Retain drag reordering across the header.
-- Keep the editor title container at the same height when Cancel and Save appear.
-- Use the public brightness scale and retain owned min/max states. Restore the prior level and mode on a second tap.
-- Clear preset active states after manual brightness changes, including unchanged endpoints and quick drags back to a limit. Protect restore values during Nudge's own writes.
-- Keep small finger drift and release jitter from restarting a completed swipe-and-hold interval.
-- Send gesture feedback through the vibrator with the required permission and hardware strength fallback.
+- scale brightness and retain preset ownership (a0f53c8)
+- keep editor headers stable while saving (97426d5)
+- stabilize hold gesture recognition (c4f1293)
+- preserve brightness popup interactions (f9c962e)
+- clear brightness presets after manual input (91c8299)
+- keep handles reachable below global controls (49cc6ef)
 
 ### Changed
 
-- Measure brightness vertical position from the bottom. Preserve existing physical placement during migration.
-- Store the new controls in backup schema 12. Preserve earlier settings on import.
-- Put Toggle handles immediately after Close panels in the action picker.
+- remove unused shared gesture labels (2e411ad)
+
+### Maintenance
+
+- explain the automatic brightness action (b12e202)
+- retain presets during synchronous status reads (d19b5b2)
+- explain slider controls and hold feedback (5bd1cd3)
+- record slider and gesture improvements (38de611)
+- explain brightness return and touch behavior (f1bdab2)
+- record brightness interaction improvements (b07b4bb)
+- explain the global handle switches (5f80971)
+- record global handle controls (136f69a)
+- describe scrollable global handle controls (7c994a3)
+- record small-screen handle navigation (7e5f92d)
 
 ## 0.4.0 - 2026-10-19
 
