@@ -82,6 +82,32 @@ class BrightnessControllerTest {
         app.brightness.toggle(BrightnessPreset.MINIMUM); app.brightness.toggle(BrightnessPreset.MINIMUM)
         assertEquals(70, level())
     }
+    @Test fun manualSliderUseAtAnUnchangedEndpointClearsBothPresetStates() {
+        Writes.allowed = true
+        for (preset in BrightnessPreset.entries) {
+            set(100, false)
+            app.brightness.toggle(preset)
+            assertEquals(preset == BrightnessPreset.MAXIMUM, app.brightness.status().maximum)
+            val endpoint = if (preset == BrightnessPreset.MAXIMUM) 1f else 0f
+            assertEquals(BrightnessResult.ALREADY_SET, app.brightness.setFraction(endpoint))
+            assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+        }
+    }
+    @Test fun externalEndpointNotificationsClearOwnershipWithoutIntermediateReads() {
+        Writes.allowed = true
+        for (preset in BrightnessPreset.entries) {
+            set(100, false); app.brightness.toggle(preset)
+            shadowOf(Looper.getMainLooper()).idle()
+            val endpoint = level()
+            // A quick external drag can return to its endpoint before the callback reads Settings.
+            Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, 80)
+            Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, endpoint)
+            resolver.notifyChange(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), null)
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(endpoint, level())
+            assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+        }
+    }
     @Test fun automaticToggleKeepsLevelAndHandlesDenialAndFailedWrites() {
         set(100, false)
         assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.toggleAutomatic())

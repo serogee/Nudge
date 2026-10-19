@@ -38,7 +38,14 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
     private var backDispatcher: android.window.OnBackInvokedDispatcher? = null
     private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { onDismiss(PanelDismissReason.BACK) } else null
     private val receiver = object : BroadcastReceiver() { override fun onReceive(context: Context?, intent: Intent?) { refreshSound() } }
-    private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) { refreshSound() } }
+    private val handler = Handler(Looper.getMainLooper())
+    private val refresh = Runnable { refreshSound() }
+    private val observer = object : ContentObserver(handler) {
+        override fun onChange(selfChange: Boolean) {
+            // Read after brightness ownership observers have handled the same setting notification.
+            handler.removeCallbacks(refresh); handler.post(refresh)
+        }
+    }
 
     override fun show(spec: PanelSpec) {
         val window = active
@@ -178,6 +185,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
         windowAnimations = 0
     }
     private fun stopObservers() {
+        handler.removeCallbacks(refresh)
         if (registered) { registered = false; try { context.unregisterReceiver(receiver) } catch (_: RuntimeException) { } }
         if (observing) { observing = false; try { context.contentResolver.unregisterContentObserver(observer) } catch (_: RuntimeException) { } }
         if (Build.VERSION.SDK_INT >= 33) { try { back?.let { backDispatcher?.unregisterOnBackInvokedCallback(it) } } catch (_: RuntimeException) { }; backDispatcher = null }
