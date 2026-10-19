@@ -40,7 +40,7 @@ class ConfigurationRepositoryTest {
             val repo=DataStoreConfigurationRepository(store)
             val loaded=repo.configuration.first()
             assertEquals(18f,loaded.handles.single().trigger.indicatorThicknessDp)
-            assertEquals(5,JSONObject(store.data.first()[key]!!).getInt("schema"))
+            assertEquals(ConfigurationCodec.SCHEMA,JSONObject(store.data.first()[key]!!).getInt("schema"))
             repo.write(loaded.editHandle(loaded.handles.single().id) { it.copy(trigger=it.trigger.copy(depthDp=8f)) })
         }
         session(file) { store ->

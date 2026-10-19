@@ -4,8 +4,8 @@ import java.util.UUID
 
 enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
-data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null) {
-    val isNone get() = panelId == null && !volume && action == null
+data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false) {
+    val isNone get() = panelId == null && !volume && action == null && !brightness
     fun normalized() = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.copy(showVolumePopup = false)) else this
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
@@ -18,7 +18,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, SCREENSHOT, EMPTY }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, TOGGLE_HANDLES, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, EMPTY }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
@@ -34,6 +34,7 @@ data class PanelButton(
     val showVolumePopup: Boolean = false,
     val iconContainer: IconContainer = IconContainer.DEFAULT,
     val emptyAppearance: EmptyAppearance = EmptyAppearance.SLASH,
+    val handleScope: HandleToggleScope = HandleToggleScope.ALL,
 )
 data class PanelLayout(
     val mode: PanelMode = PanelMode.FIXED,
@@ -104,10 +105,12 @@ data class AppConfiguration(
     val enabled: Boolean = false, val includePrereleases: Boolean = false,
     val handles: List<HandleConfig> = listOf(HandleConfig(id = "first-handle", enabled = true)),
     val panels: List<SavedPanel> = emptyList(),
+    val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
+    val shortcuts: List<HomeShortcut> = emptyList(),
 ) {
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
-        return copy(panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+        return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80)) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
             h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
                 if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
             }) }

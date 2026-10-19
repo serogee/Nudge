@@ -42,6 +42,9 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private var registry: OverlayRegistry<String, HandleWindowSpec>? = null
     private var frames: FrameCoalescer? = null
+    private var brightnessHost: BrightnessPopupHost? = null
+    private var brightnessOpen = false
+    private var brightnessOwner: String? = null
     private var panelHost: PanelHost? = null
     private var panelTimeout: PanelTimeout? = null
     private var open: OpenPanel? = null
@@ -54,13 +57,15 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var handleBounds = emptyMap<String, Bounds>()
     private var actions: ActionExecutor? = null
     private var screenshots: NativeScreenshotRequest? = null
+    private var systemPanels: NativeSystemPanelRequest? = null
     private val sessions = GestureSessions()
     private val errors = mutableMapOf<String, String>()
     private val frame = Choreographer.FrameCallback { frames?.onFrame() }
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             screenshots?.cancel()
-            views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.SCREEN_STATE)
+            systemPanels?.cancel()
+            hideBrightness(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.SCREEN_STATE)
             clearPanelWindows()
             if (intent?.action == Intent.ACTION_SCREEN_OFF) app.unlocks.clear()
             refresh()
@@ -75,10 +80,18 @@ class EdgeAccessibilityService : AccessibilityService() {
         frames = FrameCoalescer({ choreographer.postFrameCallback(frame) }, { choreographer.removeFrameCallback(frame) }, ::refresh)
         screenshots = NativeScreenshotRequest(choreographer,
             { scope != null && getSystemService(PowerManager::class.java).isInteractive },
-            { dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
+            { hideBrightness(); systemPanels?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
             { performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT) },
             { app.diagnostics.record("Screenshot request failed"); Toast.makeText(this, R.string.screenshot_failed, Toast.LENGTH_SHORT).show() })
-        actions = PanelActions(this) { screenshots?.request() == true }
+        systemPanels = NativeSystemPanelRequest(choreographer,
+            { scope != null && getSystemService(PowerManager::class.java).isInteractive },
+            { hideBrightness(); screenshots?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
+            { performGlobalAction(it) },
+            { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
+        brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(); refresh() }, {
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+        })
+        actions = PanelActions(this, screenshot = { screenshots?.request() == true }, systemPanel = { systemPanels?.request(it) == true }, brightnessPopup = ::showBrightness)
         panelTimeout = PanelTimeout(requireNotNull(scope)) { dismissPanel(PanelCloseReason.TIMEOUT); refresh() }
         panelHost = AccessibilityPanelHost(this, manager, actions!!, { reason -> dismissPanel(when (reason) {
             PanelDismissReason.BACK -> PanelCloseReason.BACK
@@ -99,9 +112,13 @@ class EdgeAccessibilityService : AccessibilityService() {
                 addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
             }, ContextCompat.RECEIVER_NOT_EXPORTED)
             registered = true
+            app.shortcuts.bind(this, ::runShortcut)
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
-            scope?.launch { app.editor.state.collect { screenshots?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
+            scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
+            scope?.launch { app.brightnessPreview.state.collect { frames?.request() } }
+            scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
+            scope?.launch { app.editor.state.collect { hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
                 val selection = app.editor.state.value
                 if (selection?.preview == true && selection.matches(request.handleId, request.panelId) && app.configuration.preview.value?.panel(request.panelId) != null) {
@@ -129,9 +146,12 @@ class EdgeAccessibilityService : AccessibilityService() {
     override fun onDestroy() { stopSession(); super.onDestroy() }
     override fun onTaskRemoved(rootIntent: Intent?) { app.diagnostics.record("Task removed; service remains system managed"); super.onTaskRemoved(rootIntent) }
 
-    private fun reason(config: AppConfiguration, h: HandleConfig, landscape: Boolean = screen().landscape) = HandleEligibility.reason(config, h,
+    private fun reason(config: AppConfiguration, h: HandleConfig, landscape: Boolean = screen().landscape, ignorePause: Boolean = false): HandleAvailability {
+        val base = HandleEligibility.reason(config, h,
         getSystemService(PowerManager::class.java).isInteractive, getSystemService(KeyguardManager::class.java).isKeyguardLocked,
         landscape, foreground)
+        return if (base == HandleAvailability.ACTIVE && !ignorePause && h.id in app.handlePauses.state.value) HandleAvailability.PAUSED else base
+    }
     private fun screen(): ScreenSpace {
         val m = manager.currentWindowMetrics
         val safe = m.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
@@ -148,6 +168,12 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (target.isNone) return
         // One gesture can request both windows. Android owns the native popup's lifetime.
         replacePanel(target.panelId?.takeIf { config.panel(it) != null }?.let { OpenPanel(it, id) }, id)
+        val slot = when (kind) {
+            GestureKind.SWIPE -> GestureSlot.entries[requireNotNull(stage)]
+            GestureKind.SWIPE_HOLD -> GestureSlot.SWIPE_HOLD
+            GestureKind.TAP -> GestureSlot.TAP
+            GestureKind.HOLD -> GestureSlot.HOLD
+        }
         var submitted = target.panelId != null
         if (target.volume && target.action?.action !in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) {
             when (val result = app.volume.show()) {
@@ -159,18 +185,16 @@ class EdgeAccessibilityService : AccessibilityService() {
             }
         }
         target.action?.let { action ->
-            val slot = when (kind) {
-                GestureKind.SWIPE -> GestureSlot.entries[requireNotNull(stage)]
-                GestureKind.SWIPE_HOLD -> GestureSlot.SWIPE_HOLD
-                GestureKind.TAP -> GestureSlot.TAP
-                GestureKind.HOLD -> GestureSlot.HOLD
-            }
             // Remove the previous panel before an app launch or the system lock action.
             refresh()
             actions?.execute(id, if (action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) action.copy(showVolumePopup = target.volume) else action, testing = false, gestureSlot = slot)?.let { result ->
                 submitted = submitted || result.succeeded
                 result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
             }
+        }
+        if (target.brightness) actions?.showBrightness(id, slot)?.let { result ->
+            submitted = submitted || result.succeeded
+            result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
         }
         if (submitted) sessions.submitted(handle, stage, target, now) else sessions.reset(id)
         if (target.action?.action in listOf(ButtonAction.CLOSE_PANELS, ButtonAction.SCREENSHOT)) sessions.reset(id)
@@ -204,7 +228,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         val owner = open ?: return
         val config = (if (owner.testing) app.configuration.preview.value else app.configuration.state.value) ?: return
         val h = config.handle(owner.handleId)
-        if (!owner.testing && (h == null || reason(config, h) != HandleAvailability.ACTIVE)) { dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE); refresh(); return }
+        if (!owner.testing && (h == null || reason(config, h, ignorePause = true) != HandleAvailability.ACTIVE)) { dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE); refresh(); return }
         val p = config.panel(owner.panelId)?.settings ?: return
         val trigger = h?.trigger ?: TriggerSettings()
         val s = screen()
@@ -231,6 +255,15 @@ class EdgeAccessibilityService : AccessibilityService() {
         val config = (if (selected != null) app.configuration.preview.value else app.configuration.state.value) ?: return
         if (softHideForeground != foreground) { views.values.forEach { it.resetSoftHide() }; softHideForeground = foreground }
         val s = screen()
+        val awake = getSystemService(PowerManager::class.java).isInteractive
+        val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
+        if (app.brightnessPreview.state.value && selected == null && awake && !locked) {
+            brightnessOpen = false; brightnessOwner = null
+            brightnessHost?.show(config.brightnessPopup, s, editing = true)
+        } else if (brightnessOpen && awake && selected == null &&
+            (brightnessOwner?.let { config.handle(it)?.let { h -> reason(config, h, ignorePause = true) == HandleAvailability.ACTIVE } } ?: !locked)) {
+            if (brightnessHost?.show(config.brightnessPopup, s, editing = false) != true) hideBrightness()
+        } else hideBrightness()
         val preview = selected?.landscape?.takeIf { open?.testing != true }?.let { PreviewGeometry.calculate(s.width, s.height, s.insets, s.rotation, it) }
         val guideScreen = preview?.let { ScreenSpace(it.width, it.height, s.density, it.insets, it.landscape) } ?: s
         val editing = selected != null && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
@@ -252,7 +285,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 config.panel(it.panelId) == null -> PanelCloseReason.PANEL_REMOVED
                 it.testing && (!editing || selected?.preview != true || !selected.matches(it.handleId, it.panelId)) -> PanelCloseReason.TEST_ENDED
                 !it.testing && selected != null -> PanelCloseReason.EDITOR_CHANGED
-                !it.testing && reasons[it.handleId] != HandleAvailability.ACTIVE -> PanelCloseReason.HANDLE_UNAVAILABLE
+                !it.testing && config.handle(it.handleId)?.let { h -> reason(config, h, s.landscape, ignorePause = true) } != HandleAvailability.ACTIVE -> PanelCloseReason.HANDLE_UNAVAILABLE
                 else -> null
             }
         }
@@ -266,7 +299,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (changed) {
                 val previous = attachedPanel?.takeIf { !it.second }?.first
                 val animateExit = if (previous?.testing == true) editing && selected?.preview == true && selected.matches(previous.handleId, previous.panelId)
-                    else selected == null && config.handle(previous?.handleId)?.let { reason(config, it) == HandleAvailability.ACTIVE } == true
+                    else selected == null && config.handle(previous?.handleId)?.let { reason(config, it, ignorePause = true) == HandleAvailability.ACTIVE } == true
                 panelHost?.hide(animate = animateExit)
             }
             if (wanted != null) {
@@ -277,7 +310,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, trigger, space.landscape)
                 val geometry = PanelGeometry.calculate(space.usable, space.density, p.layout(space.landscape), p.buttons.size, b, edge)
                 panelHost?.show(PanelSpec(p, p.layout(space.landscape), if (panelEditing && preview != null) geometry.copy(bounds = preview.toDisplay(geometry.bounds)) else geometry,
-                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0))
+                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId))
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
@@ -299,15 +332,42 @@ class EdgeAccessibilityService : AccessibilityService() {
         app.status.report(ServiceState(true, active.isNotEmpty(), errors.values.firstOrNull(), active, reasons, open?.handleId, open?.panelId))
     }
     private fun updateEvents(config: AppConfiguration) {
-        val need = open != null || (config.enabled && config.handles.any { h -> h.enabled &&
+        val need = open != null || (config.enabled && config.handles.any { h -> h.enabled && h.id !in app.handlePauses.state.value &&
             (h.trigger.excludedPackages.isNotEmpty() || h.trigger.softHideEnabled || h.bindings.values.any { config.panel(it.panelId) != null }) })
         foregroundTracker?.track(need, SystemClock.uptimeMillis())
         val events = if (need) AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED else 0
         val info = serviceInfo ?: return
         if (info.eventTypes != events) { info.eventTypes = events; serviceInfo = info }
     }
+    private fun runShortcut(id: String): Boolean {
+        if (scope == null || !getSystemService(PowerManager::class.java).isInteractive || getSystemService(KeyguardManager::class.java).isKeyguardLocked) return false
+        val config = app.configuration.state.value ?: return false
+        val shortcut = config.shortcuts.firstOrNull { it.id == id } ?: return false
+        if (!shortcut.available(config)) return false
+        hideBrightness(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows()
+        val result = actions?.executeShortcut(shortcut) ?: return false
+        result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+        refresh()
+        return true
+    }
+    private fun showBrightness(handleId: String): Boolean {
+        val config = app.configuration.state.value ?: return false
+        val handle = config.handle(handleId) ?: return false
+        if (app.editor.state.value != null || reason(config, handle, ignorePause = true) != HandleAvailability.ACTIVE) return false
+        brightnessOpen = true; brightnessOwner = handleId
+        val shown = brightnessHost?.show(config.brightnessPopup, screen(), editing = false) == true
+        if (shown) brightnessHost?.restartTimeout() else hideBrightness()
+        return shown
+    }
+    private fun hideBrightness() {
+        brightnessOpen = false; brightnessOwner?.let(sessions::reset); brightnessOwner = null
+        brightnessHost?.hide()
+    }
     private fun stopSession() {
+        app.shortcuts.unbind(this)
+        hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
+        systemPanels?.cancel(); systemPanels = null
         dismissPanel(PanelCloseReason.SERVICE_STOPPED)
         panelTimeout?.stop(); panelTimeout = null
         frames?.stop(); frames = null; scope?.cancel(); scope = null

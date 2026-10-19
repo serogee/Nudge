@@ -20,6 +20,7 @@ import kotlin.math.roundToInt
     val context = LocalContext.current
     val service by vm.status.collectAsStateWithLifecycle()
     val draft by vm.draft.collectAsStateWithLifecycle()
+    val saving by vm.savingEditor.collectAsStateWithLifecycle()
     var exclusions by remember { mutableStateOf(false) }
     var reset by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -30,7 +31,7 @@ import kotlin.math.roundToInt
         color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
             EditorHeader(context.handleLabel(config, h), draft?.changed == true, R.string.rename_handle,
-                rename = { name = h.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing) {
+                rename = { name = h.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing, saving = saving) {
                 HandleBadge(h, context.handleLabel(config, h))
             }
             AnimatedVisibility(!collapsed) {

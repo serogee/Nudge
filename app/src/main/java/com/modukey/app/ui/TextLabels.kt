@@ -6,6 +6,8 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 @StringRes fun label(value: Any): Int = when (value) {
+    BrightnessSide.OPPOSITE_VOLUME -> R.string.opposite_volume; BrightnessSide.LEFT, VolumeSide.LEFT -> R.string.left
+    BrightnessSide.RIGHT, VolumeSide.RIGHT -> R.string.right; BrightnessSide.CUSTOM -> R.string.slider_custom
     Edge.LEFT -> R.string.left; Edge.RIGHT -> R.string.right; Edge.BOTTOM -> R.string.bottom
     GestureSlot.SWIPE_1 -> R.string.swipe_1; GestureSlot.SWIPE_2 -> R.string.swipe_2; GestureSlot.SWIPE_3 -> R.string.swipe_3
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
@@ -18,6 +20,11 @@ import com.modukey.app.core.*
     ButtonAction.LOCK -> R.string.lock_screen; ButtonAction.OPEN_APP -> R.string.open_app
     ButtonAction.INPUT_METHOD_PICKER -> R.string.input_method_picker
     ButtonAction.CLOSE_PANELS -> R.string.close_panels; ButtonAction.SCREENSHOT -> R.string.screenshot
+    ButtonAction.BRIGHTNESS_MAXIMUM -> R.string.brightness_maximum; ButtonAction.BRIGHTNESS_MINIMUM -> R.string.brightness_minimum
+    ButtonAction.TOGGLE_HANDLES -> R.string.toggle_handles
+    ButtonAction.NOTIFICATIONS -> R.string.notifications; ButtonAction.CONTROL_PANEL -> R.string.control_panel
+    ButtonAction.BRIGHTNESS_UP -> R.string.brightness_up; ButtonAction.BRIGHTNESS_DOWN -> R.string.brightness_down
+    HandleToggleScope.ALL -> R.string.all_handles; HandleToggleScope.CURRENT -> R.string.current_handle; HandleToggleScope.OTHERS -> R.string.other_handles
     ButtonAction.EMPTY -> R.string.empty_button
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash
     IconShape.CIRCLE -> R.string.circle; IconShape.ROUNDED_SQUARE -> R.string.rounded_square; IconShape.SQUIRCLE -> R.string.squircle
@@ -35,15 +42,11 @@ fun Context.buttonLabel(button: PanelButton): String = if (button.action == Butt
 fun Context.handleLabel(config: AppConfiguration, handle: HandleConfig): String = handle.name.ifBlank { getString(R.string.handle_name, config.handles.indexOfFirst { it.id == handle.id } + 1) }
 fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(R.string.untitled_panel) }
 fun Context.targetLabel(config: AppConfiguration, target: GestureTarget): String {
-    target.action?.let {
-        val name = getString(R.string.action_target, buttonLabel(it))
-        return if (target.volume) getString(R.string.panel_with_volume, name) else name
-    }
-    val panel = config.panel(target.panelId)
-    return if (panel != null) {
-        val name = getString(R.string.panel_target, panelLabel(panel))
-        if (target.volume) getString(R.string.panel_with_volume, name) else name
-    } else getString(if (target.volume) R.string.volume_popup else R.string.no_action)
+    var name = target.action?.let { getString(R.string.action_target, buttonLabel(it)) }
+        ?: config.panel(target.panelId)?.let { getString(R.string.panel_target, panelLabel(it)) }
+    name = if (target.volume) name?.let { getString(R.string.panel_with_volume, it) } ?: getString(R.string.volume_popup) else name
+    return if (target.brightness) name?.let { getString(R.string.target_with_brightness, it) } ?: getString(R.string.brightness_slider)
+        else name ?: getString(R.string.no_action)
 }
 
 @StringRes fun availabilityLabel(value: HandleAvailability?, enabled: Boolean) = when(value) {

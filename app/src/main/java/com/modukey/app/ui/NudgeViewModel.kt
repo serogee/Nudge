@@ -30,6 +30,13 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val draft = app.configuration.draft
     val error = app.configuration.error
     val status = app.status.state
+    val pausedHandles = app.handlePauses.state
+    fun resumeHandles() = app.handlePauses.clear()
+    private val launcherShortcuts = PinnedShortcuts(app, app.icons)
+    val shortcutSupported = MutableStateFlow<Boolean?>(null)
+    val pinnedShortcuts = MutableStateFlow<Set<String>>(emptySet())
+    val shortcutBusy = MutableStateFlow(false)
+    private var shortcutRefresh: Job? = null
     val accessibilityEnabled = MutableStateFlow(false)
     val policyAccess = MutableStateFlow(false)
     val launchableApps = MutableStateFlow<List<LaunchableApp>>(emptyList())
@@ -43,6 +50,11 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     private var appLoad: Job? = null
     private val updateChecker = UpdateChecker(GitHubReleaseSource(), BuildConfig.VERSION_NAME, viewModelScope)
     val updates = updateChecker.state
+    private val downloadBackend = AndroidApkDownloadBackend(app)
+    private val downloadController = ApkDownloadController(downloadBackend, viewModelScope)
+    val apkDownload = downloadController.state
+    val preparingUpdate = MutableStateFlow(false)
+    val savingEditor = MutableStateFlow(false)
     private val permissionObserver = object : ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) = refreshPermissions() }
     init {
         app.contentResolver.registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES), false, permissionObserver)
@@ -76,8 +88,21 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun resetHandle(id: String) { editHandle(id) { HandleConfig(id = it.id, name = it.name, enabled = it.enabled) }; flush() }
     fun flush() = app.configuration.flush()
     fun retrySaving() = app.configuration.retry()
-    fun saveEditing() = app.configuration.saveDraft()
-    fun cancelEditing() = app.configuration.cancelDraft()
+    fun saveEditing() { saveEditingThen {} }
+    fun saveEditingThen(saved: () -> Unit) {
+        if (savingEditor.value || draft.value == null) return
+        savingEditor.value = true
+        app.configuration.saveDraft { success -> viewModelScope.launch {
+            savingEditor.value = false
+            android.widget.Toast.makeText(app, if (success) R.string.changes_saved else R.string.save_failed, android.widget.Toast.LENGTH_SHORT).show()
+            if (success) saved()
+        } }
+    }
+    fun cancelEditing() {
+        if (savingEditor.value) return
+        app.configuration.cancelDraft()
+        android.widget.Toast.makeText(app, R.string.changes_cancelled, android.widget.Toast.LENGTH_SHORT).show()
+    }
     fun closeEditing() = app.configuration.closeDraft()
     fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true, landscape: Boolean? = null) {
         if (panelId != null) app.configuration.openPanel(panelId) else if (handleId != null) app.configuration.openHandle(handleId)
@@ -87,14 +112,76 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun testPanel(id: String, previewHandleId: String?) {
         if (status.value.connected) app.editor.test(PanelTestRequest(id, previewHandleId)) else tell(R.string.preview_unavailable)
     }
+    fun refreshShortcuts() {
+        shortcutRefresh?.cancel()
+        shortcutRefresh = viewModelScope.launch { shortcutSupported.value = launcherShortcuts.supported(); pinnedShortcuts.value = launcherShortcuts.pinned() }
+    }
+    fun pinShortcut(shortcut: HomeShortcut) {
+        if (shortcutBusy.value) return
+        shortcutBusy.value = true
+        viewModelScope.launch {
+            try {
+                if (!launcherShortcuts.supported()) { shortcutSupported.value = false; tell(R.string.shortcut_unsupported); return@launch }
+                val config = app.configuration.state.value ?: return@launch
+                if (!shortcut.available(config)) { tell(R.string.shortcut_missing); return@launch }
+                val stored = config.shortcuts.firstOrNull { it.id == shortcut.id }
+                if (stored != null && stored != shortcut) { tell(R.string.shortcut_missing); return@launch }
+                if (stored == null) edit { it.copy(shortcuts = it.shortcuts + shortcut) }
+                if (!app.configuration.flushNow()) { tell(R.string.save_failed); return@launch }
+                if (app.configuration.state.value?.shortcuts?.firstOrNull { it.id == shortcut.id } != shortcut) { tell(R.string.shortcut_missing); return@launch }
+                val label = shortcut.name.ifBlank { app.buttonLabel(shortcut.button) }
+                tell(if (launcherShortcuts.pin(shortcut, label)) R.string.shortcut_requested else R.string.shortcut_failed)
+                refreshShortcuts()
+            } catch (e: CancellationException) { throw e }
+            catch (_: RuntimeException) { tell(R.string.shortcut_failed) }
+            finally { shortcutBusy.value = false }
+        }
+    }
+    fun removeShortcut(id: String) {
+        if (shortcutBusy.value) return
+        shortcutBusy.value = true
+        viewModelScope.launch {
+            try {
+                edit { it.copy(shortcuts = it.shortcuts.filterNot { shortcut -> shortcut.id == id }) }
+                if (!app.configuration.flushNow()) { tell(R.string.save_failed); return@launch }
+                launcherShortcuts.disable(id); refreshShortcuts(); tell(R.string.shortcut_removed)
+            } catch (e: CancellationException) { throw e }
+            catch (_: RuntimeException) { tell(R.string.shortcut_failed) }
+            finally { shortcutBusy.value = false }
+        }
+    }
     fun refreshPermissions() {
+        refreshShortcuts()
         accessibilityEnabled.value = AccessibilityPermission.enabled(app)
         policyAccess.value = app.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
     }
     fun checkForUpdates() = updateChecker.check(configuration.value?.includePrereleases ?: false)
+    fun downloadApk(release: PublishedRelease) { release.apkUrl?.let { downloadController.download(ApkTarget(release.tag, it)) } }
+    fun retryApkDownload() = downloadController.retry()
+    fun cancelApkDownload() { downloadController.cancel() }
+    suspend fun observeApkDownload() = downloadController.observe()
+    fun installUpdate(expectedUrl: String, launch: (Intent) -> Unit) {
+        if (preparingUpdate.value) return
+        preparingUpdate.value = true
+        viewModelScope.launch {
+            try {
+                val record = downloadController.prepareInstall() ?: return@launch
+                if (record.target.url != expectedUrl) { tell(R.string.apk_download_changed); return@launch }
+                val intent = withContext(Dispatchers.IO) { downloadBackend.installIntent(record) }
+                launch(intent)
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { tell(R.string.apk_install_failed) }
+            finally { preparingUpdate.value = false }
+        }
+    }
     fun setIncludePrereleases(value: Boolean) {
         if (configuration.value?.includePrereleases == value) return
         updateChecker.clear(); edit { it.copy(includePrereleases = value) }; flush()
+    }
+    fun previewBrightness(token: Any, enabled: Boolean) { if (enabled) app.brightnessPreview.begin(token) else app.brightnessPreview.end(token) }
+    fun openBrightnessAccess() {
+        try { app.startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        catch (_: RuntimeException) { tell(R.string.action_failed) }
     }
     fun testVolume() { popupCheck.value = if (app.volume.show() == VolumeResult.Requested) R.string.volume_requested else R.string.volume_failed }
     fun confirmPopup(visible: Boolean) { popupCheck.value = if (visible) R.string.volume_confirmed else R.string.volume_not_shown }

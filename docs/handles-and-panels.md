@@ -10,6 +10,14 @@ In the development interface, drag a card's left grip to change its priority. Se
 
 Handle and panel editors keep changes in a temporary draft. The top pencil changes to Save and Cancel after an edit. Save applies all changes in that editor. Cancel restores its saved settings. Long titles use an ellipsis so both controls stay visible.
 
+Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
+
+Handle icons keep a bold initial inside a rounded square. A small inset pill marks the saved left, right, or bottom edge.
+
+Drag a list grip to reorder handles, panels, or buttons. Hold near the top or bottom to scroll. The same item stays selected until release or cancellation. Touch outside the grip to scroll normally. Accessibility move actions remain available.
+
+The launch icon uses a centered N with padding inside a rounded container. Its side pills reveal from their centers. The middle pill reveals upright, then rotates as the side pills move into position. The native sequence ends after 600 ms. Disabled system animations skip the wait. Backgrounding removes the launch view.
+
 Mini previews and on-phone guides show pending changes immediately. Normal gestures use saved settings when Nudge is in the background. Pending edits survive activity recreation and temporary backgrounding. They are not included in backups or disk saves until you select Save. Closing the app process discards the draft.
 
 Before leaving an editor with pending changes, select Save, Discard, or Keep editing. Save inside a name, gesture, or button dialog updates the editor draft. Use the top Save control to apply that draft. List switches and list management actions still apply immediately.
@@ -37,6 +45,8 @@ On the lock screen, the picker first requests normal system unlock. Cancelled au
 Each assignment owns its action settings. Editing it does not change a panel button or another gesture. Direct actions close the current Nudge panel. App and settings actions use the same normal system unlock step as panel buttons. A removed or changed assignment cannot continue after unlock. Sound-mode actions show required Do Not Disturb access on Home, including when no panel uses them.
 
 Close panels and Screenshot are available as panel buttons and direct actions. Close panels dismisses Nudge's open panel and resets its swipe sequence. It does not dismiss Android's volume popup. With no Nudge panel open, it has no effect.
+
+Notifications opens the native notification shade. Control panel opens native Quick Settings, called Control center on some phones. Some devices use the same panel for both requests. Nudge removes its interactive panel before submitting either request. Failed requests show an error. Android controls availability on the lock screen. No extra permission is needed beyond the connected accessibility service. Verify the exact behavior on your HyperOS build.
 
 Screenshot removes the interactive Nudge panel, waits two display frames, and requests Android's native screenshot action. Android controls capture, saving, and restrictions. Nudge does not read or store the image. Screen-off and service shutdown cancel pending requests. Requests add no idle timer or observer. Editing guides still follow their preview switch.
 
@@ -116,6 +126,16 @@ Choose a default icon pack for a panel or a manual static icon for any button. C
 
 The development button editor keeps changes private until Save. Volume up and Volume down have an optional Show volume popup switch. It changes the native UI flag while keeping the media adjustment to one system step. Sound buttons still keep the Nudge panel open.
 
+Maximum brightness and Minimum brightness are available as panel buttons and direct gesture actions. The first use opens Android's Modify system settings screen if access is missing. Grant access, return, and run the action again. Nudge does not change brightness before access is granted.
+
+Each brightness limit uses manual brightness. Tap the same action again to restore the previous level and automatic mode. An external brightness or mode change clears the restore values. App restarts also clear them. The two actions retain their own restore values when switching between limits. They do not wake the screen. Device brightness limits require a Redmi check.
+
+Toggle handles is available as a panel button and direct gesture action. Select All handles, This handle, or Other handles. This handle means the handle that opened the panel or ran the gesture. A panel test without a preview handle cannot select This handle or Other handles.
+
+The action pauses currently enabled handles without changing their saved Enable switches. Its tile shows On when all selected handles are available through this pause control. Tap again to resume. If only some are paused, tapping resumes the group. Existing panels remain usable while their handle is paused. Saved disabling, the master switch, and normal eligibility rules still close panels.
+
+Use Resume handles above the Handles list to clear all pauses. This also recovers a handle paused by its own gesture. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+
 Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
 The built-in Nudge icon uses the separated pill mark without the app background. It follows the panel's icon color and opacity. Select Standalone for a button with no container. The default Nudge settings icon keeps the full app icon.
@@ -132,7 +152,7 @@ Add handles and panels is the default import mode. It creates disabled handle co
 
 Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
 
-The current configuration uses schema 4 for expanded appearance and handle controls. Schemas 1 through 3 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+The current configuration uses schema 6 for brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
 
 Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
 
@@ -140,7 +160,7 @@ Field changes apply immediately to the current draft. Disk saves wait for 150 ms
 
 ## Battery and verification
 
-All handles share one accessibility service. Static windows schedule no idle frames. Hold recognition and swipe sequences use timestamps. Direct actions reuse the existing action executor without an additional service or observer. Panels own their event observers only while open. Icons load off the main thread with an 8 MiB bitmap cache.
+All handles share one accessibility service. Static windows schedule no idle frames. Hold recognition and swipe sequences use timestamps. Direct actions reuse the existing action executor. Panels own their event observers only while open. Brightness observes its two settings only while a restore value exists. Handle pauses use state updates without timers or polling. Icons load off the main thread with an 8 MiB bitmap cache.
 
 Optional panel auto-close uses one cancellable delay while a panel is open. It adds no polling, wake lock, periodic job, or idle frame loop.
 

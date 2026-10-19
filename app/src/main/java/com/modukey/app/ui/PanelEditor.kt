@@ -152,13 +152,14 @@ import kotlin.math.roundToInt
 @Composable fun PanelEditor(config: AppConfiguration, panel: SavedPanel, previewHandleId: String?, vm: NudgeViewModel, preview: (String?) -> Unit, previewEnabled: Boolean, setPreview: (Boolean) -> Unit, landscape: Boolean, selectOrientation: (Boolean) -> Unit) {
     val context = LocalContext.current
     val draft by vm.draft.collectAsStateWithLifecycle()
+    val saving by vm.savingEditor.collectAsStateWithLifecycle()
     val service by vm.status.collectAsStateWithLifecycle()
     var renaming by rememberSaveable(panel.id) { mutableStateOf(false) }
     var name by rememberSaveable(panel.id) { mutableStateOf("") }
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
             EditorHeader(context.panelLabel(panel), draft?.changed == true, R.string.rename_panel,
-                rename = { name = panel.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing) {
+                rename = { name = panel.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing, saving = saving) {
                 Icon(AppIcons.Apps, null, Modifier.size(28.dp))
             }
             OverlayPreviewToggle(previewEnabled, service.connected, setPreview)

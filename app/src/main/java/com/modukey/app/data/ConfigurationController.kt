@@ -71,11 +71,12 @@ class ConfigurationController(private val repository: ConfigurationRepository, p
         mutableDraft.value = current.copy(value = edit(current.value).copy(id = id).normalized())
         publishPreview()
     }
-    fun saveDraft() {
+    fun saveDraft(completed: ((Boolean) -> Unit)? = null) {
         val current = mutableDraft.value ?: return
         update(current::applyTo)
         cancelDraft()
-        flush()
+        debounce?.cancel(); debounce = null
+        scope.launch { val success = save(); completed?.invoke(success) }
     }
     fun cancelDraft() {
         mutableDraft.value = mutable.value?.let { mutableDraft.value?.baseline(it) }
@@ -92,12 +93,13 @@ class ConfigurationController(private val repository: ConfigurationRepository, p
         mutablePreview.value = configuration?.let { mutableDraft.value?.applyTo(it)?.normalized() ?: it }
     }
     fun flush() { debounce?.cancel(); debounce = null; scope.launch { save() } }
+    suspend fun flushNow(): Boolean { debounce?.cancel(); debounce = null; return save() }
     fun retry() { if (mutable.value == null) load() else flush() }
-    private suspend fun save() = saveLock.withLock {
-        val snapshot = mutable.value ?: return@withLock
-        if (savedRevision == revision) return@withLock
+    private suspend fun save(): Boolean = saveLock.withLock {
+        val snapshot = mutable.value ?: return@withLock false
+        if (savedRevision == revision) return@withLock true
         val writingRevision = revision
-        try { repository.write(snapshot); savedRevision = writingRevision; mutableError.value = null }
-        catch (_: IOException) { mutableError.value = ConfigurationError.SAVE }
+        try { repository.write(snapshot); savedRevision = writingRevision; mutableError.value = null; true }
+        catch (_: IOException) { mutableError.value = ConfigurationError.SAVE; false }
     }
 }

@@ -22,7 +22,8 @@ import com.modukey.app.ui.NudgeTheme
 import com.modukey.app.ui.PanelContent
 import kotlin.math.roundToInt
 
-data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT, val previewQuarterTurns: Int = 0)
+data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT, val previewQuarterTurns: Int = 0,
+    val handleId: String? = null)
 interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound() }
 enum class PanelDismissReason { BACK, OUTSIDE_TOUCH, WINDOW_DETACHED }
 
@@ -150,7 +151,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
             }
         } else stopObservers()
     }
-    override fun refreshSound() { active?.takeIf { !it.spec.editing }?.let { it.sound = actions.snapshot() } }
+    override fun refreshSound() { active?.takeIf { !it.spec.editing }?.let { it.sound = actions.snapshot().copy(ownerHandleId = it.spec.handleId) } }
     @SuppressLint("RtlHardcoded")
     private fun params(spec: PanelSpec) = WindowManager.LayoutParams(spec.geometry.bounds.width.roundToInt().coerceAtLeast(1),
         spec.geometry.bounds.height.roundToInt().coerceAtLeast(1), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,

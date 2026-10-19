@@ -9,6 +9,8 @@ try {
     $changes = & git -c $gitTrust status --porcelain
     if ($LASTEXITCODE -ne 0) { throw 'Cannot read Git status.' }
     if ($changes) { throw 'Commit source changes before building a release so its commit is reproducible.' }
+    $branch = & git -c $gitTrust branch --show-current
+    if ($LASTEXITCODE -ne 0 -or $branch -ne 'main') { throw 'Build the final signed release from clean main after the pull request is merged.' }
     $version = @{}
     Get-Content -LiteralPath 'version.properties' | ForEach-Object {
         if ($_ -match '^([^#=]+)=(.*)$') { $version[$matches[1].Trim()] = $matches[2].Trim() }

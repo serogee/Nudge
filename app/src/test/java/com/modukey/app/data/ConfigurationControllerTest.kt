@@ -37,6 +37,15 @@ class ConfigurationControllerTest {
         assertEquals(0, store.writes); c.flush(); runCurrent(); assertEquals(1, store.writes)
         assertEquals(c.state.value, store.disk.value)
     }
+    @Test fun `awaited saves report failure before shortcut publication and retain pending definitions`() = runTest {
+        val store = Store().apply { fail = true }; val c = ConfigurationController(store, backgroundScope); runCurrent()
+        val shortcut = HomeShortcut(name = "Dim", button = PanelButton(action = ButtonAction.BRIGHTNESS_DOWN))
+        c.update { it.copy(shortcuts = listOf(shortcut)) }
+        assertFalse(c.flushNow()); assertEquals(ConfigurationError.SAVE, c.error.value)
+        assertTrue(store.disk.value.shortcuts.isEmpty()); assertEquals(listOf(shortcut), c.state.value!!.shortcuts)
+        store.fail = false
+        assertTrue(c.flushNow()); assertEquals(listOf(shortcut), store.disk.value.shortcuts); assertNull(c.error.value)
+    }
     @Test fun `legacy modes map once without enabling other gestures`() {
         for (a in Activation.entries) {
             val old = TriggerSettings(enabled = true, activation = a, includePrereleases = true, indicatorVisible = true, excludedPackages = setOf("game"))

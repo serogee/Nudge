@@ -4,6 +4,7 @@ import android.media.AudioManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -81,9 +83,15 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
         ButtonAction.SILENT -> state.ringer == AudioManager.RINGER_MODE_SILENT
         ButtonAction.VIBRATE -> state.ringer == AudioManager.RINGER_MODE_VIBRATE
         ButtonAction.DND -> state.dnd
+        ButtonAction.BRIGHTNESS_MAXIMUM -> state.maximumBrightness
+        ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
+        ButtonAction.TOGGLE_HANDLES -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
+            state.handlesEnabled && targets.isNotEmpty() && targets.none { it in state.pausedHandleIds }
+        }
         else -> false
     }
-    val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND)
+    val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND,
+        ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.TOGGLE_HANDLES)
     val description = if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
     val shape = iconShape(panel)
     val container = if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_ICON) true else when (button.iconContainer) {
@@ -99,8 +107,9 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
     val behind = if (container) buttonBackground.compositeOver(panelBackground) else panelBackground
     val tint = if (panel.automaticIconColor) contrastOn(behind) else Color(panel.iconColor)
     Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(buttonBackground) else Modifier)
+        .then(if (isToggle && selected && (!container || !panel.automaticButtonColor)) Modifier.border(2.dp, tint, shape) else Modifier)
         .then(if (interactive && button.action != ButtonAction.EMPTY) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
-        .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics { contentDescription = description } else Modifier), contentAlignment = androidx.compose.ui.Alignment.Center) {
+        .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics { contentDescription = description; if (isToggle) this.selected = selected } else Modifier), contentAlignment = androidx.compose.ui.Alignment.Center) {
         if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH) ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape).alpha(panel.iconOpacity), tint, cell.value.toInt())
     }
 }
@@ -122,6 +131,13 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.INPUT_METHOD_PICKER -> Icon(AppIcons.Keyboard, null, modifier, tint = tint)
         ButtonAction.CLOSE_PANELS -> Icon(AppIcons.ClosePanels, null, modifier, tint = tint)
         ButtonAction.SCREENSHOT -> Icon(AppIcons.Screenshot, null, modifier, tint = tint)
+        ButtonAction.BRIGHTNESS_MAXIMUM -> Icon(AppIcons.BrightnessMaximum, null, modifier, tint = tint)
+        ButtonAction.BRIGHTNESS_MINIMUM -> Icon(AppIcons.BrightnessMinimum, null, modifier, tint = tint)
+        ButtonAction.TOGGLE_HANDLES -> Icon(AppIcons.Handle, null, modifier, tint = tint)
+        ButtonAction.NOTIFICATIONS -> Icon(AppIcons.Notifications, null, modifier, tint = tint)
+        ButtonAction.CONTROL_PANEL -> Icon(AppIcons.ControlPanel, null, modifier, tint = tint)
+        ButtonAction.BRIGHTNESS_UP -> Icon(AppIcons.BrightnessUp, null, modifier, tint = tint)
+        ButtonAction.BRIGHTNESS_DOWN -> Icon(AppIcons.BrightnessDown, null, modifier, tint = tint)
         else -> Canvas(modifier) {
             val u = size.minDimension / 24f
             fun p(x: Float, y: Float) = Offset(x * u, y * u)

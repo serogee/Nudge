@@ -23,7 +23,7 @@ class ThicknessConfigurationTest {
             val upgraded = ConfigurationCodec.upgrade(old.toString())
             assertEquals(expected, ConfigurationCodec.decode(upgraded))
             val json = JSONObject(upgraded)
-            assertEquals(5, json.getInt("schema"))
+            assertEquals(ConfigurationCodec.SCHEMA, json.getInt("schema"))
             val trigger = json.getJSONArray("handles").getJSONObject(0).getJSONObject("trigger")
             assertEquals(6.0, trigger.getDouble("indicatorThicknessDp"), 0.0)
             assertFalse(trigger.has("indicatorThickness"))
