@@ -25,7 +25,8 @@ interface ActionExecutor {
     fun snapshot(): SoundState
 }
 class PanelActions(private val service: AccessibilityService,
-    private val screenshot: () -> Boolean = { service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT) }) : ActionExecutor {
+    private val screenshot: () -> Boolean = { service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT) },
+    private val systemPanel: (Int) -> Boolean = { service.performGlobalAction(it) }) : ActionExecutor {
     private val app get() = service.application as NudgeApplication
     private val audio = service.getSystemService(AudioManager::class.java)
     private val notification = service.getSystemService(NotificationManager::class.java)
@@ -47,6 +48,9 @@ class PanelActions(private val service: AccessibilityService,
             ButtonAction.CLOSE_PANELS -> ActionResult(close = true)
             ButtonAction.SCREENSHOT -> if (screenshot()) ActionResult(close = true)
                 else ActionResult(message = R.string.screenshot_failed, succeeded = false)
+            ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL ->
+                if (systemPanel(if (button.action == ButtonAction.NOTIFICATIONS) AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS else AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)) ActionResult(close = true)
+                else ActionResult(message = R.string.native_panel_failed, succeeded = false)
             ButtonAction.PHONE_SETTINGS, ButtonAction.NUDGE_SETTINGS, ButtonAction.OPEN_APP, ButtonAction.INPUT_METHOD_PICKER -> {
                 if (button.action == ButtonAction.INPUT_METHOD_PICKER && !service.packageManager.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS))
                     ActionResult(message = R.string.input_method_picker_failed, succeeded = false)

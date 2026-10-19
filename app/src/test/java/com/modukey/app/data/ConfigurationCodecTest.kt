@@ -11,7 +11,8 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationCodecTest {
     @Test fun `new actions and per-button handle scopes survive backup duplication and schema five upgrade`() {
-        val buttons = listOf(PanelButton(action = ButtonAction.BRIGHTNESS_MAXIMUM), PanelButton(action = ButtonAction.BRIGHTNESS_MINIMUM)) +
+        val buttons = listOf(PanelButton(action = ButtonAction.BRIGHTNESS_MAXIMUM), PanelButton(action = ButtonAction.BRIGHTNESS_MINIMUM),
+            PanelButton(action = ButtonAction.NOTIFICATIONS), PanelButton(action = ButtonAction.CONTROL_PANEL)) +
             HandleToggleScope.entries.map { PanelButton(action = ButtonAction.TOGGLE_HANDLES, handleScope = it) }
         val panel = SavedPanel(settings = PanelConfig(buttons = buttons))
         val handle = HandleConfig(bindings = mapOf(GestureSlot.HOLD to GestureTarget.direct(buttons.last().copy(id = newId()))))

@@ -134,6 +134,8 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.BRIGHTNESS_MAXIMUM -> Icon(AppIcons.BrightnessMaximum, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_MINIMUM -> Icon(AppIcons.BrightnessMinimum, null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLES -> Icon(AppIcons.Handle, null, modifier, tint = tint)
+        ButtonAction.NOTIFICATIONS -> Icon(AppIcons.Notifications, null, modifier, tint = tint)
+        ButtonAction.CONTROL_PANEL -> Icon(AppIcons.ControlPanel, null, modifier, tint = tint)
         else -> Canvas(modifier) {
             val u = size.minDimension / 24f
             fun p(x: Float, y: Float) = Offset(x * u, y * u)

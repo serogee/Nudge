@@ -54,12 +54,14 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var handleBounds = emptyMap<String, Bounds>()
     private var actions: ActionExecutor? = null
     private var screenshots: NativeScreenshotRequest? = null
+    private var systemPanels: NativeSystemPanelRequest? = null
     private val sessions = GestureSessions()
     private val errors = mutableMapOf<String, String>()
     private val frame = Choreographer.FrameCallback { frames?.onFrame() }
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             screenshots?.cancel()
+            systemPanels?.cancel()
             views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.SCREEN_STATE)
             clearPanelWindows()
             if (intent?.action == Intent.ACTION_SCREEN_OFF) app.unlocks.clear()
@@ -75,10 +77,15 @@ class EdgeAccessibilityService : AccessibilityService() {
         frames = FrameCoalescer({ choreographer.postFrameCallback(frame) }, { choreographer.removeFrameCallback(frame) }, ::refresh)
         screenshots = NativeScreenshotRequest(choreographer,
             { scope != null && getSystemService(PowerManager::class.java).isInteractive },
-            { dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
+            { systemPanels?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
             { performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT) },
             { app.diagnostics.record("Screenshot request failed"); Toast.makeText(this, R.string.screenshot_failed, Toast.LENGTH_SHORT).show() })
-        actions = PanelActions(this) { screenshots?.request() == true }
+        systemPanels = NativeSystemPanelRequest(choreographer,
+            { scope != null && getSystemService(PowerManager::class.java).isInteractive },
+            { screenshots?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
+            { performGlobalAction(it) },
+            { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
+        actions = PanelActions(this, screenshot = { screenshots?.request() == true }, systemPanel = { systemPanels?.request(it) == true })
         panelTimeout = PanelTimeout(requireNotNull(scope)) { dismissPanel(PanelCloseReason.TIMEOUT); refresh() }
         panelHost = AccessibilityPanelHost(this, manager, actions!!, { reason -> dismissPanel(when (reason) {
             PanelDismissReason.BACK -> PanelCloseReason.BACK
@@ -103,7 +110,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
-            scope?.launch { app.editor.state.collect { screenshots?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
+            scope?.launch { app.editor.state.collect { screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
                 val selection = app.editor.state.value
                 if (selection?.preview == true && selection.matches(request.handleId, request.panelId) && app.configuration.preview.value?.panel(request.panelId) != null) {
@@ -313,6 +320,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private fun stopSession() {
         screenshots?.cancel(); screenshots = null
+        systemPanels?.cancel(); systemPanels = null
         dismissPanel(PanelCloseReason.SERVICE_STOPPED)
         panelTimeout?.stop(); panelTimeout = null
         frames?.stop(); frames = null; scope?.cancel(); scope = null

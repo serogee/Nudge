@@ -36,7 +36,8 @@ class PanelUtilityRuntimeTest {
         var beforeCapture: () -> Unit = {}
         @Implementation override fun performGlobalAction(action: Int): Boolean {
             requests += action
-            if (action == AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT) beforeCapture()
+            if (action in setOf(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT, AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS,
+                AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)) beforeCapture()
             return supported
         }
     }
@@ -63,11 +64,14 @@ class PanelUtilityRuntimeTest {
         shadowOf(service.getSystemService(PowerManager::class.java)).setIsInteractive(true)
         shadowOf(service.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
         await { app.configuration.state.value != null }
-        val panel = SavedPanel(settings = PanelConfig(buttons = listOf(PanelButton(action = ButtonAction.CLOSE_PANELS), PanelButton(action = ButtonAction.SCREENSHOT))))
+        val panel = SavedPanel(settings = PanelConfig(buttons = listOf(PanelButton(action = ButtonAction.CLOSE_PANELS), PanelButton(action = ButtonAction.SCREENSHOT),
+            PanelButton(action = ButtonAction.NOTIFICATIONS), PanelButton(action = ButtonAction.CONTROL_PANEL))))
         val next = SavedPanel()
         val owner = HandleConfig(enabled = true, bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.panel(panel.id),
             GestureSlot.SWIPE_2 to GestureTarget.direct(PanelButton(action = ButtonAction.CLOSE_PANELS)), GestureSlot.SWIPE_3 to GestureTarget.panel(next.id),
-            GestureSlot.HOLD to GestureTarget.direct(PanelButton(action = ButtonAction.SCREENSHOT))))
+            GestureSlot.HOLD to GestureTarget.direct(PanelButton(action = ButtonAction.SCREENSHOT)),
+            GestureSlot.TAP to GestureTarget.direct(PanelButton(action = ButtonAction.NOTIFICATIONS)),
+            GestureSlot.SWIPE_HOLD to GestureTarget.direct(PanelButton(action = ButtonAction.CONTROL_PANEL))))
         val other = HandleConfig(enabled = true, bindings = mapOf(GestureSlot.TAP to GestureTarget.direct(PanelButton(action = ButtonAction.CLOSE_PANELS))))
         app.configuration.update { AppConfiguration(enabled = true, handles = listOf(owner, other), panels = listOf(panel, next)) }
         ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
@@ -117,5 +121,24 @@ class PanelUtilityRuntimeTest {
         f.service.onDestroy(); idle()
         assertEquals(1, f.actions.requests.size)
         assertFalse(app.status.state.value.connected)
+    }
+    @Test fun `native shades work from buttons and direct gestures after removing the Nudge panel`() {
+        val f = fixture()
+        f.actions.beforeCapture = { assertNull(f.host.spec); assertNull(app.status.state.value.panelId) }
+        for ((action, kind, native) in listOf(
+            Triple(ButtonAction.NOTIFICATIONS, GestureKind.TAP, AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS),
+            Triple(ButtonAction.CONTROL_PANEL, GestureKind.SWIPE_HOLD, AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS))) {
+            gesture(f); button(f, action); assertNull(f.host.spec)
+            val before = f.actions.requests.size
+            idle(); assertEquals(before + 1, f.actions.requests.size); assertEquals(native, f.actions.requests.last())
+            gesture(f); gesture(f, kind = kind); assertNull(f.host.spec)
+            idle(); assertEquals(before + 2, f.actions.requests.size); assertEquals(native, f.actions.requests.last())
+        }
+        f.actions.supported = false
+        gesture(f, kind = GestureKind.TAP); idle()
+        assertEquals(app.getString(R.string.native_panel_failed), ShadowToast.getTextOfLatestToast())
+        val count = f.actions.requests.size
+        gesture(f, kind = GestureKind.TAP); f.service.onDestroy(); idle()
+        assertEquals(count, f.actions.requests.size)
     }
 }

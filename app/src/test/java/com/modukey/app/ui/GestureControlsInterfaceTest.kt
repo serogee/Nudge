@@ -128,7 +128,8 @@ class GestureControlsInterfaceTest {
     }
     @Test fun `utility actions can be selected directly and survive a configuration backup`() {
         val app = ready()
-        val buttons = listOf(PanelButton(action = ButtonAction.CLOSE_PANELS), PanelButton(action = ButtonAction.SCREENSHOT))
+        val buttons = listOf(PanelButton(action = ButtonAction.CLOSE_PANELS), PanelButton(action = ButtonAction.SCREENSHOT),
+            PanelButton(action = ButtonAction.NOTIFICATIONS), PanelButton(action = ButtonAction.CONTROL_PANEL))
         rule.runOnIdle { app.configuration.update { it.copy(panels = listOf(SavedPanel(settings = PanelConfig(buttons = buttons)))) } }
         editGestures()
         rule.onNodeWithText("Volume popup").performScrollTo().performClick()
@@ -141,10 +142,19 @@ class GestureControlsInterfaceTest {
         rule.onNode(hasScrollToIndexAction()).performScrollToIndex(ButtonAction.SCREENSHOT.ordinal)
         rule.onNodeWithText("Screenshot").performClick()
         rule.onNodeWithText("Save").performClick()
+        var previous = "Screenshot"
+        for (action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) {
+            rule.onNodeWithText("Action: $previous + volume popup").performClick()
+            rule.onNode(hasText("Action: $previous") and hasAnyAncestor(isDialog())).performClick()
+            rule.onNode(hasScrollToIndexAction()).performScrollToIndex(action.ordinal)
+            previous = rule.activity.getString(label(action))
+            rule.onNodeWithText(previous).performClick()
+            rule.onNodeWithText("Save").performClick()
+        }
         rule.onNodeWithContentDescription("Save").performClick()
         rule.runOnIdle {
             val saved = app.configuration.state.value!!
-            assertEquals(ButtonAction.SCREENSHOT, saved.handles.single().target(GestureSlot.SWIPE_1).action!!.action)
+            assertEquals(ButtonAction.CONTROL_PANEL, saved.handles.single().target(GestureSlot.SWIPE_1).action!!.action)
             assertEquals(buttons, saved.panels.single().settings.buttons)
             assertEquals(saved, com.modukey.app.data.ConfigurationCodec.decode(com.modukey.app.data.ConfigurationCodec.encode(saved)))
         }
