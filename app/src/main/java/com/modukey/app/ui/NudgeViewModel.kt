@@ -43,6 +43,10 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     private var appLoad: Job? = null
     private val updateChecker = UpdateChecker(GitHubReleaseSource(), BuildConfig.VERSION_NAME, viewModelScope)
     val updates = updateChecker.state
+    private val downloadBackend = AndroidApkDownloadBackend(app)
+    private val downloadController = ApkDownloadController(downloadBackend, viewModelScope)
+    val apkDownload = downloadController.state
+    val preparingUpdate = MutableStateFlow(false)
     private val permissionObserver = object : ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange: Boolean) = refreshPermissions() }
     init {
         app.contentResolver.registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES), false, permissionObserver)
@@ -92,6 +96,24 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         policyAccess.value = app.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
     }
     fun checkForUpdates() = updateChecker.check(configuration.value?.includePrereleases ?: false)
+    fun downloadApk(release: PublishedRelease) { release.apkUrl?.let { downloadController.download(ApkTarget(release.tag, it)) } }
+    fun retryApkDownload() = downloadController.retry()
+    fun cancelApkDownload() { downloadController.cancel() }
+    suspend fun observeApkDownload() = downloadController.observe()
+    fun installUpdate(expectedUrl: String, launch: (Intent) -> Unit) {
+        if (preparingUpdate.value) return
+        preparingUpdate.value = true
+        viewModelScope.launch {
+            try {
+                val record = downloadController.prepareInstall() ?: return@launch
+                if (record.target.url != expectedUrl) { tell(R.string.apk_download_changed); return@launch }
+                val intent = withContext(Dispatchers.IO) { downloadBackend.installIntent(record) }
+                launch(intent)
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { tell(R.string.apk_install_failed) }
+            finally { preparingUpdate.value = false }
+        }
+    }
     fun setIncludePrereleases(value: Boolean) {
         if (configuration.value?.includePrereleases == value) return
         updateChecker.clear(); edit { it.copy(includePrereleases = value) }; flush()
