@@ -22,6 +22,10 @@ object AppIcons {
     val Duplicate = icon("Duplicate") { moveTo(9f,8f); lineTo(21f,8f); lineTo(21f,21f); lineTo(9f,21f); close(); moveTo(15f,4f); lineTo(3f,4f); lineTo(3f,17f); moveTo(12f,14f); lineTo(18f,14f); moveTo(15f,11f); lineTo(15f,17f) }
     val Reset = icon("Reset") { moveTo(4f,10f); curveTo(5f,1f,20f,1f,20f,12f); curveTo(20f,21f,7f,23f,4f,15f); moveTo(4f,4f); lineTo(4f,10f); lineTo(10f,10f) }
     val Handle = icon("Handle") { moveTo(6f,3f); lineTo(18f,3f); curveTo(20f,3f,21f,4f,21f,6f); lineTo(21f,18f); curveTo(21f,20f,20f,21f,18f,21f); lineTo(6f,21f); curveTo(4f,21f,3f,20f,3f,18f); lineTo(3f,6f); curveTo(3f,4f,4f,3f,6f,3f); moveTo(18f,9f); lineTo(18f,15f) }
+    val HandleVisibility = icon("Handle visibility") {
+        moveTo(2f,12f); curveTo(7f,3f,17f,3f,22f,12f); curveTo(17f,21f,7f,21f,2f,12f); close()
+        moveTo(15f,12f); curveTo(15f,16f,9f,16f,9f,12f); curveTo(9f,8f,15f,8f,15f,12f)
+    }
     val Drag = icon("Drag") { for(x in listOf(9f,15f)) for(y in listOf(5f,12f,19f)) { moveTo(x,y); lineTo(x+.1f,y) } }
     val ChevronUp = icon("Collapse") { moveTo(6f,15f); lineTo(12f,9f); lineTo(18f,15f) }
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
