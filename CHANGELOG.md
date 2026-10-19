@@ -16,6 +16,7 @@
 
 ### Fixed
 
+- Scroll global handle controls with the list to keep editing reachable on small displays. Retain drag reordering across the header.
 - Keep the editor title container at the same height when Cancel and Save appear.
 - Use the public brightness scale and retain owned min/max states. Restore the prior level and mode on a second tap.
 - Clear preset active states after manual brightness changes, including unchanged endpoints and quick drags back to a limit. Protect restore values during Nudge's own writes.
