@@ -1,0 +1,46 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector android:width="432dp" android:height="432dp" android:viewportWidth="108" android:viewportHeight="108">
+            <!-- Keep the rounded container inside Android's circular splash safe area. -->
+            <group android:translateX="27" android:translateY="27" android:scaleX="0.5" android:scaleY="0.5">
+                <path android:fillColor="#DDF6A5" android:pathData="M30,0H78A30,30 0,0 1,108 30V78A30,30 0,0 1,78 108H30A30,30 0,0 1,0 78V30A30,30 0,0 1,30 0Z" />
+                <group android:name="left_position">
+                    <path android:name="left_pill" android:fillColor="@android:color/transparent" android:strokeColor="#20251C"
+                        android:strokeWidth="14" android:strokeLineCap="round" android:trimPathStart="0.5" android:trimPathEnd="0.5"
+                        android:pathData="M34,44.25L34,63.75" />
+                </group>
+                <group android:name="middle_position" android:pivotX="55.5" android:pivotY="54.65">
+                    <path android:name="middle_pill" android:fillColor="@android:color/transparent" android:strokeColor="#20251C"
+                        android:strokeWidth="14" android:strokeLineCap="round" android:trimPathStart="0.5" android:trimPathEnd="0.5"
+                        android:pathData="M55.5,24.7418L55.5,84.5582" />
+                </group>
+                <group android:name="right_position">
+                    <path android:name="right_pill" android:fillColor="@android:color/transparent" android:strokeColor="#20251C"
+                        android:strokeWidth="14" android:strokeLineCap="round" android:trimPathStart="0.5" android:trimPathEnd="0.5"
+                        android:pathData="M74,44L74,64" />
+                </group>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="left_pill"><aapt:attr name="android:animation"><set>
+        <objectAnimator android:propertyName="trimPathStart" android:valueFrom="0.5" android:valueTo="0" android:valueType="floatType" android:duration="260" />
+        <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0.5" android:valueTo="1" android:valueType="floatType" android:duration="260" />
+    </set></aapt:attr></target>
+    <target android:name="right_pill"><aapt:attr name="android:animation"><set>
+        <objectAnimator android:propertyName="trimPathStart" android:valueFrom="0.5" android:valueTo="0" android:valueType="floatType" android:duration="260" />
+        <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0.5" android:valueTo="1" android:valueType="floatType" android:duration="260" />
+    </set></aapt:attr></target>
+    <target android:name="middle_pill"><aapt:attr name="android:animation"><set>
+        <objectAnimator android:propertyName="trimPathStart" android:valueFrom="0.5" android:valueTo="0" android:valueType="floatType" android:startOffset="120" android:duration="260" />
+        <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0.5" android:valueTo="1" android:valueType="floatType" android:startOffset="120" android:duration="260" />
+    </set></aapt:attr></target>
+    <target android:name="left_position"><aapt:attr name="android:animation">
+        <objectAnimator android:propertyName="translateY" android:valueFrom="0" android:valueTo="11.4" android:valueType="floatType" android:startOffset="250" android:duration="350" android:interpolator="@android:interpolator/fast_out_slow_in" />
+    </aapt:attr></target>
+    <target android:name="right_position"><aapt:attr name="android:animation">
+        <objectAnimator android:propertyName="translateY" android:valueFrom="0" android:valueTo="-14.15" android:valueType="floatType" android:startOffset="250" android:duration="350" android:interpolator="@android:interpolator/fast_out_slow_in" />
+    </aapt:attr></target>
+    <target android:name="middle_position"><aapt:attr name="android:animation">
+        <objectAnimator android:propertyName="rotation" android:valueFrom="0" android:valueTo="-38.211025" android:valueType="floatType" android:startOffset="320" android:duration="280" android:interpolator="@android:interpolator/fast_out_slow_in" />
+    </aapt:attr></target>
+</animated-vector>
