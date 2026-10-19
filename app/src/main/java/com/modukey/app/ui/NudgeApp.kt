@@ -134,7 +134,7 @@ import com.modukey.app.platform.*
     }
     val policy by vm.policyAccess.collectAsStateWithLifecycle()
     val policyActions = setOf(ButtonAction.DND, ButtonAction.SILENT, ButtonAction.VIBRATE)
-    val needsPolicy = config.panels.any { p -> p.settings.buttons.any { it.action in policyActions } } ||
+    val needsPolicy = config.shortcuts.any { it.button.action in policyActions } || config.panels.any { p -> p.settings.buttons.any { it.action in policyActions } } ||
         config.handles.any { h -> h.bindings.values.any { it.action?.action in policyActions } }
     Section(R.string.app_settings) {
         Toggle(R.string.enable_gestures, R.string.master_help, config.enabled, default = false) { value -> vm.edit { it.copy(enabled = value) }; vm.flush() }
@@ -161,6 +161,7 @@ import com.modukey.app.platform.*
         }
     }
     BrightnessPopupSettingsSection(config, vm)
+    HomeShortcutsSection(config, vm)
     Help(R.string.touch_help)
     HyperOsSetup(vm, openSettings)
 }

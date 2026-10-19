@@ -32,6 +32,11 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val status = app.status.state
     val pausedHandles = app.handlePauses.state
     fun resumeHandles() = app.handlePauses.clear()
+    private val launcherShortcuts = PinnedShortcuts(app, app.icons)
+    val shortcutSupported = MutableStateFlow<Boolean?>(null)
+    val pinnedShortcuts = MutableStateFlow<Set<String>>(emptySet())
+    val shortcutBusy = MutableStateFlow(false)
+    private var shortcutRefresh: Job? = null
     val accessibilityEnabled = MutableStateFlow(false)
     val policyAccess = MutableStateFlow(false)
     val launchableApps = MutableStateFlow<List<LaunchableApp>>(emptyList())
@@ -107,7 +112,46 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun testPanel(id: String, previewHandleId: String?) {
         if (status.value.connected) app.editor.test(PanelTestRequest(id, previewHandleId)) else tell(R.string.preview_unavailable)
     }
+    fun refreshShortcuts() {
+        shortcutRefresh?.cancel()
+        shortcutRefresh = viewModelScope.launch { shortcutSupported.value = launcherShortcuts.supported(); pinnedShortcuts.value = launcherShortcuts.pinned() }
+    }
+    fun pinShortcut(shortcut: HomeShortcut) {
+        if (shortcutBusy.value) return
+        shortcutBusy.value = true
+        viewModelScope.launch {
+            try {
+                if (!launcherShortcuts.supported()) { shortcutSupported.value = false; tell(R.string.shortcut_unsupported); return@launch }
+                val config = app.configuration.state.value ?: return@launch
+                if (!shortcut.available(config)) { tell(R.string.shortcut_missing); return@launch }
+                val stored = config.shortcuts.firstOrNull { it.id == shortcut.id }
+                if (stored != null && stored != shortcut) { tell(R.string.shortcut_missing); return@launch }
+                if (stored == null) edit { it.copy(shortcuts = it.shortcuts + shortcut) }
+                if (!app.configuration.flushNow()) { tell(R.string.save_failed); return@launch }
+                if (app.configuration.state.value?.shortcuts?.firstOrNull { it.id == shortcut.id } != shortcut) { tell(R.string.shortcut_missing); return@launch }
+                val label = shortcut.name.ifBlank { app.buttonLabel(shortcut.button) }
+                tell(if (launcherShortcuts.pin(shortcut, label)) R.string.shortcut_requested else R.string.shortcut_failed)
+                refreshShortcuts()
+            } catch (e: CancellationException) { throw e }
+            catch (_: RuntimeException) { tell(R.string.shortcut_failed) }
+            finally { shortcutBusy.value = false }
+        }
+    }
+    fun removeShortcut(id: String) {
+        if (shortcutBusy.value) return
+        shortcutBusy.value = true
+        viewModelScope.launch {
+            try {
+                edit { it.copy(shortcuts = it.shortcuts.filterNot { shortcut -> shortcut.id == id }) }
+                if (!app.configuration.flushNow()) { tell(R.string.save_failed); return@launch }
+                launcherShortcuts.disable(id); refreshShortcuts(); tell(R.string.shortcut_removed)
+            } catch (e: CancellationException) { throw e }
+            catch (_: RuntimeException) { tell(R.string.shortcut_failed) }
+            finally { shortcutBusy.value = false }
+        }
+    }
     fun refreshPermissions() {
+        refreshShortcuts()
         accessibilityEnabled.value = AccessibilityPermission.enabled(app)
         policyAccess.value = app.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
     }
