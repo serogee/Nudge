@@ -48,10 +48,12 @@ class EditorSaveInterfaceTest {
 
     @Test fun `paired header actions show feedback and restore rename while keeping the editor open`() {
         val app = ready(); openHandle()
+        val headerHeight = rule.onNodeWithTag("editor-header").fetchSemanticsNode().boundsInRoot.height
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
         val cancel = rule.onNodeWithContentDescription("Cancel").fetchSemanticsNode().boundsInRoot
         val save = rule.onNodeWithContentDescription("Save").fetchSemanticsNode().boundsInRoot
         assertTrue(cancel.right < save.left)
+        assertEquals(headerHeight, rule.onNodeWithTag("editor-header").fetchSemanticsNode().boundsInRoot.height)
         rule.onNodeWithContentDescription("Cancel").performClick()
         rule.runOnIdle { assertEquals(rule.activity.getString(R.string.changes_cancelled), ShadowToast.getTextOfLatestToast()) }
         rule.onNodeWithContentDescription("Rename handle").assertIsDisplayed()
