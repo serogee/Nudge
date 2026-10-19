@@ -459,4 +459,12 @@
     <string name="select_handle">Select handle</string>
     <string name="import_shortcut_summary">Shortcuts: %1$d</string>
     <string name="import_shortcut_help">Replace also imports brightness slider settings and shortcut definitions. It does not add icons to your Home screen.</string>
+    <string name="brightness_automatic">Automatic brightness</string>
+    <string name="brightness_automatic_short">A</string>
+    <string name="brightness_automatic_action_help">Turn automatic brightness on or off. The phone controls brightness when this is on.</string>
+    <string name="slider_center_from_bottom">Vertical center from bottom</string>
+    <string name="slider_show_background">Show slider background</string>
+    <string name="slider_background_help">Turn this off to fill the slider width without an outer background.</string>
+    <string name="slider_show_automatic">Show automatic brightness toggle</string>
+    <string name="slider_automatic_help">Show the Automatic brightness button below the slider.</string>
 </resources>

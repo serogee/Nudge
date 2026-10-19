@@ -35,6 +35,11 @@ object AppIcons {
         moveTo(3f,6f); lineTo(8f,6f); moveTo(13f,6f); lineTo(21f,6f); moveTo(8f,3f); lineTo(8f,9f); lineTo(13f,9f); lineTo(13f,3f); close()
         moveTo(3f,18f); lineTo(12f,18f); moveTo(17f,18f); lineTo(21f,18f); moveTo(12f,15f); lineTo(12f,21f); lineTo(17f,21f); lineTo(17f,15f); close()
     }
+    val BrightnessAutomatic = icon("Automatic brightness") {
+        moveTo(3f,9f); lineTo(3f,3f); lineTo(9f,3f); moveTo(15f,3f); lineTo(21f,3f); lineTo(21f,9f)
+        moveTo(21f,15f); lineTo(21f,21f); lineTo(15f,21f); moveTo(9f,21f); lineTo(3f,21f); lineTo(3f,15f)
+        moveTo(8f,17f); lineTo(12f,7f); lineTo(16f,17f); moveTo(10f,13f); lineTo(14f,13f)
+    }
     val BrightnessMaximum = icon("Maximum brightness") {
         moveTo(17f,12f); curveTo(17f,19f,7f,19f,7f,12f); curveTo(7f,5f,17f,5f,17f,12f)
         moveTo(12f,2f); lineTo(12f,4f); moveTo(12f,20f); lineTo(12f,22f)
