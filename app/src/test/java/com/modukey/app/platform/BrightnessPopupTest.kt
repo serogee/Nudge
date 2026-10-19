@@ -68,13 +68,15 @@ class BrightnessPopupTest {
     @Test fun automaticButtonIsSeparateFromSliderInputAndHiddenInSettings() {
         var automatic = 0
         val writes = mutableListOf<Float>()
-        val root = BrightnessPopupView(app, writes::add, {}, {}, { automatic++ })
+        val touches = mutableListOf<Boolean>()
+        val root = BrightnessPopupView(app, writes::add, touches::add, {}, { automatic++ })
         root.configure(BrightnessPopupSettings(), false, .5f, true)
         root.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(296, View.MeasureSpec.EXACTLY))
         root.layout(0, 0, 64, 296)
         val mode = root.getChildAt(1) as ToggleButton
         assertTrue(mode.isChecked); assertEquals(48, mode.height)
         mode.performClick(); assertEquals(1, automatic); assertTrue(writes.isEmpty())
+        assertEquals(listOf(true, false), touches)
         root.configure(BrightnessPopupSettings(), true, .5f, false)
         assertFalse(mode.isEnabled)
         root.configure(BrightnessPopupSettings(showAutomaticToggle = false), false, .5f)
@@ -97,6 +99,24 @@ class BrightnessPopupTest {
         assertEquals(base.fill.toInt(), image(base.copy(showBackground = false)).getPixel(1, 180))
         assertEquals(255, Color.alpha(image(base).getPixel(0, 0)))
         assertEquals(0, Color.alpha(image(base.copy(cornerRadiusDp = 32f)).getPixel(0, 0)))
+    }
+    @Test fun aSmallDragUsesTheActualFullWidthTrackHeight() {
+        val writes = mutableListOf<Float>()
+        val view = BrightnessPopupView(app, writes::add, {}, {})
+        view.configure(BrightnessPopupSettings(showBackground = false, showAutomaticToggle = false), false, .5f)
+        view.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, 64, 240)
+        listOf(MotionEvent.ACTION_DOWN to 120f, MotionEvent.ACTION_MOVE to 96f, MotionEvent.ACTION_UP to 96f).forEach { (action, y) ->
+            event(action, y).let { view.dispatchTouchEvent(it); it.recycle() }
+        }
+        assertEquals(1, writes.size); assertEquals(.6f, writes.single(), .001f)
+    }
+    @Test fun outsideTouchBelowTheModeButtonStillClosesThePopup() {
+        var dismissed = 0
+        val view = BrightnessPopupView(app, {}, {}, { dismissed++ })
+        view.layout(0, 0, 64, 296); view.configure(BrightnessPopupSettings(), false, .5f)
+        event(MotionEvent.ACTION_OUTSIDE, 500f).let { assertTrue(view.onTouchEvent(it)); it.recycle() }
+        assertEquals(1, dismissed)
     }
     @Test fun oldPreviewOwnerCannotClearReplacementSession() {
         val preview = BrightnessPreview(); val old = Any(); val current = Any()

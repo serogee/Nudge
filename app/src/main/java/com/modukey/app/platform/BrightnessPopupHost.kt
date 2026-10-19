@@ -109,7 +109,7 @@ internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
             }
             false
         }
-        setOnClickListener { automatic() }
+        setOnClickListener { touching(true); automatic(); touching(false) }
     }
     private var settings = BrightnessPopupSettings()
     private var buttonStyle: BrightnessPopupSettings? = null
@@ -160,7 +160,7 @@ internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
             mode.layout(x, height - size, x + size, height)
         }
     }
-    override fun onTouchEvent(event: MotionEvent): Boolean = if (event.y <= slider.bottom) slider.onTouchEvent(event) else false
+    override fun onTouchEvent(event: MotionEvent): Boolean = if (event.actionMasked == MotionEvent.ACTION_OUTSIDE || event.y <= slider.bottom) slider.onTouchEvent(event) else false
     fun cancelInput() { slider.cancelInput(); if (mode.isPressed) touching(false); mode.isPressed = false }
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = slider.onKeyUp(keyCode, event)
 }
