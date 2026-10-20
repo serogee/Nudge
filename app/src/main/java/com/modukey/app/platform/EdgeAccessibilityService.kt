@@ -103,7 +103,9 @@ class EdgeAccessibilityService : AccessibilityService() {
             { x, y -> handleBounds.values.any { it.contains(x, y) } }, ::runButton, { panelTimeout?.touch(it) }, { error ->
                 app.diagnostics.record("Panel cleanup failed", error); errors["panel"] = getString(R.string.overlay_error); frames?.request()
             })
-        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }, { frames?.request() }) { view ->
+        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }, { frames?.request() }, { error ->
+            app.diagnostics.record("Handle handoff cleanup failed", error)
+        }) { view ->
             if (view == null) views.remove(id) else views[id] = view
         } }
         try {
