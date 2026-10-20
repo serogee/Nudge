@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- Group all gesture selectors above their categorized settings.
+- Use three columns in the panel button selector.
+- Replace timing sliders with numeric inputs that show minimum and maximum values.
+- Increase maximum gesture haptic strength while keeping low strengths brief.
+
+### Fixed
+
+- Apply pull and return feedback to visible handles during swipes and held swipes.
+- Restore regular fade, slide-and-fade, and scale-slide-and-fade panel transitions.
+
 ## 0.4.1 - 2026-10-19
 
 ### Added

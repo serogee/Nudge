@@ -32,6 +32,8 @@ Both previews use the selected Portrait or Landscape tab. On an upright phone, a
 
 ## Gestures
 
+All six gesture selectors are in the top section. Distance, timing, and feedback controls stay in their separate settings categories.
+
 Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. The dialog's Save updates the editor draft. Cancel keeps the existing draft assignment.
 
 Panel choices show a four-square icon and the prefix Panel:. Direct actions show the same icon and the prefix Action:. Panel options have separate rows with space between them. Action names stay centered when they wrap.
@@ -61,15 +63,19 @@ Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Each hold 
 
 Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
 
-Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+Timing controls use numeric inputs in milliseconds. Each input shows its minimum and maximum. Valid entries update the draft immediately. Finishing an out-of-range entry applies the nearest limit. An empty or oversized entry restores the last valid value. Reset restores that control's default. These inputs also cover handle hiding, panel closing, and brightness popup closing.
 
-Pulling a panel shifts a non-interactive preview slightly inward, up to 12 dp. The preview stays in place during a hold. Releasing a completed gesture opens the assigned panel and settles it over 180 ms. An immediate swipe-and-hold action keeps its panel suspended until release. Preview buttons do not execute actions. Disabled system animations skip the motion.
+Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Maximum strength uses a 140 ms pulse at full available amplitude. Low strengths remain brief. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+
+Swiping bends the visible handle slightly inward. It stays pulled during a hold and returns over 180 ms after release. The touch area stays fixed. Hidden handles and disabled system animations skip this feedback. Panels use their selected opening and closing animations. Opening a panel preserves captured handle input and its return animation before raising handles above the panel.
 
 A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
 After Volume popup alone or a direct action, the next swipe advances only within Swipe sequence timeout, which defaults to 3 seconds. The existing saved timeout is retained. A combined assignment keeps the sequence active while its Nudge panel is open. Timing uses an expiry timestamp, not an idle timer or popup observation. Tap, Hold, and Swipe and hold reset ordinary swipe progression. Failed direct actions reset progression.
 
 ## Independent panels
+
+The button action selector uses three columns. Action names remain centered when they wrap.
 
 Open **Panels** to create, name, order, duplicate, edit, or delete panels. A new configuration has no panels. There are no fixed panel slots. Panels have their own editor and can be shared by several handles.
 
