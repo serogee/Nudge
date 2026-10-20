@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,22 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold); content()
+        }
+    }
+}
+@Composable fun CollapsibleSection(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
+    val label = t(title)
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            val description = t(if (expanded) R.string.collapse_section else R.string.expand_section, label)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, description, Modifier.size(20.dp))
+                }
+            }
+            if (expanded) content()
         }
     }
 }

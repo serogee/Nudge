@@ -14,27 +14,27 @@ import kotlin.math.roundToInt
     Section(R.string.gestures) {
         GestureSlot.entries.forEach { binding(it) }
     }
-    Section(R.string.swipe_settings) {
+    CollapsibleSection(R.string.swipe_settings) {
         SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = v) } }
         DurationInput(R.string.swipe_time, s.swipeTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v) } }
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }
     }
-    Section(R.string.swipe_hold_settings) {
+    CollapsibleSection(R.string.swipe_hold_settings) {
         SettingSlider(R.string.swipe_hold_distance, s.swipeHoldDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeHoldDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceDp = v) } }
         DurationInput(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v) } }
         DurationInput(R.string.swipe_hold_time, s.swipeHoldTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v) } }
         OptionRow(t(R.string.execute_hold), HoldExecution.entries, s.swipeHoldExecution, HoldExecution.ON_RELEASE) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldExecution = v) } }
         GestureFeedbackControls(R.string.swipe_hold_feedback, s.swipeHoldFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldFeedback = v) } }
     }
-    Section(R.string.hold_settings) {
+    CollapsibleSection(R.string.hold_settings) {
         DurationInput(R.string.hold_time, s.holdTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(holdTimeMs = v) } }
         OptionRow(t(R.string.execute_hold), HoldExecution.entries, s.holdExecution, HoldExecution.ON_RELEASE) { v -> vm.editTrigger(h.id) { it.copy(holdExecution = v) } }
         GestureFeedbackControls(R.string.hold_feedback, s.holdFeedback) { v -> vm.editTrigger(h.id) { it.copy(holdFeedback = v) } }
     }
-    Section(R.string.tap_settings) {
+    CollapsibleSection(R.string.tap_settings) {
         GestureFeedbackControls(R.string.tap_feedback, s.tapFeedback) { v -> vm.editTrigger(h.id) { it.copy(tapFeedback = v) } }
     }
-    Section(R.string.swipe_sequence_settings) {
+    CollapsibleSection(R.string.swipe_sequence_settings) {
         DurationInput(R.string.volume_sequence, h.volumeSequenceMs, 1000L..10000L, default = 3000) { v -> vm.editHandle(h.id) { it.copy(volumeSequenceMs = v) } }
         Help(R.string.volume_sequence_help); Help(R.string.gesture_help); Help(R.string.hold_help)
     }

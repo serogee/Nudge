@@ -293,6 +293,8 @@
     <string name="dnd_access_off">Do Not Disturb access is needed</string>
     <string name="expand_setup">Show setup steps</string>
     <string name="collapse_setup">Hide setup steps</string>
+    <string name="expand_section">Show %1$s</string>
+    <string name="collapse_section">Hide %1$s</string>
     <string name="open_autostart">Open Background autostart</string>
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>

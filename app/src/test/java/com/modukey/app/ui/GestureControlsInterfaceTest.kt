@@ -50,7 +50,10 @@ class GestureControlsInterfaceTest {
         rule.onNodeWithText("Swipe and hold settings").assertExists()
         rule.onNodeWithText("Hold settings").assertExists()
         rule.onNodeWithText("Tap settings").assertExists()
+        rule.onNodeWithContentDescription("Swipe distance").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Show Swipe settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe haptic feedback").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Show Swipe and hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe and hold distance").performScrollTo()
             .performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
         rule.onAllNodesWithText("After release").onFirst().performScrollTo().performClick()
@@ -95,9 +98,11 @@ class GestureControlsInterfaceTest {
         val original = TriggerSettings(holdTimeMs = 1_200, swipeHoldTimeMs = 900, depthDp = 22f)
         rule.runOnIdle { app.configuration.update { it.editHandle(it.handles.single().id) { h -> h.copy(trigger = original) } } }
         editGestures()
+        rule.onNodeWithContentDescription("Show Hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Hold time").performScrollTo()
             .performTextReplacement("1500")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500), app.configuration.preview.value!!.handles.single().trigger) }
+        rule.onNodeWithContentDescription("Show Swipe and hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe and hold time").performScrollTo()
             .performTextReplacement("1700")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
