@@ -50,8 +50,8 @@ class NudgeInterfaceTest {
     @Test fun `home and handle editor render and new handles start disabled`() {
         val app=ready()
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
-        rule.onNodeWithText("Add handle").performClick()
-        rule.runOnIdle { assertEquals(2,app.configuration.preview.value!!.handles.size) }
+        rule.onNodeWithText("Add handle").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals("saved=${app.configuration.state.value!!.handles.size}, preview=${app.configuration.preview.value!!.handles.size}", 2,app.configuration.preview.value!!.handles.size) }
         rule.onNodeWithContentDescription("Rename handle").performClick()
         rule.onNode(hasText("Name") and hasSetTextAction()).performTextInput("Second")
         rule.onNodeWithText("Save").performClick()
@@ -70,7 +70,9 @@ class NudgeInterfaceTest {
         rule.onNodeWithText("Hex color").assertDoesNotExist()
         rule.onNodeWithContentDescription("Edit Color").assertIsNotEnabled()
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
-        rule.onNodeWithContentDescription("Edit Color").assertIsEnabled().performClick()
+        rule.onNodeWithContentDescription("Edit Color").performScrollTo().assertIsEnabled().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Done").assertIsDisplayed()
         rule.onNodeWithText("Hex color").assertIsDisplayed()
         rule.onNodeWithContentDescription("Color #202122").assertExists()
     }
