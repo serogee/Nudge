@@ -10,6 +10,7 @@
 - store brightness popup animation choices (9272a13)
 - animate brightness popup transitions (fdcabed)
 - strengthen handle badge letter (42c0d99)
+- collapse detailed gesture settings (3095386)
 
 ## Fixed
 

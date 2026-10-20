@@ -59,7 +59,7 @@ There is no setting to hide handles during every screenshot method. Android's su
 - Swipe: move inward at least 24 dp and release within 600 ms by default.
 - Swipe and hold: reach its own distance within its own time limit. Hold still, then run at the deadline or after release.
 
-Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
+Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
 
 Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
 
