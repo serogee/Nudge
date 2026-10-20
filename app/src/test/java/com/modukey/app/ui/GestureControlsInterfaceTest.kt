@@ -96,15 +96,26 @@ class GestureControlsInterfaceTest {
         rule.runOnIdle { app.configuration.update { it.editHandle(it.handles.single().id) { h -> h.copy(trigger = original) } } }
         editGestures()
         rule.onNodeWithContentDescription("Hold time").performScrollTo()
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(1_500f) }
+            .performTextReplacement("1500")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Swipe and hold time").performScrollTo()
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(1_700f) }
+            .performTextReplacement("1700")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Hold time").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Swipe and hold time").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 500), app.configuration.preview.value!!.handles.single().trigger) }
+        val hold = rule.onNodeWithContentDescription("Hold time").performScrollTo()
+        hold.performTextReplacement("299")
+        rule.runOnIdle { assertEquals(500L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(300L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performClick().performTextReplacement("3001")
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(3000L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performClick().performTextClearance()
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(3000L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)

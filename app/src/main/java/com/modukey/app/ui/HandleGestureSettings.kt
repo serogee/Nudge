@@ -16,18 +16,18 @@ import kotlin.math.roundToInt
     }
     Section(R.string.swipe_settings) {
         SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = v) } }
-        SettingSlider(R.string.swipe_time, s.swipeTimeoutMs.toFloat(), 200f..1200f, t(R.string.ms_value, s.swipeTimeoutMs.toInt()), default = 600f) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v.toLong()) } }
+        DurationInput(R.string.swipe_time, s.swipeTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v) } }
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }
     }
     Section(R.string.swipe_hold_settings) {
         SettingSlider(R.string.swipe_hold_distance, s.swipeHoldDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeHoldDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceDp = v) } }
-        SettingSlider(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs.toFloat(), 200f..1200f, t(R.string.ms_value, s.swipeHoldTimeoutMs.toInt()), default = 600f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v.toLong()) } }
-        SettingSlider(R.string.swipe_hold_time, s.swipeHoldTimeMs.toFloat(), 300f..3000f, t(R.string.ms_value, s.swipeHoldTimeMs.toInt()), default = 500f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v.toLong()) } }
+        DurationInput(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v) } }
+        DurationInput(R.string.swipe_hold_time, s.swipeHoldTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v) } }
         OptionRow(t(R.string.execute_hold), HoldExecution.entries, s.swipeHoldExecution, HoldExecution.ON_RELEASE) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldExecution = v) } }
         GestureFeedbackControls(R.string.swipe_hold_feedback, s.swipeHoldFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldFeedback = v) } }
     }
     Section(R.string.hold_settings) {
-        SettingSlider(R.string.hold_time, s.holdTimeMs.toFloat(), 300f..3000f, t(R.string.ms_value, s.holdTimeMs.toInt()), default = 500f) { v -> vm.editTrigger(h.id) { it.copy(holdTimeMs = v.toLong()) } }
+        DurationInput(R.string.hold_time, s.holdTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(holdTimeMs = v) } }
         OptionRow(t(R.string.execute_hold), HoldExecution.entries, s.holdExecution, HoldExecution.ON_RELEASE) { v -> vm.editTrigger(h.id) { it.copy(holdExecution = v) } }
         GestureFeedbackControls(R.string.hold_feedback, s.holdFeedback) { v -> vm.editTrigger(h.id) { it.copy(holdFeedback = v) } }
     }
@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
         GestureFeedbackControls(R.string.tap_feedback, s.tapFeedback) { v -> vm.editTrigger(h.id) { it.copy(tapFeedback = v) } }
     }
     Section(R.string.swipe_sequence_settings) {
-        SettingSlider(R.string.volume_sequence, h.volumeSequenceMs.toFloat(), 1000f..10000f, t(R.string.seconds_value, h.volumeSequenceMs / 1000f), default = 3000f) { v -> vm.editHandle(h.id) { it.copy(volumeSequenceMs = v.toLong()) } }
+        DurationInput(R.string.volume_sequence, h.volumeSequenceMs, 1000L..10000L, default = 3000) { v -> vm.editHandle(h.id) { it.copy(volumeSequenceMs = v) } }
         Help(R.string.volume_sequence_help); Help(R.string.gesture_help); Help(R.string.hold_help)
     }
 }

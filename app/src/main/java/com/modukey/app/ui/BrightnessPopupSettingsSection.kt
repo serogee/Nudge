@@ -51,7 +51,7 @@ import kotlin.math.roundToInt
             PercentSlider(R.string.slider_center_from_bottom, s.y, default = defaults.y) { v -> edit { it.copy(y = v) } }
             SettingSlider(R.string.slider_width, s.widthDp, 48f..128f, t(R.string.dp_value, s.widthDp.roundToInt()), default = defaults.widthDp) { v -> edit { it.copy(widthDp = v) } }
             SettingSlider(R.string.slider_height, s.heightDp, 120f..480f, t(R.string.dp_value, s.heightDp.roundToInt()), default = defaults.heightDp) { v -> edit { it.copy(heightDp = v) } }
-            SettingSlider(R.string.slider_timeout, s.timeoutMs / 1000f, 1f..10f, t(R.string.seconds_value, s.timeoutMs / 1000f), default = 3f) { v -> edit { it.copy(timeoutMs = (v * 1000).toLong()) } }
+            DurationInput(R.string.slider_timeout, s.timeoutMs, 1000L..10000L, default = defaults.timeoutMs) { v -> edit { it.copy(timeoutMs = v) } }
             SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..64f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), default = defaults.cornerRadiusDp) { v -> edit { it.copy(cornerRadiusDp = v) } }
             Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true) { v -> edit { it.copy(showBackground = v) } }
             Toggle(R.string.slider_show_automatic, R.string.slider_automatic_help, s.showAutomaticToggle, default = true) { v -> edit { it.copy(showAutomaticToggle = v) } }

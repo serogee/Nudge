@@ -96,7 +96,7 @@ import kotlin.math.roundToInt
                         Toggle(R.string.lock_available, R.string.lock_help, s.lockScreenEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(lockScreenEnabled = value) } }
                         Toggle(R.string.soft_hide, R.string.soft_hide_help, s.softHideEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(softHideEnabled = value) } }
                         if (s.softHideEnabled) {
-                            SettingSlider(R.string.hide_after, s.softHideDelayMs.toFloat(), 1000f..30000f, t(R.string.seconds_value, s.softHideDelayMs / 1000f), default = 3000f) { value -> vm.editTrigger(h.id) { it.copy(softHideDelayMs = value.toLong()) } }
+                            DurationInput(R.string.hide_after, s.softHideDelayMs, 1000L..30000L, default = 3000) { value -> vm.editTrigger(h.id) { it.copy(softHideDelayMs = value) } }
                             Help(R.string.soft_hide_detection)
                         }
                         Help(R.string.screen_off_help)
