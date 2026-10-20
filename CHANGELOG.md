@@ -1,22 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.4.2 - 2026-10-20
 
-### Changed
+### Added
 
-- Group all gesture selectors above their categorized settings.
-- Use three columns in the panel button selector.
-- Replace timing sliders with numeric inputs that show minimum and maximum values.
-- Increase maximum gesture haptic strength while keeping low strengths brief.
-- Add separate opening and closing animation choices for the brightness popup.
-- Render the automatic brightness control as a horizontal pill.
+- group gesture selectors above settings (e1325ae)
+- show button actions in three columns (a3e0bfa)
+- strengthen maximum gesture haptics (09ce5e3)
+- replace timing sliders with bounded inputs (776926f)
+- animate visible handles during swipes (07fb8af)
+- store brightness popup animation choices (9272a13)
+- animate brightness popup transitions (fdcabed)
+- strengthen handle badge letter (42c0d99)
 
 ### Fixed
 
-- Apply pull and return feedback to visible handles during swipes and held swipes.
-- Restore regular fade, slide-and-fade, and scale-slide-and-fade panel transitions.
-- Keep handles visible while their windows move above an open panel.
-- Retain revealed handles and their hide deadlines during window replacement.
+- restore regular panel transitions (92936a9)
+- keep handles visible while raising windows (26b76e7)
+- retain revealed handles during window handoff (6120680)
+
+### Maintenance
+
+- target the panel search input in its dialog (ef74b7d)
+- record handle feedback and control updates (e4ab968)
+- explain handle and brightness feedback (4e53441)
+- record brightness popup updates (433e330)
 
 ## 0.4.1 - 2026-10-19
 
