@@ -80,7 +80,7 @@ class GestureControlsInterfaceTest {
         val toolsRow = rule.onNode(hasText("Tools") and hasClickAction()).fetchSemanticsNode().boundsInRoot
         val mediaRow = rule.onNode(hasText("Media") and hasClickAction()).fetchSemanticsNode().boundsInRoot
         assertTrue("Panel options must have a gap", mediaRow.top > toolsRow.bottom)
-        rule.onNode(hasSetTextAction()).performTextInput("Media")
+        rule.onNode(hasSetTextAction() and hasAnyAncestor(isDialog())).performTextInput("Media")
         rule.onNodeWithText("Tools").assertDoesNotExist()
         rule.onNode(hasText("Media") and hasClickAction() and !hasSetTextAction()).performClick()
         rule.onNodeWithText("Panel: Media").assertExists()
