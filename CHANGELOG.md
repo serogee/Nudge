@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add a master switch for handle pull and reveal animations.
+- Show compact color swatches with a palette and hex editor.
+- Compare the brightness background with the MIUI volume slider background.
+
 ## 0.4.2 - 2026-10-20
 
 ### Added
