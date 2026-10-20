@@ -1,13 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Added
-
-- Add a master switch for handle pull and reveal animations.
-- Show compact color swatches with a palette and hex editor.
-- Compare the brightness background with the MIUI volume slider background.
-
 ## 0.4.2 - 2026-10-20
 
 ### Added
@@ -21,6 +13,8 @@
 - animate brightness popup transitions (fdcabed)
 - strengthen handle badge letter (42c0d99)
 - collapse detailed gesture settings (3095386)
+- compact color controls and compare slider backgrounds (f7c7a26)
+- add a master handle animation switch (72c4bec)
 
 ### Fixed
 
@@ -34,6 +28,10 @@
 - record handle feedback and control updates (e4ab968)
 - explain handle and brightness feedback (4e53441)
 - record brightness popup updates (433e330)
+- prepare Nudge 0.4.2 (1a883c2)
+- record collapsed gesture settings (7c17af5)
+- explain handle and color preview controls (d99c5fd)
+- record handle and color controls (71fdf8b)
 
 ## 0.4.1 - 2026-10-19
 

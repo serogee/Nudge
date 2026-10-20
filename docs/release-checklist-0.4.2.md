@@ -4,7 +4,7 @@ Version: **0.4.2**, code **11**. Baseline: published **v0.4.1**, code **10**.
 
 ## Prepared on the feature branch
 
-- Version values and reviewed notes are committed before merging.
+- Commit version values and reviewed notes before merging.
 - Notes: [release-notes-0.4.2.md](release-notes-0.4.2.md).
 - The signing key, application ID, previous release tags, and released changelog entries stay unchanged.
 - No feature-branch signed APK or release tag is created.
@@ -29,7 +29,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Finalize-Release.ps1
 
 The script fetches `origin/main` and tags, confirms that GitHub merged the prepared commits, and checks the version. It switches to local `main` and fast-forwards it. It then runs release checks, builds the signed APK, verifies its signer and version, exports the checksum and build metadata, and creates local tag **v0.4.2**.
 
-Install the APK over 0.4.1 without uninstalling. Check saved settings, accessibility recovery, brightness, haptics, handle visibility, rotation, and panel actions. Record actual phone results in the ignored `plans/compatibility.md`.
+Install the APK over 0.4.1 without uninstalling. Check saved settings, accessibility recovery, brightness, haptics, handle visibility and animation toggle, color selection, rotation, and panel actions. Confirm that backup schema 14 imports older backups. Record actual phone results in the ignored `plans/compatibility.md`.
 
 ## Push the tag and publish
 

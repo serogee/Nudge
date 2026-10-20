@@ -11,6 +11,8 @@
 - animate brightness popup transitions (fdcabed)
 - strengthen handle badge letter (42c0d99)
 - collapse detailed gesture settings (3095386)
+- compact color controls and compare slider backgrounds (f7c7a26)
+- add a master handle animation switch (72c4bec)
 
 ## Fixed
 
@@ -24,11 +26,18 @@
 - record handle feedback and control updates (e4ab968)
 - explain handle and brightness feedback (4e53441)
 - record brightness popup updates (433e330)
+- prepare Nudge 0.4.2 (1a883c2)
+- record collapsed gesture settings (7c17af5)
+- explain handle and color preview controls (d99c5fd)
+- record handle and color controls (71fdf8b)
 
 ## Compatibility and known limits
 
-- Install over 0.4.1 without uninstalling to retain settings. Recheck accessibility after updating.
-- New backups use schema 13. Older backups remain importable. Older Nudge versions cannot import schema-13 backups.
-- Handle and brightness transitions follow the Android animation setting.
+- New backups use schema 14. Older backups remain importable. Older Nudge versions cannot import schema-14 backups.
+- Existing configurations keep handle animations on. Turn off **Handle animations** to disable pull and reveal feedback for all handles.
+- The Android animation setting also controls handle and brightness transitions.
+- Color controls use a compact swatch. Tap it to choose a palette color or enter a hex value.
+- The brightness preview compares the selected background with the MIUI volume background, #202122.
+- Install over 0.4.1 without uninstalling. Recheck saved settings and accessibility after updating.
 - Physical Redmi and HyperOS checks, update installation, and battery comparison remain pending.
-- The finalizer reruns release checks, signs the APK, verifies its identity, and creates the tag after the GitHub merge.
+- The finalizer checks the merged release, builds and signs the APK, verifies its identity, and creates the tag.
