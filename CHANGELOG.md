@@ -8,11 +8,15 @@
 - Use three columns in the panel button selector.
 - Replace timing sliders with numeric inputs that show minimum and maximum values.
 - Increase maximum gesture haptic strength while keeping low strengths brief.
+- Add separate opening and closing animation choices for the brightness popup.
+- Render the automatic brightness control as a horizontal pill.
 
 ### Fixed
 
 - Apply pull and return feedback to visible handles during swipes and held swipes.
 - Restore regular fade, slide-and-fade, and scale-slide-and-fade panel transitions.
+- Keep handles visible while their windows move above an open panel.
+- Retain revealed handles and their hide deadlines during window replacement.
 
 ## 0.4.1 - 2026-10-19
 
