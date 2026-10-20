@@ -11,7 +11,7 @@ typealias MigratedPanelName = (String, Int, Int) -> String
 /** Schema 12 adds a global visible-handle override and its action. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 12
+    const val SCHEMA = 13
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("hideHandleIndicators", config.hideHandleIndicators)
@@ -142,13 +142,15 @@ object ConfigurationCodec {
         backgroundOpacity = p.float("backgroundOpacity", 1f), trackOpacity = p.float("trackOpacity", 1f), fillOpacity = p.float("fillOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
         timeoutMs = p.optLong("timeoutMs", 3_000), cornerRadiusDp = p.float("cornerRadiusDp", 32f),
         showBackground = p.optBoolean("showBackground", true), showAutomaticToggle = p.optBoolean("showAutomaticToggle", true),
-        touchBehavior = enumValueOf(p.optString("touchBehavior", "JUMP_TO_TOUCH")))
+        touchBehavior = enumValueOf(p.optString("touchBehavior", "JUMP_TO_TOUCH")),
+        animation = enumValueOf(p.optString("animation", "NONE")), closeAnimation = enumValueOf(p.optString("closeAnimation", "NONE")))
     private fun brightness(p: BrightnessPopupSettings) = JSONObject().put("side", p.side.name).put("volumeSide", p.volumeSide.name)
         .put("width", p.widthDp).put("height", p.heightDp).put("x", p.x).put("y", p.y)
         .put("background", p.background).put("track", p.track).put("fill", p.fill).put("icon", p.icon)
         .put("backgroundOpacity", p.backgroundOpacity).put("trackOpacity", p.trackOpacity).put("fillOpacity", p.fillOpacity).put("iconOpacity", p.iconOpacity)
         .put("timeoutMs", p.timeoutMs).put("cornerRadiusDp", p.cornerRadiusDp)
         .put("showBackground", p.showBackground).put("showAutomaticToggle", p.showAutomaticToggle).put("touchBehavior", p.touchBehavior.name)
+        .put("animation", p.animation.name).put("closeAnimation", p.closeAnimation.name)
     private fun button(b: JSONObject) = PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),
