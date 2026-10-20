@@ -10,7 +10,7 @@ import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
 internal data class HandleWindowSpec(val bounds: Bounds, val settings: TriggerSettings, val edge: Edge, val editing: Boolean, val previewQuarterTurns: Int = 0,
-    val hideIndicator: Boolean = false)
+    val hideIndicator: Boolean = false, val animationsEnabled: Boolean = true)
 
 /** Own the registered window even before View receives its attachment callback. */
 internal class HandleWindowHost(private val context: Context, private val manager: WindowManager,
@@ -26,7 +26,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun attach(value: HandleWindowSpec) {
         check(view == null)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
-        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator)
+        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
         view = next; changed(next)
         try {
             val p = params(value)
@@ -39,7 +39,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun update(value: HandleWindowSpec) {
         val current = requireNotNull(view)
         val p = params(value); val previous = layout
-        current.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator)
+        current.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
         if (previous?.x != p.x || previous.y != p.y || previous.width != p.width || previous.height != p.height || previous.flags != p.flags) {
             current.cancelGesture(); manager.updateViewLayout(current, p); layout = p
         }
@@ -47,7 +47,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun raise(value: HandleWindowSpec) {
         val previous = view ?: return attach(value)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
-        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator)
+        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
         next.inheritVisibility(previous)
         val p = params(value)
         try { manager.addView(next, p) }

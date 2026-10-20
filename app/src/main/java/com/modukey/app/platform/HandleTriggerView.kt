@@ -22,6 +22,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var edge = Edge.RIGHT
     private var editing = false
     private var hideIndicator = false
+    private var animationsEnabled = true
     private var previewQuarterTurns = 0
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -59,7 +60,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             insets
         }
     }
-    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0, hideIndicator: Boolean = false) {
+    fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0, hideIndicator: Boolean = false,
+        animationsEnabled: Boolean = true) {
         val turns = if (editing) previewQuarterTurns.mod(4) else 0
         if (this.edge != edge || this.editing != editing || this.previewQuarterTurns != turns || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
             this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs ||
@@ -69,6 +71,13 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         }
         this.settings = settings; this.edge = edge; this.editing = editing
         this.hideIndicator = hideIndicator && !editing
+        if (this.animationsEnabled != animationsEnabled) {
+            this.animationsEnabled = animationsEnabled
+            if (!animationsEnabled) {
+                resetPull(); animator?.cancel(); animator = null; bounce = 0f
+                onIdle()
+            }
+        }
         if (this.hideIndicator) { animator?.cancel(); animator = null; bounce = 0f; resetPull() }
         this.previewQuarterTurns = turns
         importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -87,12 +96,12 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     }
     private fun feedbackVisible() = !editing && !hideIndicator && (if (softHide.active) softHide.revealed else settings.indicatorVisible)
     private fun updatePull() {
-        val next = if (feedbackVisible() && ValueAnimator.areAnimatorsEnabled())
+        val next = if (animationsEnabled && feedbackVisible() && ValueAnimator.areAnimatorsEnabled())
             (gesture.pullDistance * .2f).coerceAtMost(10f * resources.displayMetrics.density) else 0f
         if (pull != next) { pull = next; invalidate() }
     }
     private fun releasePull() {
-        if (pull <= 0f || !feedbackVisible() || !ValueAnimator.areAnimatorsEnabled()) { resetPull(); onIdle(); return }
+        if (!animationsEnabled || pull <= 0f || !feedbackVisible() || !ValueAnimator.areAnimatorsEnabled()) { resetPull(); onIdle(); return }
         val returning = ValueAnimator.ofFloat(pull, 0f).apply {
             duration = 180
             interpolator = PathInterpolator(.15f, .85f, .25f, 1f)
@@ -133,7 +142,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private fun completeGesture(kind: GestureKind) {
         if (softHide.gesture(SystemClock.uptimeMillis())) {
             onReveal()
-            if (!hideIndicator && ValueAnimator.areAnimatorsEnabled()) {
+            if (animationsEnabled && !hideIndicator && ValueAnimator.areAnimatorsEnabled()) {
                 animator?.cancel()
                 animator = ValueAnimator.ofFloat(0f, 1f, -.15f, 0f).apply {
                     duration = 220

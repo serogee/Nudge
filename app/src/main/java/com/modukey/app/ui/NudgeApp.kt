@@ -186,6 +186,8 @@ import com.modukey.app.platform.*
                     Toggle(R.string.pause_handles, R.string.pause_handles_help, paused.isNotEmpty(),
                         enabled = paused.isNotEmpty() || (config.enabled && config.handles.any { it.enabled }), change = vm::pauseHandles)
                     Toggle(R.string.hide_visible_handles, R.string.hide_visible_handles_help, config.hideHandleIndicators, default = false, change = vm::hideVisibleHandles)
+                    Toggle(R.string.handle_animations, R.string.handle_animations_help, config.handleAnimationsEnabled,
+                        default = true, change = vm::setHandleAnimationsEnabled)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(t(R.string.handles), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
