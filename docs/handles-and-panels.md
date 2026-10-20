@@ -152,9 +152,11 @@ The **Pause handles** switch is above **Add handle**. Both global switches scrol
 
 The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
 
+The **Handle animations** switch controls pull and reveal feedback for every handle. It is on by default. Turn it off to keep handles still. Gesture actions continue to work.
+
 **Toggle handle visibility** applies the same override from a panel button, direct gesture, or Home shortcut. Its tile is On when visibility is allowed and Off while bars are hidden. It keeps an open panel usable. Restoring visibility shows only bars enabled in each handle's settings. **Toggle handles** follows **Close panels** in the action picker; **Toggle handle visibility** is next.
 
-Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
+Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. Color controls show a compact swatch. Tap it to open the palette and enter a hex value. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
 The built-in Nudge icon uses the separated pill mark without the app background. It follows the panel's icon color and opacity. Select Standalone for a button with no container. The default Nudge settings icon keeps the full app icon.
 
@@ -202,7 +204,7 @@ Button drags beyond touch slop cancel clicking until the next press, including w
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
 
-Development backups use schema 13 for brightness popup animations, per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch and No animation. Existing actions, icon settings, and other preferences are retained.
+Development backups use schema 13 for brightness popup animations, per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Schema 14 adds the global handle-animation switch. Earlier configurations default to animations on. Add import keeps the current global settings; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch and No animation. Existing actions, icon settings, and other preferences are retained.
 
 ## Brightness popup animations
 
@@ -215,5 +217,7 @@ The automatic brightness control is a horizontal pill below the slider. Its touc
 ## Brightness touch behavior
 
 Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
+
+Expand **Appearance** to compare the configured brightness slider background with the MIUI volume slider background color, #202122. The preview uses the selected track and fill colors for the brightness sample.
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
