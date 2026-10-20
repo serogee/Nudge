@@ -9,6 +9,12 @@ class SoftHideSession {
     private var touching = false
     private var panelOpen = false
 
+    fun copyForWindow(now: Long) = SoftHideSession().also {
+        it.active = active; it.revealed = revealed; it.deadline = deadline
+        it.delayMs = delayMs; it.panelOpen = panelOpen
+        if (touching) it.restart(now)
+    }
+
     fun configure(enabled: Boolean, fullScreen: Boolean?, delayMs: Long, now: Long) {
         val next = enabled && fullScreen == true
         val delayChanged = this.delayMs != delayMs

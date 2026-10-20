@@ -33,7 +33,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var pullAnimator: ValueAnimator? = null
     val hasInteraction get() = touching || pullAnimator != null
     private var radius = 0f
-    private val softHide = SoftHideSession()
+    private var softHide = SoftHideSession()
     private var fullScreen: Boolean? = null
     private var panelOpen = false
     private var scheduledAt: Long? = null
@@ -112,6 +112,11 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         if (panelOpen == open) return
         panelOpen = open; softHide.panel(open, SystemClock.uptimeMillis()); scheduleExpiry()
         if (!open) requestApplyInsets()
+    }
+    internal fun inheritVisibility(previous: HandleTriggerView) {
+        fullScreen = previous.fullScreen; panelOpen = previous.panelOpen
+        softHide = previous.softHide.copyForWindow(SystemClock.uptimeMillis())
+        updateSoftHide(); invalidate()
     }
     fun resetSoftHide() { softHide.reset(); animator?.cancel(); bounce = 0f; scheduleExpiry(); invalidate() }
     private fun updateSoftHide() {

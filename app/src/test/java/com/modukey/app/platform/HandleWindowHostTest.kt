@@ -3,6 +3,7 @@ package com.modukey.app.platform
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.WindowInsets
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
@@ -62,6 +63,22 @@ class HandleWindowHostTest {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
             assertTrue(windows.registered.isEmpty()); assertNull(active)
             assertEquals(windows.adds, windows.removes)
+        } finally { host.detach() }
+    }
+    @Test fun raisingRetainsARevealedHandleAndItsPanelStateInFullScreen() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        var active: HandleTriggerView? = null
+        var actions = 0
+        val host = HandleWindowHost(app, windows, { actions++ }, {}) { active = it }
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(softHideEnabled = true), Edge.LEFT, false)
+        try {
+            host.attach(spec)
+            active!!.dispatchApplyWindowInsets(WindowInsets.Builder().setVisible(WindowInsets.Type.statusBars(), false).build())
+            active!!.performClick(); assertEquals(0, actions)
+            active!!.setPanelOpen(true)
+            host.raise(spec)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4))
+            active!!.performClick(); assertEquals("Raising must not hide a revealed bar", 1, actions)
         } finally { host.detach() }
     }
     @Test fun visibilityUpdatesKeepTheSameBoundedTouchableWindow() {

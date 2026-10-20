@@ -48,6 +48,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
         val previous = view ?: return attach(value)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
         next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator)
+        next.inheritVisibility(previous)
         val p = params(value)
         try { manager.addView(next, p) }
         catch (error: RuntimeException) {
