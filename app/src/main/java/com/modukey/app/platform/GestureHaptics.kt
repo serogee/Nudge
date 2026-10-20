@@ -18,7 +18,8 @@ class GestureHaptics(context: Context) {
         if (!s.enabled || vibrator?.hasVibrator() != true) return false
         return try {
             val amplitude = if (vibrator.hasAmplitudeControl()) (s.strength * 255).roundToInt().coerceIn(1, 255) else VibrationEffect.DEFAULT_AMPLITUDE
-            val effect = VibrationEffect.createOneShot((12 + s.strength * 28).toLong(), amplitude)
+            val durationMs = (12 + s.strength * 28 + s.strength * s.strength * s.strength * 100).toLong()
+            val effect = VibrationEffect.createOneShot(durationMs, amplitude)
             if (Build.VERSION.SDK_INT >= 33) vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ACCESSIBILITY))
             else vibrator.vibrate(effect, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY).build())
             true
