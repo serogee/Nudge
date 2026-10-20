@@ -67,7 +67,7 @@ Timing controls use numeric inputs in milliseconds. Each input shows its minimum
 
 Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Maximum strength uses a 140 ms pulse at full available amplitude. Low strengths remain brief. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
 
-Swiping bends the visible handle slightly inward. It stays pulled during a hold and returns over 180 ms after release. The touch area stays fixed. Hidden handles and disabled system animations skip this feedback. Panels use their selected opening and closing animations. Opening a panel preserves captured handle input and its return animation before raising handles above the panel.
+Swiping bends the visible handle slightly inward. It stays pulled during a hold and returns over 180 ms after release. The touch area stays fixed. Hidden handles and disabled system animations skip this feedback. Panels use their selected opening and closing animations. Opening a panel preserves captured handle input and its return animation before raising handles above the panel. Each old bar stays visible until its replacement draws a frame. Replacement also retains full-screen reveal state and the hide deadline.
 
 A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
@@ -202,7 +202,15 @@ Button drags beyond touch slop cancel clicking until the next press, including w
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
 
-Development backups use schema 12 for per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
+Development backups use schema 13 for brightness popup animations, per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch and No animation. Existing actions, icon settings, and other preferences are retained.
+
+## Brightness popup animations
+
+Expand **Appearance** under the brightness slider controls on Home. **Open animation** and **Close animation** each offer No animation, Fade, Slide and fade, and Scale, slide, and fade. Both default to No animation. Each control has its own reset button. Backup and restore retain both choices.
+
+Slide direction follows the popup's nearest screen side. Opening takes 180 ms, and closing takes 120 ms at normal system speed. Dismissal and timeout use the closing effect. Closing stops touch input, accessibility actions, brightness observers, and the timeout immediately. Preview guides and disabled system animations stay still. Screen-off, editor changes, screenshots, and service cleanup cancel transitions and remove the popup immediately.
+
+The automatic brightness control is a horizontal pill below the slider. Its touch area stays separate from the slider.
 
 ## Brightness touch behavior
 
