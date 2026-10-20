@@ -1,6 +1,7 @@
 package com.modukey.app.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -128,20 +129,30 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
 }
 @Composable fun ColorPicker(color: Long, enabled: Boolean = true, @StringRes title: Int = R.string.color, default: Long? = null, change: (Long) -> Unit) {
     var hex by remember(color) { mutableStateOf("%06X".format(color and 0xFFFFFF)) }
+    var selecting by remember { mutableStateOf(false) }
     val c = LocalContext.current
-    SettingTitle(t(title), enabled, if (default != null && color != default) ({ change(default) }) else null)
-    val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),
-        listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L))
-    listOf(palettes.flatten().distinct()).forEach { values ->
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            values.forEach { v -> FilledIconButton(onClick = { change(v) }, enabled = enabled,
-                modifier = Modifier.semantics { contentDescription = c.getString(R.string.color_description, "%06X".format(v and 0xFFFFFF)) },
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(v))) {
-                if (v == color) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contrastOn(Color(v)))
-            } }
-        }
+    val label = t(title)
+    Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { SettingTitle(label, enabled, if (default != null && color != default) ({ change(default) }) else null) }
+        Surface(Modifier.size(48.dp, 32.dp).clickable(enabled = enabled, role = Role.Button) { selecting = true }
+            .semantics { contentDescription = c.getString(R.string.edit_color, label) }, shape = MaterialTheme.shapes.small,
+            color = Color(color), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (enabled) 1f else .38f))) {}
     }
-    OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
-        enabled = enabled, label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,
-        isError = enabled && !hex.matches(Regex("[0-9a-fA-F]{6}")), modifier = Modifier.fillMaxWidth())
+    if (!selecting) return
+    val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),
+        listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L),
+        listOf(0xFF202122L))
+    AlertDialog(onDismissRequest = { selecting = false }, title = { Text(label) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                palettes.flatten().distinct().forEach { v -> FilledIconButton(onClick = { change(v) },
+                    modifier = Modifier.semantics { contentDescription = c.getString(R.string.color_description, "%06X".format(v and 0xFFFFFF)) },
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(v))) {
+                    if (v == color) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contrastOn(Color(v)))
+                } }
+            }
+            OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
+                label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,
+                isError = !hex.matches(Regex("[0-9a-fA-F]{6}")), modifier = Modifier.fillMaxWidth())
+        } }, confirmButton = { TextButton(onClick = { selecting = false }) { Text(t(R.string.done)) } })
 }

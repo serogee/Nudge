@@ -67,9 +67,12 @@ class NudgeInterfaceTest {
         rule.onNode(hasText("Handles") and hasClickAction()).performClick()
         rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Edit"))
         rule.onNodeWithContentDescription("Edit").performScrollTo().performClick()
-        rule.onNodeWithText("Hex color").assertIsNotEnabled()
+        rule.onNodeWithText("Hex color").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Edit Color").assertIsNotEnabled()
         rule.onNodeWithText("Make handle visible").performScrollTo().performClick()
-        rule.onNodeWithText("Hex color").assertIsEnabled()
+        rule.onNodeWithContentDescription("Edit Color").assertIsEnabled().performClick()
+        rule.onNodeWithText("Hex color").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Color #202122").assertExists()
     }
     @Test fun `home shows permission details and info navigation`() {
         ready()
