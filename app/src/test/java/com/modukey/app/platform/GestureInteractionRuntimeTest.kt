@@ -31,7 +31,7 @@ class GestureInteractionRuntimeTest {
         override fun refreshSound() {}
     }
     @Suppress("DEPRECATION")
-    @Test fun draggingAHandleShowsThePanelOnlyWhenTheGestureCompletes() {
+    @Test fun aPanelOpensAtTheHoldDeadlineAndKeepsTheHandleUntilItsReturnEnds() {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
         val service = controller.get()
         try {
@@ -41,12 +41,14 @@ class GestureInteractionRuntimeTest {
             repeat(300) { if (app.configuration.state.value == null) { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)); Thread.sleep(5) } }
             val panel = SavedPanel(name = "Tools")
             val handle = HandleConfig(id = "pull", enabled = true, trigger = TriggerSettings(landscapeEnabled = true, portrait = Placement(Edge.LEFT),
+                indicatorVisible = true, swipeHoldExecution = HoldExecution.AFTER_TIME,
                 swipeHoldFeedback = GestureFeedback(true, .8f)), bindings = mapOf(GestureSlot.SWIPE_HOLD to GestureTarget.panel(panel.id)))
             app.configuration.update { AppConfiguration(enabled = true, handles = listOf(handle), panels = listOf(panel)) }
             ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
             val live = Host()
             ReflectionHelpers.setField(service, "panelHost", live)
             ReflectionHelpers.callInstanceMethod<Void>(service, "refresh")
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
             val view = ReflectionHelpers.getField<Map<String, HandleTriggerView>>(service, "views").getValue(handle.id)
             fun touch(action: Int, time: Long, x: Float) {
                 val event = MotionEvent.obtain(0, time, action, x, 20f, 0)
@@ -59,10 +61,17 @@ class GestureInteractionRuntimeTest {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
             assertTrue(live.shown.isEmpty())
             assertFalse(shadowOf(vibrator).isVibrating)
-            touch(MotionEvent.ACTION_UP, 800, 31f)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
             assertEquals(panel.settings, live.shown.last().panel)
             assertFalse(live.shown.last().editing)
             assertTrue(shadowOf(vibrator).isVibrating)
+            assertSame(view, ReflectionHelpers.getField<Map<String, HandleTriggerView>>(service, "views")[handle.id])
+            touch(MotionEvent.ACTION_UP, 800, 31f)
+            assertTrue(view.hasInteraction)
+            assertSame(view, ReflectionHelpers.getField<Map<String, HandleTriggerView>>(service, "views")[handle.id])
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250))
+            assertFalse(view.hasInteraction)
+            assertNotSame(view, ReflectionHelpers.getField<Map<String, HandleTriggerView>>(service, "views")[handle.id])
         } finally { controller.destroy() }
     }
 }

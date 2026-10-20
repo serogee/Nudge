@@ -14,13 +14,14 @@ internal data class HandleWindowSpec(val bounds: Bounds, val settings: TriggerSe
 /** Own the registered window even before View receives its attachment callback. */
 internal class HandleWindowHost(private val context: Context, private val manager: WindowManager,
     private val activate: (GestureKind) -> Unit, private val reveal: () -> Unit,
+    private val interactionEnded: () -> Unit = {},
     private val changed: (HandleTriggerView?) -> Unit) : OverlayHost<HandleWindowSpec> {
     private var view: HandleTriggerView? = null
     private var layout: WindowManager.LayoutParams? = null
     private var added = false
     override fun attach(value: HandleWindowSpec) {
         check(view == null)
-        val next = HandleTriggerView(context, activate, reveal)
+        val next = HandleTriggerView(context, activate, reveal, interactionEnded)
         next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator)
         view = next; changed(next)
         try {

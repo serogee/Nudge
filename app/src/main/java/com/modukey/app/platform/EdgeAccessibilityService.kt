@@ -49,6 +49,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var panelTimeout: PanelTimeout? = null
     private var open: OpenPanel? = null
     private var attachedPanel: Pair<OpenPanel, Boolean>? = null
+    private var raiseHandles = false
     private var foregroundTracker: ForegroundTracker? = null
     private val foreground get() = foregroundTracker?.packageName
     private var panelOpenedAt: Long? = null
@@ -102,7 +103,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             { x, y -> handleBounds.values.any { it.contains(x, y) } }, ::runButton, { panelTimeout?.touch(it) }, { error ->
                 app.diagnostics.record("Panel cleanup failed", error); errors["panel"] = getString(R.string.overlay_error); frames?.request()
             })
-        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }) { view ->
+        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }, { frames?.request() }) { view ->
             if (view == null) views.remove(id) else views[id] = view
         } }
         try {
@@ -323,7 +324,11 @@ class EdgeAccessibilityService : AccessibilityService() {
         val timedPanel = open?.let { config.panel(it.panelId)?.settings }
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
-        val failures = registry?.reconcile(desired, raise = changed && wanted != null).orEmpty()
+        if (wanted == null) raiseHandles = false else if (changed) raiseHandles = true
+        // Keep captured input and its return animation until the handle is idle.
+        val raise = raiseHandles && views.values.none { it.hasInteraction }
+        val failures = registry?.reconcile(desired, raise = raise).orEmpty()
+        if (raise) raiseHandles = false
         views.forEach { (id, view) -> view.setPanelOpen(open?.handleId == id) }
         errors.keys.filter { it != "panel" && it !in desired }.toList().forEach(errors::remove)
         failures.forEach { (id, error) -> errors[id] = getString(R.string.overlay_error); app.diagnostics.record("Handle window failed", error); reasons[id] = HandleAvailability.ERROR }
@@ -366,6 +371,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         brightnessHost?.hide()
     }
     private fun stopSession() {
+        raiseHandles = false
         app.shortcuts.unbind(this)
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
