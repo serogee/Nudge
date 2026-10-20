@@ -50,7 +50,10 @@ class GestureControlsInterfaceTest {
         rule.onNodeWithText("Swipe and hold settings").assertExists()
         rule.onNodeWithText("Hold settings").assertExists()
         rule.onNodeWithText("Tap settings").assertExists()
+        rule.onNodeWithContentDescription("Swipe distance").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Show Swipe settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe haptic feedback").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Show Swipe and hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe and hold distance").performScrollTo()
             .performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
         rule.onAllNodesWithText("After release").onFirst().performScrollTo().performClick()
@@ -80,7 +83,7 @@ class GestureControlsInterfaceTest {
         val toolsRow = rule.onNode(hasText("Tools") and hasClickAction()).fetchSemanticsNode().boundsInRoot
         val mediaRow = rule.onNode(hasText("Media") and hasClickAction()).fetchSemanticsNode().boundsInRoot
         assertTrue("Panel options must have a gap", mediaRow.top > toolsRow.bottom)
-        rule.onNode(hasSetTextAction()).performTextInput("Media")
+        rule.onNode(hasSetTextAction() and hasAnyAncestor(isDialog())).performTextInput("Media")
         rule.onNodeWithText("Tools").assertDoesNotExist()
         rule.onNode(hasText("Media") and hasClickAction() and !hasSetTextAction()).performClick()
         rule.onNodeWithText("Panel: Media").assertExists()
@@ -95,16 +98,29 @@ class GestureControlsInterfaceTest {
         val original = TriggerSettings(holdTimeMs = 1_200, swipeHoldTimeMs = 900, depthDp = 22f)
         rule.runOnIdle { app.configuration.update { it.editHandle(it.handles.single().id) { h -> h.copy(trigger = original) } } }
         editGestures()
+        rule.onNodeWithContentDescription("Show Hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Hold time").performScrollTo()
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(1_500f) }
+            .performTextReplacement("1500")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500), app.configuration.preview.value!!.handles.single().trigger) }
+        rule.onNodeWithContentDescription("Show Swipe and hold settings").performScrollTo().performClick()
         rule.onNodeWithContentDescription("Swipe and hold time").performScrollTo()
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(1_700f) }
+            .performTextReplacement("1700")
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 1_500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Hold time").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 1_700), app.configuration.preview.value!!.handles.single().trigger) }
         rule.onNodeWithContentDescription("Reset Swipe and hold time").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(original.copy(holdTimeMs = 500, swipeHoldTimeMs = 500), app.configuration.preview.value!!.handles.single().trigger) }
+        val hold = rule.onNodeWithContentDescription("Hold time").performScrollTo()
+        hold.performTextReplacement("299")
+        rule.runOnIdle { assertEquals(500L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(300L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performClick().performTextReplacement("3001")
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(3000L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
+        hold.performClick().performTextClearance()
+        hold.performImeAction()
+        rule.runOnIdle { assertEquals(3000L, app.configuration.preview.value!!.handles.single().trigger.holdTimeMs) }
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)

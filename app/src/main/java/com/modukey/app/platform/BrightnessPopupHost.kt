@@ -22,7 +22,10 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     private val brightness: BrightnessController, private val dismissed: () -> Unit, private val failure: (Int) -> Unit,
     private val changed: () -> Unit = {}) {
     private var view: BrightnessPopupView? = null
+    private var closing: BrightnessPopupView? = null
     private var layout: WindowManager.LayoutParams? = null
+    private var settings = BrightnessPopupSettings()
+    private var animationEdge = Edge.RIGHT
     private var preview = false
     private var observing = false
     private var timeoutMs = 3_000L
@@ -34,8 +37,11 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     val visible get() = view != null
     fun show(settings: BrightnessPopupSettings, screen: ScreenSpace, editing: Boolean): Boolean {
         if (view != null && preview != editing) hide()
+        if (view == null) finishClosing()
         preview = editing; timeoutMs = settings.timeoutMs
         val b = BrightnessPopupGeometry.calculate(screen.usable, screen.density, settings)
+        this.settings = settings
+        animationEdge = if (b.x + b.width / 2 < screen.usable.x + screen.usable.width / 2) Edge.LEFT else Edge.RIGHT
         val p = params(b, editing)
         try {
             val current = view
@@ -56,6 +62,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
                 view = next
                 next.configure(settings, editing, brightness.fraction(), brightness.status().automatic)
                 manager.addView(next, p); layout = p
+                PanelWindowAnimations.enter(next, settings.animation, animationEdge, b, editing)
                 if (!editing) {
                     context.contentResolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, observer)
                     context.contentResolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE), false, observer)
@@ -73,15 +80,39 @@ internal class BrightnessPopupHost(private val context: Context, private val man
         } catch (_: RuntimeException) { hide(); failure(R.string.overlay_error); return false }
     }
     fun restartTimeout() { handler.removeCallbacks(timeout); if (!preview && view != null) handler.postDelayed(timeout, timeoutMs) }
-    fun hide() {
+    fun hide(animate: Boolean = false) {
+        val previous = view
+        if (previous == null) { if (!animate) finishClosing(); return }
         handler.removeCallbacks(timeout)
         // Unregister even if setup failed between the two observer registrations.
         if (observing || view != null) runCatching { context.contentResolver.unregisterContentObserver(observer) }
         observing = false
-        val previous = view; view = null; layout = null
-        previous?.cancelInput()
-        if (previous != null) runCatching { manager.removeViewImmediate(previous) }
+        val p = layout
+        view = null; layout = null
+        previous.cancelInput()
+        finishClosing()
+        if (animate && !preview && previous.isAttachedToWindow && p != null && PanelWindowAnimations.enabled(settings.closeAnimation)) {
+            closing = previous
+            try {
+                previous.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                val inert = WindowManager.LayoutParams().apply {
+                    copyFrom(p)
+                    flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                }
+                manager.updateViewLayout(previous, inert)
+                PanelWindowAnimations.exit(previous, settings.closeAnimation, animationEdge,
+                    Bounds(p.x.toFloat(), p.y.toFloat(), p.width.toFloat(), p.height.toFloat())) {
+                    if (closing === previous) { closing = null; remove(previous) }
+                }
+            } catch (_: RuntimeException) { finishClosing() }
+        } else remove(previous)
     }
+    private fun remove(previous: BrightnessPopupView) {
+        PanelWindowAnimations.cancel(previous)
+        previous.cancelInput()
+        runCatching { manager.removeViewImmediate(previous) }
+    }
+    private fun finishClosing() { val previous = closing; closing = null; previous?.let(::remove) }
     @SuppressLint("RtlHardcoded")
     private fun params(b: Bounds, editing: Boolean) = WindowManager.LayoutParams(b.width.roundToInt().coerceAtLeast(1), b.height.roundToInt().coerceAtLeast(1),
         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
@@ -91,6 +122,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
         gravity = Gravity.TOP or Gravity.LEFT; x = b.x.roundToInt(); y = b.y.roundToInt(); setFitInsetsTypes(0)
         layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         title = context.getString(R.string.brightness_slider)
+        windowAnimations = 0
     }
 }
 
@@ -105,6 +137,7 @@ internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
         contentDescription = context.getString(R.string.brightness_automatic)
         minimumWidth = 0; minimumHeight = 0; minWidth = 0; minHeight = 0
         setPadding(0, 0, 0, 0)
+        setTypeface(Typeface.DEFAULT, Typeface.BOLD)
         setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> touching(true)
@@ -139,7 +172,8 @@ internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
         val alpha = if (automatic) s.fillOpacity else s.trackOpacity
         mode.backgroundTintList = null
         mode.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 16f * resources.displayMetrics.density
             setColor(Color.argb((alpha * 255).roundToInt(), Color.red(color.toInt()), Color.green(color.toInt()), Color.blue(color.toInt())))
         }
         mode.setTextColor(ColorStateList.valueOf(s.icon.toInt()).withAlpha((s.iconOpacity * 255).roundToInt()))
@@ -150,17 +184,20 @@ internal class BrightnessPopupView(context: Context, change: (Float) -> Unit,
         val extra = BrightnessPopupGeometry.automaticSpace(h.toFloat(), resources.displayMetrics.density, settings.showAutomaticToggle).roundToInt()
         slider.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h - extra, MeasureSpec.EXACTLY))
         if (settings.showAutomaticToggle) {
-            val size = minOf(w, extra, (48f * resources.displayMetrics.density).roundToInt())
-            mode.measure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY))
+            val height = minOf(extra, (32f * resources.displayMetrics.density).roundToInt())
+            val width = minOf(w, (52f * resources.displayMetrics.density).roundToInt()).coerceAtLeast(height)
+            mode.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
         }
     }
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         val extra = BrightnessPopupGeometry.automaticSpace(height.toFloat(), resources.displayMetrics.density, settings.showAutomaticToggle).roundToInt()
         slider.layout(0, 0, width, height - extra)
         if (settings.showAutomaticToggle) {
-            val size = minOf(width, extra, (48f * resources.displayMetrics.density).roundToInt())
-            val x = (width - size) / 2
-            mode.layout(x, height - size, x + size, height)
+            val modeHeight = minOf(extra, (32f * resources.displayMetrics.density).roundToInt())
+            val modeWidth = minOf(width, (52f * resources.displayMetrics.density).roundToInt()).coerceAtLeast(modeHeight)
+            val x = (width - modeWidth) / 2
+            val y = height - extra + (extra - modeHeight) / 2
+            mode.layout(x, y, x + modeWidth, y + modeHeight)
         }
     }
     override fun onTouchEvent(event: MotionEvent): Boolean = if (event.actionMasked == MotionEvent.ACTION_OUTSIDE || event.y <= slider.bottom) slider.onTouchEvent(event) else false

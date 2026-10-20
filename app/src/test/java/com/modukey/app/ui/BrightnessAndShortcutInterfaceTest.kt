@@ -71,6 +71,30 @@ class BrightnessAndShortcutInterfaceTest {
             assertEquals(BrightnessPopupSettings().background, s.background)
         }
     }
+    @Test fun brightnessAnimationsHaveIndependentChoicesAndResetControls() {
+        ready(); val vm = NudgeViewModel(app)
+        rule.activity.setContent {
+            val current by app.configuration.state.collectAsStateWithLifecycle()
+            NudgeTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+                BrightnessPopupSettingsSection(checkNotNull(current), vm)
+            } }
+        }
+        rule.onNodeWithContentDescription(rule.activity.getString(R.string.expand_setup)).performClick()
+        rule.onAllNodes(hasText("No animation") and hasClickAction()).onFirst().performScrollTo().performClick()
+        rule.onNodeWithText("Slide and fade").performClick()
+        rule.onNode(hasText("No animation") and hasClickAction()).performScrollTo().performClick()
+        rule.onNodeWithText("Scale, slide, and fade").performClick()
+        rule.runOnIdle {
+            val s = app.configuration.state.value!!.brightnessPopup
+            assertEquals(PanelAnimation.SLIDE, s.animation); assertEquals(PanelAnimation.SCALE, s.closeAnimation)
+        }
+        rule.onNodeWithContentDescription("Reset Open animation").performScrollTo().performClick()
+        rule.runOnIdle {
+            val s = app.configuration.state.value!!.brightnessPopup
+            assertEquals(PanelAnimation.NONE, s.animation); assertEquals(PanelAnimation.SCALE, s.closeAnimation)
+            assertEquals(BrightnessPopupSettings().widthDp, s.widthDp)
+        }
+    }
     @Test fun automaticBrightnessCanBeAssignedAsADirectAction() {
         ready(); val vm = NudgeViewModel(app)
         val target = mutableStateOf(GestureTarget.NONE)

@@ -32,7 +32,9 @@ class GestureHapticsTest {
         assertFalse(haptics.perform(GestureFeedback()))
         assertTrue(haptics.perform(GestureFeedback(true, .2f))); assertTrue(shadow.isVibrating)
         val low = shadow.milliseconds
-        assertTrue(haptics.perform(GestureFeedback(true, 1f))); assertTrue(shadow.milliseconds > low)
+        assertTrue("Low strength must remain brief", low < 30)
+        assertTrue(haptics.perform(GestureFeedback(true, 1f)))
+        assertEquals("Maximum strength must use a stronger pulse", 140L, shadow.milliseconds)
         if (Build.VERSION.SDK_INT >= 33) assertEquals(VibrationAttributes.USAGE_ACCESSIBILITY,
             (shadow.vibrationAttributesFromLastVibration as VibrationAttributes).usage)
         shadow.setHasAmplitudeControl(false)

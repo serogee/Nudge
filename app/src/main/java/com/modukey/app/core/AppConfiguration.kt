@@ -111,6 +111,7 @@ data class AppConfiguration(
     val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
     val shortcuts: List<HomeShortcut> = emptyList(),
     val hideHandleIndicators: Boolean = false,
+    val handleAnimationsEnabled: Boolean = true,
 ) {
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()

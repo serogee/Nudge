@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="handle_animations">Handle animations</string>
+    <string name="handle_animations_help">Animate pull and reveal feedback on all handles. Turn this off to keep them still.</string>
+</resources>

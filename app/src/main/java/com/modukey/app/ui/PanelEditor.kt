@@ -98,8 +98,7 @@ import kotlin.math.roundToInt
     Section(R.string.panel_timeout) {
         Toggle(R.string.auto_close_panel, R.string.auto_close_help, p.autoCloseEnabled, default = false) { value -> vm.editPanel(entry.id) { it.copy(autoCloseEnabled = value) } }
         if (p.autoCloseEnabled) {
-            SettingSlider(R.string.close_after, p.autoCloseMs.toFloat(), 1000f..60000f,
-                t(R.string.seconds_value, p.autoCloseMs / 1000f), default = 3000f) { value -> vm.editPanel(entry.id) { it.copy(autoCloseMs = value.toLong()) } }
+            DurationInput(R.string.close_after, p.autoCloseMs, 1000L..60000L, default = 3000) { value -> vm.editPanel(entry.id) { it.copy(autoCloseMs = value) } }
             Help(R.string.panel_timeout_help)
         }
     }

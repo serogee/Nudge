@@ -23,14 +23,14 @@ import com.modukey.app.platform.IconPackInfo
 
 @Composable fun ActionPicker(dismiss: () -> Unit, includeEmpty: Boolean = true, choose: (ButtonAction) -> Unit) {
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.button_action)) }, text = {
-        LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.heightIn(max = 460.dp),
+        LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.heightIn(max = 460.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(ButtonAction.entries.filter { includeEmpty || it != ButtonAction.EMPTY }) { action ->
                 Surface(onClick = { choose(action) }, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Column(Modifier.fillMaxWidth().padding(12.dp).heightIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.fillMaxWidth().padding(8.dp).heightIn(min = 80.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
                         ButtonGraphic(PanelButton(action = action), "", Modifier.size(28.dp))
-                        Text(t(label(action)), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+                        Text(t(label(action)), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
                     }
                 }
             }

@@ -32,6 +32,8 @@ Both previews use the selected Portrait or Landscape tab. On an upright phone, a
 
 ## Gestures
 
+All six gesture selectors are in the top section. Distance, timing, and feedback controls stay in their separate settings categories.
+
 Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. The dialog's Save updates the editor draft. Cancel keeps the existing draft assignment.
 
 Panel choices show a four-square icon and the prefix Panel:. Direct actions show the same icon and the prefix Action:. Panel options have separate rows with space between them. Action names stay centered when they wrap.
@@ -57,19 +59,23 @@ There is no setting to hide handles during every screenshot method. Android's su
 - Swipe: move inward at least 24 dp and release within 600 ms by default.
 - Swipe and hold: reach its own distance within its own time limit. Hold still, then run at the deadline or after release.
 
-Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
+Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
 
 Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
 
-Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+Timing controls use numeric inputs in milliseconds. Each input shows its minimum and maximum. Valid entries update the draft immediately. Finishing an out-of-range entry applies the nearest limit. An empty or oversized entry restores the last valid value. Reset restores that control's default. These inputs also cover handle hiding, panel closing, and brightness popup closing.
 
-Pulling a panel shifts a non-interactive preview slightly inward, up to 12 dp. The preview stays in place during a hold. Releasing a completed gesture opens the assigned panel and settles it over 180 ms. An immediate swipe-and-hold action keeps its panel suspended until release. Preview buttons do not execute actions. Disabled system animations skip the motion.
+Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Maximum strength uses a 140 ms pulse at full available amplitude. Low strengths remain brief. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
+
+Swiping bends the visible handle slightly inward. It stays pulled during a hold and returns over 180 ms after release. The touch area stays fixed. Hidden handles and disabled system animations skip this feedback. Panels use their selected opening and closing animations. Opening a panel preserves captured handle input and its return animation before raising handles above the panel. Each old bar stays visible until its replacement draws a frame. Replacement also retains full-screen reveal state and the hide deadline.
 
 A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
 
 After Volume popup alone or a direct action, the next swipe advances only within Swipe sequence timeout, which defaults to 3 seconds. The existing saved timeout is retained. A combined assignment keeps the sequence active while its Nudge panel is open. Timing uses an expiry timestamp, not an idle timer or popup observation. Tap, Hold, and Swipe and hold reset ordinary swipe progression. Failed direct actions reset progression.
 
 ## Independent panels
+
+The button action selector uses three columns. Action names remain centered when they wrap.
 
 Open **Panels** to create, name, order, duplicate, edit, or delete panels. A new configuration has no panels. There are no fixed panel slots. Panels have their own editor and can be shared by several handles.
 
@@ -146,9 +152,11 @@ The **Pause handles** switch is above **Add handle**. Both global switches scrol
 
 The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
 
+The **Handle animations** switch controls pull and reveal feedback for every handle. It is on by default. Turn it off to keep handles still. Gesture actions continue to work.
+
 **Toggle handle visibility** applies the same override from a panel button, direct gesture, or Home shortcut. Its tile is On when visibility is allowed and Off while bars are hidden. It keeps an open panel usable. Restoring visibility shows only bars enabled in each handle's settings. **Toggle handles** follows **Close panels** in the action picker; **Toggle handle visibility** is next.
 
-Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. All color swatches share one palette. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
+Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. Color controls show a compact swatch. Tap it to open the palette and enter a hex value. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
 
 The built-in Nudge icon uses the separated pill mark without the app background. It follows the panel's icon color and opacity. Select Standalone for a button with no container. The default Nudge settings icon keeps the full app icon.
 
@@ -196,10 +204,20 @@ Button drags beyond touch slop cancel clicking until the next press, including w
 
 Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
 
-Development backups use schema 12 for per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Earlier configurations start with the override off. Add import keeps the current global override; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch. Existing actions, icon settings, and other preferences are retained.
+Development backups use schema 13 for brightness popup animations, per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Schema 14 adds the global handle-animation switch. Earlier configurations default to animations on. Add import keeps the current global settings; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch and No animation. Existing actions, icon settings, and other preferences are retained.
+
+## Brightness popup animations
+
+Expand **Appearance** under the brightness slider controls on Home. **Open animation** and **Close animation** each offer No animation, Fade, Slide and fade, and Scale, slide, and fade. Both default to No animation. Each control has its own reset button. Backup and restore retain both choices.
+
+Slide direction follows the popup's nearest screen side. Opening takes 180 ms, and closing takes 120 ms at normal system speed. Dismissal and timeout use the closing effect. Closing stops touch input, accessibility actions, brightness observers, and the timeout immediately. Preview guides and disabled system animations stay still. Screen-off, editor changes, screenshots, and service cleanup cancel transitions and remove the popup immediately.
+
+The automatic brightness control is a horizontal pill below the slider. Its touch area stays separate from the slider.
 
 ## Brightness touch behavior
 
 Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
+
+Expand **Appearance** to compare the configured brightness slider background with the MIUI volume slider background color, #202122. The preview uses the selected track and fill colors for the brightness sample.
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.

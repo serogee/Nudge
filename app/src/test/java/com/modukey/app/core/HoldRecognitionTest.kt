@@ -43,13 +43,4 @@ class HoldRecognitionTest {
         g.move(0f, 70f, 100); assertNull(g.nextDeadline()); assertNull(g.poll(700))
         assertEquals(GestureKind.SWIPE_HOLD, g.up(0f, 70f, 700))
     }
-    @Test fun pullPreviewIsBoundedAndDoesNotAdvanceTheSwipeSequence() {
-        val h = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.panel("one"),
-            GestureSlot.SWIPE_2 to GestureTarget.panel("two"), GestureSlot.SWIPE_HOLD to GestureTarget.panel("held")))
-        val sessions = GestureSessions()
-        repeat(3) { assertEquals("one", PanelPullPreview.target(h, false, sessions, 0)) }
-        assertEquals("held", PanelPullPreview.target(h, true, sessions, 0))
-        assertEquals(12f, PanelPullPreview.distance(10000f, 1f)); assertEquals(0f, PanelPullPreview.distance(-20f, 1f))
-        assertEquals(GestureTarget.panel("one") to 0, sessions.next(h, GestureKind.SWIPE, 100))
-    }
 }

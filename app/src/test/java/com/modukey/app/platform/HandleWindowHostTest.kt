@@ -3,6 +3,8 @@ package com.modukey.app.platform
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.WindowInsets
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -12,6 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.Shadows.shadowOf
+import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36])
@@ -19,12 +23,63 @@ class HandleWindowHostTest {
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     @After fun cleanup() { app.onTerminate() }
     // Model WindowManager accepting a window before ViewRoot delivers attachment.
-    private class PendingWindows(delegate: WindowManager) : WindowManager by delegate {
+    private class PendingWindows(private val delegate: WindowManager, private val attachViews: Boolean = false) : WindowManager by delegate {
         val registered = linkedMapOf<View, ViewGroup.LayoutParams>()
         var adds = 0; var removes = 0
-        override fun addView(view: View, params: ViewGroup.LayoutParams) { check(registered.put(view, params) == null); adds++ }
-        override fun updateViewLayout(view: View, params: ViewGroup.LayoutParams) { check(view in registered); registered[view] = params }
-        override fun removeViewImmediate(view: View) { check(registered.remove(view) != null); removes++ }
+        override fun addView(view: View, params: ViewGroup.LayoutParams) {
+            if (attachViews) delegate.addView(view, params)
+            check(registered.put(view, params) == null); adds++
+        }
+        override fun updateViewLayout(view: View, params: ViewGroup.LayoutParams) {
+            check(view in registered); if (attachViews) delegate.updateViewLayout(view, params); registered[view] = params
+        }
+        override fun removeViewImmediate(view: View) {
+            check(registered.remove(view) != null); if (attachViews) delegate.removeViewImmediate(view); removes++
+        }
+    }
+    @Test fun raisingKeepsTheDrawnHandleUntilItsReplacementDrawsAndCleanupCancelsTheHandoff() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java), attachViews = true)
+        var active: HandleTriggerView? = null
+        val host = HandleWindowHost(app, windows, {}, {}) { active = it }
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(indicatorVisible = true), Edge.LEFT, false)
+        try {
+            host.attach(spec)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(50))
+            val original = active!!
+            host.raise(spec)
+            assertEquals(2, windows.registered.size)
+            assertTrue(original in windows.registered); assertTrue(original.isAttachedToWindow)
+            assertNotSame(original, active)
+            host.raise(spec)
+            assertEquals("Rapid raises keep one old bar", 2, windows.registered.size)
+            assertTrue(original in windows.registered)
+            // Deliver the draw event explicitly; legacy Robolectric skips window drawing.
+            active!!.viewTreeObserver.dispatchOnDraw()
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+            assertEquals(setOf(active), windows.registered.keys)
+            assertFalse(original.isAttachedToWindow)
+            host.raise(spec)
+            host.detach(); host.detach()
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+            assertTrue(windows.registered.isEmpty()); assertNull(active)
+            assertEquals(windows.adds, windows.removes)
+        } finally { host.detach() }
+    }
+    @Test fun raisingRetainsARevealedHandleAndItsPanelStateInFullScreen() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        var active: HandleTriggerView? = null
+        var actions = 0
+        val host = HandleWindowHost(app, windows, { actions++ }, {}) { active = it }
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(softHideEnabled = true), Edge.LEFT, false)
+        try {
+            host.attach(spec)
+            active!!.dispatchApplyWindowInsets(WindowInsets.Builder().setVisible(WindowInsets.Type.statusBars(), false).build())
+            active!!.performClick(); assertEquals(0, actions)
+            active!!.setPanelOpen(true)
+            host.raise(spec)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4))
+            active!!.performClick(); assertEquals("Raising must not hide a revealed bar", 1, actions)
+        } finally { host.detach() }
     }
     @Test fun visibilityUpdatesKeepTheSameBoundedTouchableWindow() {
         val windows = PendingWindows(app.getSystemService(WindowManager::class.java))

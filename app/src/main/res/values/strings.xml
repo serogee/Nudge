@@ -75,6 +75,8 @@
     <string name="percent">%1$d%%</string>
     <string name="dp_value">%1$d dp</string>
     <string name="ms_value">%1$d ms</string>
+    <string name="milliseconds_unit">ms</string>
+    <string name="duration_range">Minimum: %1$d ms. Maximum: %2$d ms.</string>
     <string name="seconds_value">%1$.1f s</string>
     <string name="touch_length_percent">%1$d%% of touch length</string>
     <string name="swipe_1">Swipe 1</string>
@@ -291,6 +293,8 @@
     <string name="dnd_access_off">Do Not Disturb access is needed</string>
     <string name="expand_setup">Show setup steps</string>
     <string name="collapse_setup">Hide setup steps</string>
+    <string name="expand_section">Show %1$s</string>
+    <string name="collapse_section">Hide %1$s</string>
     <string name="open_autostart">Open Background autostart</string>
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>
@@ -324,6 +328,7 @@
     <string name="animation_slide">Slide and fade</string>
     <string name="animation_scale">Scale, slide, and fade</string>
     <string name="animation_help">Choose how panels open and close. Slide direction follows the handle edge.</string>
+    <string name="brightness_animation_help">Choose how the brightness popup opens and closes. Slides follow the popup side.</string>
     <string name="icon_library">Icon library</string>
     <string name="icon_packs">Icon packs</string>
     <string name="camera">Camera</string>

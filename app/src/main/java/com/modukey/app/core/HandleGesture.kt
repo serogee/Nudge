@@ -16,7 +16,6 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private var crossed = false; private var holdCrossed = false; private var holdReady = false
     private var moved = false; private var inward = 0f; private var parallel = 0f
     val pullDistance get() = if (active && !cancelled && moved) inward.coerceAtLeast(0f) else 0f
-    val prefersHold get() = holdCrossed
     fun down(x: Float, y: Float, time: Long) {
         active = true; cancelled = false; emitted = false; crossed = false; holdCrossed = false; holdReady = false; moved = false
         this.x = x; this.y = y; start = time; stableX = x; stableY = y; stableAt = time; inward = 0f; parallel = 0f

@@ -35,7 +35,7 @@ import com.modukey.app.core.HandleConfig
                 val y = if (horizontal) size.height - gap - depth else (size.height - length) / 2
                 drawRoundRect(ink, androidx.compose.ui.geometry.Offset(x, y), pill, androidx.compose.ui.geometry.CornerRadius(depth / 2))
             }
-            Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+            Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
         }
     }
 }

@@ -4,6 +4,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OverlayRegistryTest {
+    @Test fun `raising uses the current owner and preserves the requested order`() {
+        val owners = mutableListOf<String>(); val raised = mutableListOf<String>(); var detaches = 0
+        val registry = OverlayRegistry<String, Int> { id ->
+            owners += id
+            object : OverlayHost<Int> {
+                override fun attach(value: Int) = Unit
+                override fun update(value: Int) = Unit
+                override fun detach() { detaches++ }
+                override fun raise(value: Int) { raised += id }
+            }
+        }
+        val desired = linkedMapOf("low" to 1, "top" to 1)
+        registry.reconcile(desired); registry.reconcile(desired, raise = true)
+        assertEquals(listOf("low", "top"), owners)
+        assertEquals(listOf("low", "top"), raised)
+        assertEquals(0, detaches)
+        registry.clear(); assertEquals(2, detaches)
+    }
     @Test fun `updates avoid duplicates and new priorities restore stacking order`() {
         val stack=mutableListOf<String>(); var updates=0
         val registry=OverlayRegistry<String,Int> { id -> object:OverlayHost<Int> {

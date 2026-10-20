@@ -17,6 +17,8 @@ data class BrightnessPopupSettings(
     val timeoutMs: Long = 3_000,
     val cornerRadiusDp: Float = 32f, val showBackground: Boolean = true, val showAutomaticToggle: Boolean = true,
     val touchBehavior: BrightnessTouchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH,
+    val animation: PanelAnimation = PanelAnimation.NONE,
+    val closeAnimation: PanelAnimation = PanelAnimation.NONE,
 ) {
     fun normalized() = copy(cornerRadiusDp = cornerRadiusDp.finite(32f).coerceIn(0f, 64f), widthDp = widthDp.finite(64f).coerceIn(48f, 128f), heightDp = heightDp.finite(240f).coerceIn(120f, 480f),
         x = x.finite(.5f).coerceIn(0f, 1f), y = y.finite(.65f).coerceIn(0f, 1f),
