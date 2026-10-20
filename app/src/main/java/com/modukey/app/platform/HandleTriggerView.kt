@@ -12,8 +12,7 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 /** Small physical input window. Appearance changes do not cancel a captured gesture. */
-class HandleTriggerView(context: Context, private val activate: (GestureKind) -> Unit, private val onReveal: () -> Unit = {},
-    private val onPull: (Float?, Boolean) -> Unit = { _, _ -> }) : View(context) {
+class HandleTriggerView(context: Context, private val activate: (GestureKind) -> Unit, private val onReveal: () -> Unit = {}) : View(context) {
     constructor(context: Context) : this(context, {})
     private var settings = TriggerSettings()
     private var edge = Edge.RIGHT
@@ -70,7 +69,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs,
         settings.swipeHoldDistanceDp * resources.displayMetrics.density, settings.swipeHoldTimeoutMs,
         settings.holdExecution == HoldExecution.AFTER_TIME, settings.swipeHoldExecution == HoldExecution.AFTER_TIME)
-    fun cancelGesture() { gesture.cancel(); gestureHandler.removeCallbacks(deadline); onPull(null, false); softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry() }
+    fun cancelGesture() { gesture.cancel(); gestureHandler.removeCallbacks(deadline); softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry() }
     private fun scheduleDeadline(now: Long) {
         gestureHandler.removeCallbacks(deadline)
         gesture.nextDeadline()?.let { gestureHandler.postDelayed(deadline, (it - now).coerceAtLeast(1)) }
@@ -148,10 +147,9 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> cancelGesture()
             MotionEvent.ACTION_MOVE -> if (event.pointerCount == 1) {
                 gesture.move(event.rawX, event.rawY, event.eventTime)
-                if (!softHide.active || softHide.revealed) onPull(gesture.pullDistance.takeIf { it > 0f }, gesture.prefersHold)
                 gesture.poll(event.eventTime)?.let(::completeGesture); scheduleDeadline(event.eventTime)
             } else cancelGesture()
-            MotionEvent.ACTION_UP -> { softHide.touch(false, SystemClock.uptimeMillis()); gestureHandler.removeCallbacks(deadline); gesture.up(event.rawX, event.rawY, event.eventTime)?.let(::completeGesture); onPull(null, false); scheduleExpiry() }
+            MotionEvent.ACTION_UP -> { softHide.touch(false, SystemClock.uptimeMillis()); gestureHandler.removeCallbacks(deadline); gesture.up(event.rawX, event.rawY, event.eventTime)?.let(::completeGesture); scheduleExpiry() }
         }
         return true
     }

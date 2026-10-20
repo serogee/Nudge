@@ -46,8 +46,6 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var brightnessOpen = false
     private var brightnessOwner: String? = null
     private var panelHost: PanelHost? = null
-    private var pullHost: PanelHost? = null
-    private var pulling: PanelPull? = null
     private var panelTimeout: PanelTimeout? = null
     private var open: OpenPanel? = null
     private var attachedPanel: Pair<OpenPanel, Boolean>? = null
@@ -104,8 +102,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             { x, y -> handleBounds.values.any { it.contains(x, y) } }, ::runButton, { panelTimeout?.touch(it) }, { error ->
                 app.diagnostics.record("Panel cleanup failed", error); errors["panel"] = getString(R.string.overlay_error); frames?.request()
             })
-        pullHost = AccessibilityPanelHost(this, manager, actions!!, {}, { _, _ -> false }, {})
-        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }, { distance, hold -> updatePull(id, distance, hold) }) { view ->
+        registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }) { view ->
             if (view == null) views.remove(id) else views[id] = view
         } }
         try {
@@ -164,58 +161,10 @@ class EdgeAccessibilityService : AccessibilityService() {
             Insets(safe.left.toFloat(), safe.top.toFloat(), safe.right.toFloat(), maxOf(safe.bottom, nav.bottom).toFloat()), m.bounds.width() > m.bounds.height(),
             displays?.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0)
     }
-    private fun updatePull(id: String, distance: Float?, preferHold: Boolean) {
-        try { changePull(id, distance, preferHold) } catch (e: RuntimeException) { failPull(e) }
-    }
-    private fun failPull(error: RuntimeException) {
-        pulling = null; runCatching { pullHost?.hide(animate = false) }; panelTimeout?.touch(false)
-        app.diagnostics.record("Panel pull preview failed", error)
-    }
-    private fun changePull(id: String, distance: Float?, preferHold: Boolean) {
-        val config = app.configuration.state.value ?: return
-        val h = config.handle(id)
-        if (distance == null || h == null || app.editor.state.value != null || reason(config, h) != HandleAvailability.ACTIVE) {
-            val previous = pulling
-            if (previous?.handleId == id) {
-                pulling = null; pullHost?.hide(animate = false)
-                if (open?.handleId == id && h != null) panelHost?.pull(0f, h.trigger.placement(screen().landscape).edge, settle = true)
-                panelTimeout?.touch(false); frames?.request()
-            }
-            return
-        }
-        val panel = PanelPullPreview.target(h, preferHold, sessions, SystemClock.elapsedRealtime())
-        if (panel == null || config.panel(panel) == null) {
-            if (pulling?.handleId == id) { pulling = null; pullHost?.hide(animate = false); panelTimeout?.touch(false) }
-            return
-        }
-        pulling = PanelPull(id, panel, PanelPullPreview.distance(distance, resources.displayMetrics.density))
-        panelTimeout?.touch(true); frames?.request()
-    }
-    private fun renderPull(config: AppConfiguration, screen: ScreenSpace) {
-        try { drawPull(config, screen) } catch (e: RuntimeException) { failPull(e) }
-    }
-    private fun drawPull(config: AppConfiguration, screen: ScreenSpace) {
-        val p = pulling
-        val h = config.handle(p?.handleId)
-        if (p == null || h == null || app.editor.state.value != null || reason(config, h) != HandleAvailability.ACTIVE) {
-            pulling = null; pullHost?.hide(animate = false); panelTimeout?.touch(false); return
-        }
-        val edge = h.trigger.placement(screen.landscape).edge
-        if (open?.handleId == p.handleId && open?.panelId == p.panelId) {
-            pullHost?.hide(animate = false); panelHost?.pull(p.distancePx, edge); return
-        }
-        val panel = config.panel(p.panelId)?.settings ?: run { pulling = null; pullHost?.hide(animate = false); panelTimeout?.touch(false); return }
-        val bounds = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, h.trigger, screen.landscape)
-        val layout = panel.layout(screen.landscape)
-        val geometry = PanelGeometry.calculate(screen.usable, screen.density, layout, panel.buttons.size, bounds, edge)
-        pullHost?.show(PanelSpec(panel, layout, geometry, editing = true, edge = edge, handleId = h.id))
-        pullHost?.pull(p.distancePx, edge)
-    }
     private fun activate(id: String, kind: GestureKind) {
         val config = app.configuration.state.value ?: return
         val handle = config.handle(id) ?: return
         if (app.editor.state.value != null || reason(config, handle) != HandleAvailability.ACTIVE) { refresh(); return }
-        pullHost?.hide(animate = false)
         haptics.perform(handle.trigger.feedback(kind))
         val now = SystemClock.elapsedRealtime(); val (target, stage) = sessions.next(handle, kind, now)
         if (target.isNone) return
@@ -363,8 +312,7 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, trigger, space.landscape)
                 val geometry = PanelGeometry.calculate(space.usable, space.density, p.layout(space.landscape), p.buttons.size, b, edge)
                 panelHost?.show(PanelSpec(p, p.layout(space.landscape), if (panelEditing && preview != null) geometry.copy(bounds = preview.toDisplay(geometry.bounds)) else geometry,
-                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId,
-                    inputSuspended = pulling?.let { it.handleId == wanted.handleId && it.panelId == wanted.panelId } == true))
+                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId))
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
@@ -372,10 +320,8 @@ class EdgeAccessibilityService : AccessibilityService() {
             app.diagnostics.record("Panel window failed", e); dismissPanel(PanelCloseReason.WINDOW_ERROR); attachedPanel = null
             try { panelHost?.hide(animate = false) } catch (_: RuntimeException) { }; errors["panel"] = getString(R.string.overlay_error)
         }
-        renderPull(config, s)
         val timedPanel = open?.let { config.panel(it.panelId)?.settings }
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
-        if (pulling != null) panelTimeout?.touch(true)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
         val failures = registry?.reconcile(desired, raise = changed && wanted != null).orEmpty()
         views.forEach { (id, view) -> view.setPanelOpen(open?.handleId == id) }
@@ -421,8 +367,6 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private fun stopSession() {
         app.shortcuts.unbind(this)
-        pulling = null
-        runCatching { pullHost?.hide(animate = false) }; pullHost = null
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
         systemPanels?.cancel(); systemPanels = null

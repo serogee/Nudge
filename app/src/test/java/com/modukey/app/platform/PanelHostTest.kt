@@ -73,23 +73,6 @@ class PanelHostTest {
         val g = PanelGeometry.calculate(Bounds(0f, 0f, 400f, 700f), 1f, p.portrait, 0, Bounds(384f, 200f, 16f, 120f), edge)
         return PanelSpec(p, p.portrait, g, editing, edge)
     }
-    @Test fun pullFeedbackIsSlightSuspendedAndSettlesAfterRelease() {
-        val f = fixture(); val normal = spec(PanelAnimation.NONE)
-        f.host.show(normal.copy(inputSuspended = true)); idle(50)
-        val root = f.windows.attached.single()
-        val flags = f.windows.params.getValue(root).flags
-        assertTrue(flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE != 0)
-        assertTrue(flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE != 0)
-        assertEquals(0, f.snapshots())
-        f.host.pull(12f, Edge.RIGHT)
-        assertEquals(-12f, root.translationX); assertEquals(0f, root.translationY)
-        idle(700); assertEquals(-12f, root.translationX)
-        f.host.show(normal); f.host.pull(0f, Edge.RIGHT, settle = true)
-        idle(250)
-        assertEquals(0f, root.translationX); assertSame(root, f.windows.attached.single())
-        assertTrue(f.windows.params.getValue(root).flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE == 0)
-        assertTrue(f.snapshots() > 0)
-    }
     @Test fun `editing preview rotates its content and bounds without enabling input or sound observers`() {
         val f = fixture()
         val logical = spec(editing = true)
