@@ -326,6 +326,7 @@
     <string name="animation_slide">Slide and fade</string>
     <string name="animation_scale">Scale, slide, and fade</string>
     <string name="animation_help">Choose how panels open and close. Slide direction follows the handle edge.</string>
+    <string name="brightness_animation_help">Choose how the brightness popup opens and closes. Slides follow the popup side.</string>
     <string name="icon_library">Icon library</string>
     <string name="icon_packs">Icon packs</string>
     <string name="camera">Camera</string>

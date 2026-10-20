@@ -74,7 +74,9 @@ class BrightnessPopupTest {
         root.measure(View.MeasureSpec.makeMeasureSpec(64, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(296, View.MeasureSpec.EXACTLY))
         root.layout(0, 0, 64, 296)
         val mode = root.getChildAt(1) as ToggleButton
-        assertTrue(mode.isChecked); assertEquals(48, mode.height)
+        assertTrue(mode.isChecked); assertTrue(mode.typeface.isBold)
+        assertEquals(52, mode.width); assertEquals(32, mode.height)
+        assertTrue(mode.width > mode.height)
         mode.performClick(); assertEquals(1, automatic); assertTrue(writes.isEmpty())
         assertEquals(listOf(true, false), touches)
         root.configure(BrightnessPopupSettings(), true, .5f, false)

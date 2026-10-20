@@ -90,7 +90,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             { hideBrightness(); screenshots?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
             { performGlobalAction(it) },
             { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
-        brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(); refresh() }, {
+        brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(animate = true); refresh() }, {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }, changed = { panelHost?.refreshSound() })
         actions = PanelActions(this, screenshot = { screenshots?.request() == true }, systemPanel = { systemPanels?.request(it) == true }, brightnessPopup = ::showBrightness)
@@ -267,7 +267,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         } else if (brightnessOpen && awake && selected == null &&
             (brightnessOwner?.let { config.handle(it)?.let { h -> reason(config, h, ignorePause = true) == HandleAvailability.ACTIVE } } ?: !locked)) {
             if (brightnessHost?.show(config.brightnessPopup, s, editing = false) != true) hideBrightness()
-        } else hideBrightness()
+        } else hideBrightness(animate = awake && !locked && selected == null)
         val preview = selected?.landscape?.takeIf { open?.testing != true }?.let { PreviewGeometry.calculate(s.width, s.height, s.insets, s.rotation, it) }
         val guideScreen = preview?.let { ScreenSpace(it.width, it.height, s.density, it.insets, it.landscape) } ?: s
         val editing = selected != null && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
@@ -368,9 +368,9 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (shown) brightnessHost?.restartTimeout() else hideBrightness()
         return shown
     }
-    private fun hideBrightness() {
+    private fun hideBrightness(animate: Boolean = false) {
         brightnessOpen = false; brightnessOwner?.let(sessions::reset); brightnessOwner = null
-        brightnessHost?.hide()
+        brightnessHost?.hide(animate)
     }
     private fun stopSession() {
         raiseHandles = false
