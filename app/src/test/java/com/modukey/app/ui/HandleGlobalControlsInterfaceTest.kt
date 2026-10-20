@@ -35,15 +35,19 @@ class HandleGlobalControlsInterfaceTest {
         val before = app.configuration.state.value!!.handles
         val pause = rule.onNodeWithContentDescription("Pause handles")
         val hide = rule.onNodeWithContentDescription("Hide visible handles")
+        val add = rule.onNodeWithText("Add handle").performScrollTo()
+        add.assertIsDisplayed()
         assertTrue(pause.fetchSemanticsNode().boundsInRoot.top < hide.fetchSemanticsNode().boundsInRoot.top)
-        assertTrue(hide.fetchSemanticsNode().boundsInRoot.top < rule.onNodeWithText("Add handle").fetchSemanticsNode().boundsInRoot.top)
-        pause.assertIsOff().performClick()
+        val hideTop = hide.fetchSemanticsNode().boundsInRoot.top
+        val addTop = add.fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Hide top=$hideTop, Add top=$addTop", hideTop < addTop)
+        pause.performScrollTo().assertIsOff().performClick()
         rule.runOnIdle { assertEquals(setOf("a", "b"), app.handlePauses.state.value); assertEquals(before, app.configuration.state.value!!.handles) }
-        pause.assertIsOn().performClick()
+        pause.performScrollTo().assertIsOn().performClick()
         rule.runOnIdle { assertTrue(app.handlePauses.state.value.isEmpty()) }
-        hide.assertIsOff().performClick()
+        hide.performScrollTo().assertIsOff().performClick()
         rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators); assertEquals(before, app.configuration.state.value!!.handles) }
-        hide.assertIsOn().performClick()
+        hide.performScrollTo().assertIsOn().performClick()
         rule.runOnIdle { assertFalse(app.configuration.state.value!!.hideHandleIndicators); assertEquals(before, app.configuration.state.value!!.handles) }
         rule.onNodeWithText("Resume handles").assertDoesNotExist()
     }

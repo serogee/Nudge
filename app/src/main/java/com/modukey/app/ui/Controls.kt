@@ -4,7 +4,9 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -143,7 +145,10 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
         listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L),
         listOf(0xFF202122L))
     AlertDialog(onDismissRequest = { selecting = false }, title = { Text(label) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        text = { Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
+                label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,
+                isError = !hex.matches(Regex("[0-9a-fA-F]{6}")), modifier = Modifier.fillMaxWidth())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 palettes.flatten().distinct().forEach { v -> FilledIconButton(onClick = { change(v) },
                     modifier = Modifier.semantics { contentDescription = c.getString(R.string.color_description, "%06X".format(v and 0xFFFFFF)) },
@@ -151,8 +156,5 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
                     if (v == color) Icon(AppIcons.Check, null, Modifier.size(18.dp), tint = contrastOn(Color(v)))
                 } }
             }
-            OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
-                label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,
-                isError = !hex.matches(Regex("[0-9a-fA-F]{6}")), modifier = Modifier.fillMaxWidth())
         } }, confirmButton = { TextButton(onClick = { selecting = false }) { Text(t(R.string.done)) } })
 }
