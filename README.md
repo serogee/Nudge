@@ -6,7 +6,7 @@ Each handle has its own gestures, appearance, placement, exclusions, and lock-sc
 
 The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
 
-Version 0.4.1 is published. Version 0.4.2 is in preparation and adds gesture feedback, brightness popup transitions, and handle window fixes. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
+Version 0.4.2 is published. Version 0.4.3 is in preparation and adds continuous slider input, scoped handle controls, active button colors, and brightness fixes. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
 
 ## Build
 
@@ -67,17 +67,19 @@ Backups use the system file picker and include panels, gesture links, hidden but
 
 In Handles, **Pause handles** and **Hide visible handles** are above **Add handle**. Pause stops input without changing saved Enable switches. Switch it off to resume all paused handles. Hiding removes only the visible bars; gestures remain available. Hiding stays active across restarts and retains each handle's saved appearance. Editing previews remain available.
 
-Use **Toggle handle visibility** from a panel, direct gesture, or Home shortcut for the same hide control. In the action picker, **Toggle handles** follows **Close panels**, followed by **Toggle handle visibility**.
+Use **Toggle handle visibility** from a panel, direct gesture, or Home shortcut. Select All handles, This handle, or Other handles. It targets enabled handles; the Handles tab switch applies to every saved handle. **Toggle and hide handles** provides separate pause/resume and hide/show scopes. Each group toggles independently. An invoking panel stays usable after its handle is paused.
 
 ## Brightness slider and Home screen shortcuts
 
-Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum have independent **Return brightness** values. Enable **Use previous brightness** to restore a valid previous level and automatic mode. Otherwise, the return level defaults to 50% in manual mode. Previous maximum brightness is unavailable; Minimum also rejects its own minimum. Manual changes never activate either button, even at a limit.
+Add Increase brightness or Decrease brightness as a panel button, direct gesture, or Home screen shortcut. Each action changes brightness by five percent and selects manual brightness. Maximum and Minimum have independent **Return brightness** values. Enable **Use previous brightness** to restore a valid previous level and automatic mode. Otherwise, the return level defaults to 50% in manual mode. Previous maximum brightness is unavailable; Minimum also rejects its own minimum. A manually selected maximum makes Maximum brightness active. Its next press uses Return brightness when no previous value is available.
 
 Enable **Show brightness slider** in a gesture assignment. It works alone or with a panel, direct action, and **Show Volume Popup**. The custom slider opens on the left by default, opposite the usual right-side volume popup. Android does not report Xiaomi's private volume popup bounds. Home provides the volume-side selection, custom placement, width, height, timeout, colors, and opacity. The starting size is 64 ? 240 dp; compare and adjust it on your phone. It approximates MIUI styling, rather than using Xiaomi's native volume window.
 
 **Corner radius** changes slider rounding. **Show slider background** controls outer padding; off uses the full track width. **Vertical center from bottom** starts at 0% on the bottom. Existing placement migrates without a jump. The optional **Automatic brightness** button is shown below the slider by default. The same toggle is available for panel buttons, gestures, and shortcuts.
 
 Home's **Touch behavior** selects **Jump to touch** or **Slide to adjust**. Jump uses the touched track position. Slide keeps the current level on touch, then changes it in proportion to the drag. Existing setups keep Jump to touch. Slide follows direction changes immediately at either limit.
+
+In gesture assignments, **Slide to adjust** keeps touch after activation. Select exactly one volume or brightness popup. Keep your finger down, then slide vertically. Each handle has separate travel distances and optional editor guides. A continuous swipe disables Swipe and hold while retaining its saved assignment. This option is separate from the direct slider touch behavior above.
 
 Home's preview is non-interactive and ends when Home is left or the app goes into the background. It works with the master switch off when accessibility is connected. The live slider requires **Modify system settings** access. Dragging selects manual brightness; showing a preview does not change brightness. Outside touch and Back dismiss the live slider. It also closes on timeout, screen-off, source ineligibility, and service cleanup. Locked use follows the invoking handle's lock-screen setting and never wakes the phone.
 
@@ -87,7 +89,7 @@ Shortcuts require a connected Nudge accessibility service. They can run with Ena
 
 ## Battery use and compatibility
 
-One system-bound service manages all handles. There is no polling, wake lock, periodic restart work, foreground service, or idle redraw loop. Gesture timing uses touch timestamps. Panels release their composition and observers when closed. The brightness slider observes settings only while visible and coalesces drag writes to one per display frame. Its timeout is a single pending callback; there is no repeating timer. Shortcuts run only after a tap or an explicit pin request. Icons load off the main thread with an 8 MiB bitmap cache. Update checks run only when requested.
+One system-bound service manages all handles. It does not poll while idle. It has no wake lock, periodic restart work, foreground service, or idle redraw loop. Gesture timing uses touch timestamps. Panels release their composition and observers when closed. The brightness slider observes settings only while visible and coalesces drag writes to one per display frame. Its timeout is a single pending callback. During held volume adjustment, one unchanged-value popup request runs each second. It stops when input ends. Shortcuts run only after a tap or an explicit pin request. Icons load off the main thread with an 8 MiB bitmap cache. Update checks run only when requested.
 
 Physical Redmi Note 12 checks and battery measurements remain pending. Passing automated tests does not prove HyperOS compatibility or zero battery drain. Record the exact model, Android version, HyperOS build, and navigation mode in the local compatibility checklist.
 
@@ -121,9 +123,9 @@ For each new distributed version, commit the completed features/fixes, then incr
 
 ```powershell
 # Preview changes since the latest published release:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.4.2 -FromTag v0.4.1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.4.3 -FromTag v0.4.2
 # After changing version.properties, update that version's changelog and notes:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag v0.4.1 -Write
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag v0.4.2 -Write
 # Review the generated files, add device observations, and commit the version and notes.
 # Run the signed build from clean main after merging:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateTag
@@ -131,9 +133,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateT
 
 The generator uses the first line of each full commit message, including messages with body bullets immediately after the title. `feat` becomes Added, `fix` Fixed, `perf` Performance, and build/docs/test/chore commits Maintenance. Other changes go under Changed; `!` or a `BREAKING CHANGE:` footer identifies breaking changes. Scoped and older unscoped titles both work. Each entry includes its commit hash. Scopes and message rules are defined in [.plans/scopes.md](.plans/scopes.md) and [AGENTS.md](AGENTS.md).
 
-`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.4.1` selects the baseline for 0.4.2; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
+`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.4.2` selects the baseline for 0.4.3; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
 
-Established local version tags identify release versions in this repository. The newest tag can remain a working release until marked ready. Version 0.4.2, code 11, is being prepared from published `v0.4.1`, code 10. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
+Established local version tags identify release versions in this repository. The newest tag can remain a working release until marked ready. Version 0.4.3, code 12, is being prepared from published `v0.4.2`, code 11. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
 
 Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
@@ -168,11 +170,11 @@ The profile is saved under `.local/device-checks`; manually complete the checkli
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
 
-## 0.4.2 preparation and publication
+## 0.4.3 preparation and publication
 
-Version 0.4.2, code 11, is the next release. Its notes use published `v0.4.1` as the baseline. Keep the existing release tags and signing key.
+Version 0.4.3, code 12, is the next release. Its notes use published `v0.4.2` as the baseline. Keep the existing release tags and signing key.
 
-The feature branch contains the version, reviewed notes, and post-merge finalizer. See [the 0.4.2 release checklist](docs/release-checklist-0.4.2.md). Push this branch, open a pull request into main, and select **Create a merge commit**. This preserves the separate commits and lets the finalizer confirm that main contains the prepared source.
+The feature branch contains the version, reviewed notes, and post-merge finalizer. See [the 0.4.3 release checklist](docs/release-checklist-0.4.3.md). Push this branch, open a pull request into main, and select **Create a merge commit**. This preserves the separate commits and lets the finalizer confirm that main contains the prepared source.
 
 After GitHub merges the pull request, run this command from the clean feature checkout:
 
@@ -180,7 +182,7 @@ After GitHub merges the pull request, run this command from the clean feature ch
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Finalize-Release.ps1
 ```
 
-The finalizer fetches main, verifies that the prepared commits are merged, and fast-forwards local main. It does not create a local merge commit. It then runs the release checks, builds the signed APK, verifies its signer and version, exports the four release files, and creates local tag `v0.4.2`. It does not push or publish. It refuses an unmerged or dirty checkout. `-CheckOnly` checks local preparation without fetching, switching branches, building, or tagging.
+The finalizer fetches main, verifies that the prepared commits are merged, and fast-forwards local main. It does not create a local merge commit. It then runs the release checks, builds the signed APK, verifies its signer and version, exports the four release files, and creates local tag `v0.4.3`. It does not push or publish. It refuses an unmerged or dirty checkout. `-CheckOnly` checks local preparation without fetching, switching branches, building, or tagging.
 
 The final signed APK and tag must be created after the merge so both identify the merged main commit. Do not tag the feature branch or regenerate the reviewed notes after merging. If a command fails, resolve the failure before continuing.
 
@@ -189,14 +191,14 @@ Install the signed APK over the current release without uninstalling. Check reta
 After the finalizer succeeds and the files are ready, push its existing tag:
 
 ```powershell
-git push origin v0.4.2
+git push origin v0.4.3
 ```
 
-Create a GitHub release for that tag. Use **Nudge 0.4.2** as the title and paste `releases/0.4.2/Nudge-0.4.2-notes.md` into the description. Attach these files from `releases/0.4.2/`:
+Create a GitHub release for that tag. Use **Nudge 0.4.3** as the title and paste `releases/0.4.3/Nudge-0.4.3-notes.md` into the description. Attach these files from `releases/0.4.3/`:
 
-- `Nudge-0.4.2.apk`
-- `Nudge-0.4.2.apk.sha256`
-- `Nudge-0.4.2.json`
-- `Nudge-0.4.2-notes.md`
+- `Nudge-0.4.3.apk`
+- `Nudge-0.4.3.apk.sha256`
+- `Nudge-0.4.3.json`
+- `Nudge-0.4.3-notes.md`
 
-Publish only after all four files are attached. For a stable release, leave the pre-release option off and set the release as latest. Confirm publication before using `v0.4.2` as a future changelog baseline.
+Publish only after all four files are attached. For a stable release, leave the pre-release option off and set the release as latest. Confirm publication before using `v0.4.3` as a future changelog baseline.
