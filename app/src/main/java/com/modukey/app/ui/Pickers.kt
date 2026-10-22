@@ -15,13 +15,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 import com.modukey.app.core.*
 import com.modukey.app.platform.IconPackInfo
 
-@Composable fun ActionPicker(dismiss: () -> Unit, includeEmpty: Boolean = true, choose: (ButtonAction) -> Unit) {
+@Composable fun ActionPicker(dismiss: () -> Unit, includeEmpty: Boolean = true, volumePopupOptions: Boolean = true, choose: (ButtonAction) -> Unit) {
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.button_action)) }, text = {
         LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.heightIn(max = 460.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -29,7 +30,11 @@ import com.modukey.app.platform.IconPackInfo
                 Surface(onClick = { choose(action) }, shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                     Column(Modifier.fillMaxWidth().padding(8.dp).heightIn(min = 80.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
-                        ButtonGraphic(PanelButton(action = action), "", Modifier.size(28.dp))
+                        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                            ButtonGraphic(PanelButton(action = action), "", Modifier.size(28.dp))
+                            if (action.hasAdditionalOptions(volumePopupOptions)) ActionOptionsBadge(action,
+                                MaterialTheme.colorScheme.surfaceContainerHigh, Modifier.align(Alignment.BottomEnd).zIndex(1f))
+                        }
                         Text(t(label(action)), Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
                     }
                 }

@@ -295,6 +295,10 @@
     <string name="collapse_setup">Hide setup steps</string>
     <string name="expand_section">Show %1$s</string>
     <string name="collapse_section">Hide %1$s</string>
+    <string name="additional_options_available">Additional options available</string>
+    <string name="additional_options_shown">Additional options shown</string>
+    <string name="action_has_options">%1$s has additional options</string>
+    <string name="options_for_setting">Options for %1$s</string>
     <string name="open_autostart">Open Background autostart</string>
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>

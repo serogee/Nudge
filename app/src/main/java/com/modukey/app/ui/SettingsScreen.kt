@@ -118,7 +118,7 @@ import com.modukey.app.updates.*
                 }
             }
             Help(R.string.autostart_note)
-            if (open) {
+            if (open) DependentSettings(R.string.hyperos_setup) {
                 Text(t(R.string.open_accessibility), style = MaterialTheme.typography.titleSmall)
                 Help(R.string.setup_accessibility)
                 OutlinedButton(onClick = { openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text(t(R.string.open_accessibility)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Open, null, Modifier.size(16.dp)) }

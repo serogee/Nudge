@@ -4,6 +4,7 @@
 
 - Move brightness calibration to Home, below the brightness slider controls.
 - Choose Any direction or Inward only for ordinary swipes. Existing handles keep Inward only.
+- Mark additional settings with chevrons, action-picker gear badges, and subtle parent-setting indicators.
 
 ## 0.4.3 - 2026-10-22
 

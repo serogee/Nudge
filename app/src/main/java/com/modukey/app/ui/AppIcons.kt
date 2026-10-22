@@ -12,7 +12,7 @@ import com.modukey.app.core.BuiltInIcon
 
 /** Small static vectors share one style across navigation, editing, and the icon library. */
 object AppIcons {
-    private fun icon(name: String, draw: PathBuilder.() -> Unit) = ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
+    private fun icon(name: String, autoMirror: Boolean = false, draw: PathBuilder.() -> Unit) = ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f, autoMirror = autoMirror).apply {
         path(fill = null, stroke = SolidColor(Color.Black), strokeLineWidth = 1.8f, strokeLineCap = StrokeCap.Round,
             strokeLineJoin = StrokeJoin.Round, pathBuilder = draw)
     }.build()
@@ -29,6 +29,10 @@ object AppIcons {
     val Drag = icon("Drag") { for(x in listOf(9f,15f)) for(y in listOf(5f,12f,19f)) { moveTo(x,y); lineTo(x+.1f,y) } }
     val ChevronUp = icon("Collapse") { moveTo(6f,15f); lineTo(12f,9f); lineTo(18f,15f) }
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
+    val Dependent = icon("Related settings", autoMirror = true) {
+        moveTo(5f,4f); lineTo(5f,11f); curveTo(5f,14f,7f,16f,10f,16f); lineTo(20f,16f)
+        moveTo(15f,11f); lineTo(20f,16f); lineTo(15f,21f)
+    }
     val Add = icon("Add") { moveTo(4f,12f); lineTo(20f,12f); moveTo(12f,4f); lineTo(12f,20f) }
     val Minus = icon("Minus") { moveTo(5f,12f); lineTo(19f,12f) }
     val Notifications = icon("Notifications") {

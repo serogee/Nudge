@@ -224,6 +224,10 @@ Expand **Appearance** to edit the brightness background, track, fill, and icon c
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
 
+## Settings with additional options
+
+Settings that offer more options show a chevron. A small bent arrow identifies controls that depend on a parent setting. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
+
 ## Brightness percentages and calibration
 
 Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Home provides optional calibration below the brightness slider controls at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Home, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.

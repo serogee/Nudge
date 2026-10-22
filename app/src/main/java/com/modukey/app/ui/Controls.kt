@@ -47,7 +47,7 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
                     Icon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, description, Modifier.size(20.dp))
                 }
             }
-            if (expanded) content()
+            if (expanded) DependentSettings(label, content)
         }
     }
 }
@@ -68,12 +68,14 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
         }
     }
 }
-@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, default: Boolean? = null, enabled: Boolean = true, change: (Boolean) -> Unit) {
+@Composable fun Toggle(@StringRes title: Int, @StringRes detail: Int?, checked: Boolean, default: Boolean? = null, enabled: Boolean = true,
+    optionsExpanded: Boolean? = null, change: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
             SettingTitle(t(title), enabled = enabled, reset = if (default != null && checked != default) ({ change(default) }) else null)
             detail?.let { Help(it) }
         }
+        if (optionsExpanded != null) OptionsIndicator(optionsExpanded, enabled)
         val description = t(title)
         Switch(checked = checked, onCheckedChange = change, enabled = enabled, modifier = Modifier.semantics { contentDescription = description })
     }
@@ -104,7 +106,7 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
         SettingTitle(title, reset = if (default != null && selected != default) ({ change(default) }) else null)
         Box {
             OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(optionText(c, selected as Any), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
+                Text(optionText(c, selected as Any), Modifier.weight(1f)); Icon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, null, Modifier.size(18.dp))
             }
             DropdownMenu(expanded, { expanded = false }) {
                 values.forEach { v -> DropdownMenuItem(text = { Text(optionText(c, v as Any)) }, onClick = { expanded = false; change(v) }) }
@@ -138,7 +140,11 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
         Box(Modifier.weight(1f)) { SettingTitle(label, enabled, if (default != null && color != default) ({ change(default) }) else null) }
         Surface(Modifier.size(48.dp, 32.dp).clickable(enabled = enabled, role = Role.Button) { selecting = true }
             .semantics { contentDescription = c.getString(R.string.edit_color, label) }, shape = MaterialTheme.shapes.small,
-            color = Color(color), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (enabled) 1f else .38f))) {}
+            color = Color(color), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (enabled) 1f else .38f))) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(AppIcons.Down, null, Modifier.size(16.dp), tint = contrastOn(Color(color)).copy(alpha = if (enabled) .8f else .38f))
+            }
+        }
     }
     if (!selecting) return
     val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),

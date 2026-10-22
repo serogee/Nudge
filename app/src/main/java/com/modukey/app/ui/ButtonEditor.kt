@@ -34,26 +34,30 @@ import com.modukey.app.core.*
                 SettingTitle(t(R.string.button_action), reset = if (draft.action != ButtonAction.VOLUME_UP) ({ draft = draft.copy(action = ButtonAction.VOLUME_UP) }) else null)
                 OutlinedButton(onClick = { page = 1 }, modifier = Modifier.fillMaxWidth()) {
                     ButtonGraphic(PanelButton(action = draft.action), "", Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
-                    Text(t(label(draft.action)), Modifier.weight(1f)); Icon(AppIcons.Edit, null, Modifier.size(18.dp))
+                    Text(t(label(draft.action)), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
                 }
-                if (draft.action == ButtonAction.OPEN_APP) OutlinedButton(onClick = { page = 2 }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (draft.appPackage.isBlank()) t(R.string.choose_app) else draft.appLabel.ifBlank { draft.appPackage }, Modifier.weight(1f)); Icon(AppIcons.Apps, null)
+                if (draft.action == ButtonAction.OPEN_APP) DependentSettings(t(label(draft.action))) {
+                    OutlinedButton(onClick = { page = 2 }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (draft.appPackage.isBlank()) t(R.string.choose_app) else draft.appLabel.ifBlank { draft.appPackage }, Modifier.weight(1f)); Icon(AppIcons.Down, null)
+                    }
                 }
-                if (draft.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN))
+                if (draft.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) DependentSettings(t(label(draft.action))) {
                     Toggle(R.string.show_volume_popup, R.string.show_volume_help, draft.showVolumePopup, default = false) { draft = draft.copy(showVolumePopup = it) }
+                }
                 HandleActionControls(draft) { draft = it }
-                if (draft.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM))
+                if (draft.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) DependentSettings(t(label(draft.action))) {
                     BrightnessReturnControls(draft.brightnessReturn) { draft = draft.copy(brightnessReturn = it) }
+                }
                 if (draft.action == ButtonAction.BRIGHTNESS_AUTOMATIC) Help(R.string.brightness_automatic_action_help)
                 if (draft.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) Help(R.string.brightness_step_help)
                 if (draft.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) Help(R.string.native_panel_help)
-                if (draft.action == ButtonAction.EMPTY) {
+                if (draft.action == ButtonAction.EMPTY) DependentSettings(t(label(draft.action))) {
                     OptionRow(t(R.string.appearance), EmptyAppearance.entries, draft.emptyAppearance, EmptyAppearance.SLASH) { draft = draft.copy(emptyAppearance = it) }
                     Help(R.string.empty_button_help)
                 } else {
                 SettingTitle(t(R.string.button_icon), reset = if (draft.icon != IconReference()) ({ draft = draft.copy(icon = IconReference()) }) else null)
                 OutlinedButton(onClick = { vm.loadPacks(); page = 3 }, modifier = Modifier.fillMaxWidth()) {
-                    ButtonGraphic(draft, panel.iconPack, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)); Text(t(R.string.choose_icon), Modifier.weight(1f)); Icon(AppIcons.Edit, null, Modifier.size(18.dp))
+                    ButtonGraphic(draft, panel.iconPack, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)); Text(t(R.string.choose_icon), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
                 }
                 OptionRow(t(R.string.icon_container), IconContainer.entries, draft.iconContainer, IconContainer.DEFAULT) { draft = draft.copy(iconContainer = it) }
                 }

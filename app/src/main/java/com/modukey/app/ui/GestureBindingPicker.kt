@@ -26,7 +26,7 @@ import com.modukey.app.core.*
             if (target.panelId != null || target.action != null) {
                 Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
             }
-            Text(context.targetLabel(config, target), Modifier.weight(1f)); Icon(AppIcons.Edit, null, Modifier.size(18.dp))
+            Text(context.targetLabel(config, target), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
         }
     }
     if (picking && enabled) GestureBindingPicker(config, slot, target, vm, { picking = false }) { change(it); picking = false }
@@ -39,7 +39,7 @@ import com.modukey.app.core.*
     var page by remember { mutableIntStateOf(0) }
     when (page) {
         1 -> {
-            ActionPicker({ page = 0 }, includeEmpty = false) { selected ->
+            ActionPicker({ page = 0 }, includeEmpty = false, volumePopupOptions = false) { selected ->
                 val action = (draft.action ?: PanelButton()).copy(action = selected, showVolumePopup = false)
                 if (selected == ButtonAction.OPEN_APP) { pendingApp = action; vm.loadApps(); page = 2 }
                 else { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action, slideToAdjust = draft.slideToAdjust); page = 0 }
@@ -65,26 +65,34 @@ import com.modukey.app.core.*
             item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, slideToAdjust = draft.slideToAdjust) } }
             item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
-            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it).normalized() } }
-            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false) { draft = draft.copy(brightness = it).normalized() } }
+            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false,
+                optionsExpanded = if (slot != GestureSlot.TAP && !draft.brightness) draft.volume else null) { draft = draft.copy(volume = it).normalized() } }
+            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false,
+                optionsExpanded = if (slot != GestureSlot.TAP && !draft.volume) draft.brightness else null) { draft = draft.copy(brightness = it).normalized() } }
             if (slot != GestureSlot.TAP && (draft.volume xor draft.brightness)) item {
-                Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, draft.slideToAdjust, default = false) { draft = draft.copy(slideToAdjust = it) }
+                DependentSettings(if (draft.volume) R.string.show_volume_popup else R.string.show_brightness_slider) {
+                    Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, draft.slideToAdjust, default = false) { draft = draft.copy(slideToAdjust = it) }
+                }
             }
             if (draft.action?.action in listOf(ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)) item {
                 HandleActionControls(requireNotNull(draft.action)) { draft = draft.copy(action = it) }
             }
             if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item {
                 val action = requireNotNull(draft.action)
-                BrightnessReturnControls(action.brightnessReturn) { draft = draft.copy(action = action.copy(brightnessReturn = it)) }
+                DependentSettings(t(label(action.action))) {
+                    BrightnessReturnControls(action.brightnessReturn) { draft = draft.copy(action = action.copy(brightnessReturn = it)) }
+                }
             }
             if (draft.action?.action == ButtonAction.BRIGHTNESS_AUTOMATIC) item { Help(R.string.brightness_automatic_action_help) }
             if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) item { Help(R.string.brightness_step_help) }
             if (draft.action?.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) item { Help(R.string.native_panel_help) }
             if (draft.action?.action == ButtonAction.OPEN_APP) item {
-                OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
-                    Text(context.buttonLabel(requireNotNull(draft.action)), Modifier.weight(1f))
-                    Icon(AppIcons.Edit, null, Modifier.size(18.dp))
+                DependentSettings(t(label(ButtonAction.OPEN_APP))) {
+                    OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
+                        Text(context.buttonLabel(requireNotNull(draft.action)), Modifier.weight(1f))
+                        Icon(AppIcons.Down, null, Modifier.size(18.dp))
+                    }
                 }
             }
         }
@@ -118,6 +126,6 @@ import com.modukey.app.core.*
         Spacer(Modifier.width(12.dp))
         if (showTypeIcon) { Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)) }
         Text(title, Modifier.weight(1f))
-        if (showTypeIcon) { Spacer(Modifier.width(8.dp)); Icon(AppIcons.Edit, null, Modifier.size(18.dp)) }
+        if (showTypeIcon) { Spacer(Modifier.width(8.dp)); Icon(AppIcons.Down, null, Modifier.size(18.dp)) }
     }
 }

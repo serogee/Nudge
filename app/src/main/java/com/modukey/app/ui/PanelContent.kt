@@ -181,7 +181,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
     }
 }
 
-private class SquircleShape(private val fraction: Float) : Shape {
+internal class SquircleShape(private val fraction: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val r = size.minDimension * fraction.coerceIn(0f, 0.5f)
         val w = size.width; val h = size.height
