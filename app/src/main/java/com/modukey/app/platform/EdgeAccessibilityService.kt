@@ -245,6 +245,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (target.brightness) brightnessHost?.holdFromHandle(true)
         val binding = SliderBinding(handle.id, slot, target)
         val travel = (if (target.volume) handle.volumeTravelDp else handle.brightnessTravelDp) * resources.displayMetrics.density
+        val guarded = slot in listOf(GestureSlot.SWIPE_1, GestureSlot.SWIPE_2, GestureSlot.SWIPE_3) && target.sliderActivation == SliderActivation.AFTER_HOLD
         val driver = SliderDragSession(view, initial, view.touchY, travel, write = { fraction ->
             if (target.volume) app.volume.setFraction(fraction) else {
                 when (app.brightness.setFraction(fraction)) {
@@ -261,7 +262,9 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (target.brightness) hideBrightness()
             Toast.makeText(this, if (target.volume) R.string.volume_failed else if (!app.brightness.canWrite)
                 R.string.brightness_access_required else R.string.brightness_failed, Toast.LENGTH_SHORT).show()
-        })
+        }, startX = view.touchX, holdMs = if (guarded) target.sliderHoldMs else 0, slopPx = 8f * resources.displayMetrics.density,
+            readOnArm = { if (target.volume) app.volume.read()?.fraction else app.brightness.fraction() },
+            onArmed = { if (handle.trigger.feedback(GestureKind.SWIPE).enabled) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) })
         val captured = view.captureSlider(driver::move) { cancelled ->
             val completed = driver.finish(cancelled)
             val owns = sliderBinding === binding

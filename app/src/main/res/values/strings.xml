@@ -295,6 +295,10 @@
     <string name="collapse_setup">Hide setup steps</string>
     <string name="expand_section">Show %1$s</string>
     <string name="collapse_section">Hide %1$s</string>
+    <string name="additional_options_available">Additional options available</string>
+    <string name="additional_options_shown">Additional options shown</string>
+    <string name="action_has_options">%1$s has additional options</string>
+    <string name="options_for_setting">Options for %1$s</string>
     <string name="open_autostart">Open Background autostart</string>
     <string name="autostart_unavailable">This phone does not expose the shortcut. Use the steps below.</string>
     <string name="offset_x">X offset</string>
@@ -501,11 +505,12 @@
     <string name="brightness_calibrated">Brightness uses your saved calibration. Calibration stays on this device.</string>
     <string name="calibrate_brightness">Calibrate brightness</string>
     <string name="reset_brightness_calibration">Reset calibration</string>
-    <string name="brightness_calibration_steps">Turn off automatic brightness. Open Control center and set its brightness slider to the requested position. Return here and select Capture.</string>
+    <string name="brightness_calibration_steps">Turn off automatic brightness. Open Control center and set its brightness slider to the requested position. Return to Home and select Capture.</string>
     <string name="brightness_calibration_position">Set the native brightness slider to %1$d%%.</string>
     <string name="capture_brightness">Capture</string>
     <string name="brightness_calibration_failed">Cannot save this sample. Turn off automatic brightness. Each sample must be higher than the previous sample.</string>
     <string name="swipe_hold_distance_mode">Distance direction</string>
+    <string name="swipe_distance_mode_help">Any direction uses the straight-line distance from the first touch. Moving back reduces this distance. Inward only follows the handle’s edge.</string>
     <string name="any_direction">Any direction</string>
     <string name="inward_only">Inward only</string>
     <string name="swipe_hold_distance_mode_help">Measure from the starting point. Hold beyond the distance. Moving back below the distance restarts the hold.</string>

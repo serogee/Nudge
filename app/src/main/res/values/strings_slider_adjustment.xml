@@ -1,6 +1,13 @@
 <resources>
     <string name="slide_to_adjust">Slide to adjust</string>
     <string name="slide_to_adjust_help">Keep your finger down after activation. Slide up to increase the value. Slide down to decrease it.</string>
+    <string name="slider_activation">Start adjustment</string>
+    <string name="slider_after_hold">After hold</string>
+    <string name="slider_immediate">Immediate</string>
+    <string name="slider_hold_time">Adjustment hold time</string>
+    <string name="slider_hold_help">The popup opens first. Keep your finger still for the hold time, then slide. Small initial movement is ignored. Release early to keep the current value. The ready cue follows this swipe’s haptic setting.</string>
+    <string name="slider_immediate_help">Adjustment starts when the popup opens. Further vertical movement changes the value immediately.</string>
+    <string name="slider_action_timing_help">An assigned button action runs when the popup opens. The hold time delays only slide adjustment.</string>
     <string name="slide_swipe_hold_conflict">Swipe and hold is unavailable while a swipe uses Slide to adjust. Its saved action stays available after you disable that option.</string>
     <string name="slider_travel">Slider travel</string>
     <string name="slider_travel_help" formatted="false">Set the vertical distance for a full change from 0% to 100%. A shorter distance changes the value faster.</string>

@@ -38,15 +38,17 @@ import kotlin.math.roundToInt
             Text(t(R.string.appearance), Modifier.weight(1f))
             EditIcon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, if (expanded) R.string.collapse_setup else R.string.expand_setup) { expanded = !expanded }
         }
-        if (expanded) {
+        if (expanded) DependentSettings(R.string.appearance) {
             Help(R.string.brightness_slider_help)
             Help(R.string.brightness_size_help)
             OptionRow(t(R.string.brightness_position), BrightnessSide.entries, s.side, defaults.side) { v -> edit { it.copy(side = v) } }
-            if (s.side == BrightnessSide.OPPOSITE_VOLUME) {
+            if (s.side == BrightnessSide.OPPOSITE_VOLUME) DependentSettings(R.string.brightness_position) {
                 OptionRow(t(R.string.volume_popup_side), VolumeSide.entries, s.volumeSide, defaults.volumeSide) { v -> edit { it.copy(volumeSide = v) } }
                 Help(R.string.volume_side_help)
             }
-            if (s.side == BrightnessSide.CUSTOM) PercentSlider(R.string.center_x, s.x, default = defaults.x) { v -> edit { it.copy(x = v) } }
+            if (s.side == BrightnessSide.CUSTOM) DependentSettings(R.string.brightness_position) {
+                PercentSlider(R.string.center_x, s.x, default = defaults.x) { v -> edit { it.copy(x = v) } }
+            }
             PercentSlider(R.string.slider_center_from_bottom, s.y, default = defaults.y) { v -> edit { it.copy(y = v) } }
             SettingSlider(R.string.slider_width, s.widthDp, 48f..128f, t(R.string.dp_value, s.widthDp.roundToInt()), default = defaults.widthDp) { v -> edit { it.copy(widthDp = v) } }
             SettingSlider(R.string.slider_height, s.heightDp, 120f..480f, t(R.string.dp_value, s.heightDp.roundToInt()), default = defaults.heightDp) { v -> edit { it.copy(heightDp = v) } }
@@ -55,10 +57,12 @@ import kotlin.math.roundToInt
             OptionRow(t(R.string.close_animation), PanelAnimation.entries, s.closeAnimation, defaults.closeAnimation) { v -> edit { it.copy(closeAnimation = v) } }
             Help(R.string.brightness_animation_help)
             SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..64f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), default = defaults.cornerRadiusDp) { v -> edit { it.copy(cornerRadiusDp = v) } }
-            Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true) { v -> edit { it.copy(showBackground = v) } }
+            Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true, optionsExpanded = s.showBackground) { v -> edit { it.copy(showBackground = v) } }
+            DependentSettings(R.string.slider_show_background) {
+                ColorPicker(s.background, title = R.string.slider_background, enabled = s.showBackground, default = defaults.background) { v -> edit { it.copy(background = v) } }
+                PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, enabled = s.showBackground, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
+            }
             Toggle(R.string.slider_show_automatic, R.string.slider_automatic_help, s.showAutomaticToggle, default = true) { v -> edit { it.copy(showAutomaticToggle = v) } }
-            ColorPicker(s.background, title = R.string.slider_background, enabled = s.showBackground, default = defaults.background) { v -> edit { it.copy(background = v) } }
-            PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, enabled = s.showBackground, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
             ColorPicker(s.track, title = R.string.slider_track, default = defaults.track) { v -> edit { it.copy(track = v) } }
             PercentSlider(R.string.slider_track_opacity, s.trackOpacity, default = 1f) { v -> edit { it.copy(trackOpacity = v) } }
             ColorPicker(s.fill, title = R.string.slider_fill, default = defaults.fill) { v -> edit { it.copy(fill = v) } }

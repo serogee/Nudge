@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 18 adds continuous slider bindings and handle travel distances. */
+/** Schema 20 adds the activation guard for continuous swipe adjustment. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 18
+    const val SCHEMA = 20
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -51,7 +51,8 @@ object ConfigurationCodec {
                         else -> GestureTarget.panel(ids[value.last().digitToInt() - 1])
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
-                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness"), it.optBoolean("slideToAdjust")).also { target ->
+                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness"), it.optBoolean("slideToAdjust"),
+                            enumValueOf(it.optString("sliderActivation", "AFTER_HOLD")), it.optLong("sliderHoldMs", 200)).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
                             require(target.action?.action != ButtonAction.EMPTY)
                         }
@@ -107,6 +108,7 @@ object ConfigurationCodec {
         swipeHoldDistanceDp = t.float("swipeHoldDistanceDp", if (schema < 9) t.float("swipeDistance", 24f) else 24f),
         swipeHoldTimeoutMs = t.optLong("swipeHoldTimeoutMs", if (schema < 9) t.optLong("swipeTime", 600) else 600),
         swipeHoldDistanceMode = enumValueOf(t.optString("swipeHoldDistanceMode", "ANY_DIRECTION")),
+        swipeDistanceMode = enumValueOf(t.optString("swipeDistanceMode", "INWARD_ONLY")),
         holdExecution = enumValueOf(t.optString("holdExecution", "ON_RELEASE")),
         swipeHoldExecution = enumValueOf(t.optString("swipeHoldExecution", "ON_RELEASE")),
         swipeFeedback = feedback(t, "swipeFeedback"), swipeHoldFeedback = feedback(t, "swipeHoldFeedback"),
@@ -129,11 +131,13 @@ object ConfigurationCodec {
             .put("swipeHoldDistanceDp", s.swipeHoldDistanceDp).put("swipeHoldTimeoutMs", s.swipeHoldTimeoutMs)
             .put("holdExecution", s.holdExecution.name).put("swipeHoldExecution", s.swipeHoldExecution.name)
             .put("swipeHoldDistanceMode", s.swipeHoldDistanceMode.name)
+            .put("swipeDistanceMode", s.swipeDistanceMode.name)
             .put("swipeFeedback", feedback(s.swipeFeedback)).put("swipeHoldFeedback", feedback(s.swipeHoldFeedback))
             .put("holdFeedback", feedback(s.holdFeedback)).put("tapFeedback", feedback(s.tapFeedback))
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
             put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness).put("slideToAdjust", target.slideToAdjust)
+                .put("sliderActivation", target.sliderActivation.name).put("sliderHoldMs", target.sliderHoldMs)
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)

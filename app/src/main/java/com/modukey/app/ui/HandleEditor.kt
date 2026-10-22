@@ -80,13 +80,15 @@ import kotlin.math.roundToInt
                             SettingSlider(R.string.touch_depth, s.depthDp, 8f..32f, t(R.string.dp_value, s.depthDp.roundToInt()), default = 16f) { value -> vm.editTrigger(h.id) { it.copy(depthDp = value) } }
                         }
                         Section(R.string.visible_handle) {
-                            Toggle(R.string.make_handle_visible, R.string.visible_help, s.indicatorVisible, default = false) { value -> vm.editTrigger(h.id) { it.copy(indicatorVisible = value) } }
-                            SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
-                            SettingSlider(R.string.indicator_thickness, s.indicatorThicknessDp, 0f..32f, t(R.string.dp_value, s.indicatorThicknessDp.roundToInt()), s.indicatorVisible, default = 4f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessDp = value) } }
-                            Help(R.string.indicator_thickness_help)
-                            PercentSlider(R.string.opacity, s.indicatorOpacity, s.indicatorVisible, default = .65f) { value -> vm.editTrigger(h.id) { it.copy(indicatorOpacity = value) } }
-                            SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..16f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), s.indicatorVisible, default = 2f) { value -> vm.editTrigger(h.id) { it.copy(cornerRadiusDp = value) } }
-                            ColorPicker(s.indicatorColor, s.indicatorVisible, default = TriggerSettings().indicatorColor) { value -> vm.editTrigger(h.id) { it.copy(indicatorColor = value) } }
+                            Toggle(R.string.make_handle_visible, R.string.visible_help, s.indicatorVisible, default = false, optionsExpanded = s.indicatorVisible) { value -> vm.editTrigger(h.id) { it.copy(indicatorVisible = value) } }
+                            DependentSettings(R.string.make_handle_visible) {
+                                SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
+                                SettingSlider(R.string.indicator_thickness, s.indicatorThicknessDp, 0f..32f, t(R.string.dp_value, s.indicatorThicknessDp.roundToInt()), s.indicatorVisible, default = 4f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessDp = value) } }
+                                Help(R.string.indicator_thickness_help)
+                                PercentSlider(R.string.opacity, s.indicatorOpacity, s.indicatorVisible, default = .65f) { value -> vm.editTrigger(h.id) { it.copy(indicatorOpacity = value) } }
+                                SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..16f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), s.indicatorVisible, default = 2f) { value -> vm.editTrigger(h.id) { it.copy(cornerRadiusDp = value) } }
+                                ColorPicker(s.indicatorColor, s.indicatorVisible, default = TriggerSettings().indicatorColor) { value -> vm.editTrigger(h.id) { it.copy(indicatorColor = value) } }
+                            }
                             if (!s.indicatorVisible) Help(R.string.visible_off_help)
                         }
                     }
@@ -94,14 +96,14 @@ import kotlin.math.roundToInt
                     else -> Section(R.string.availability) {
                         Text(t(availabilityLabel(service.handles[h.id], h.enabled)), style = MaterialTheme.typography.bodyMedium)
                         Toggle(R.string.lock_available, R.string.lock_help, s.lockScreenEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(lockScreenEnabled = value) } }
-                        Toggle(R.string.soft_hide, R.string.soft_hide_help, s.softHideEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(softHideEnabled = value) } }
-                        if (s.softHideEnabled) {
+                        Toggle(R.string.soft_hide, R.string.soft_hide_help, s.softHideEnabled, default = false, optionsExpanded = s.softHideEnabled) { value -> vm.editTrigger(h.id) { it.copy(softHideEnabled = value) } }
+                        if (s.softHideEnabled) DependentSettings(R.string.soft_hide) {
                             DurationInput(R.string.hide_after, s.softHideDelayMs, 1000L..30000L, default = 3000) { value -> vm.editTrigger(h.id) { it.copy(softHideDelayMs = value) } }
                             Help(R.string.soft_hide_detection)
                         }
                         Help(R.string.screen_off_help)
                         SettingTitle(t(R.string.excluded_apps), reset = if (s.excludedPackages.isNotEmpty()) ({ vm.editTrigger(h.id) { it.copy(excludedPackages = emptySet()) } }) else null)
-                        OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text(t(R.string.excluded_apps)) }
+                        OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text(t(R.string.excluded_apps)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Down, null, Modifier.size(18.dp)) }
                         Help(R.string.exclusions_help)
                         TextButton(onClick = { reset = true }) { Text(t(R.string.reset_handle)) }
                     }

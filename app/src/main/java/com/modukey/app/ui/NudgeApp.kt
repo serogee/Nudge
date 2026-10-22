@@ -161,6 +161,7 @@ import com.modukey.app.platform.*
         }
     }
     BrightnessPopupSettingsSection(config, vm)
+    BrightnessCalibrationSection()
     HomeShortcutsSection(config, vm)
     Help(R.string.touch_help)
     HyperOsSetup(vm, openSettings)

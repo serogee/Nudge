@@ -24,17 +24,19 @@ import kotlin.math.roundToInt
         lifecycle.addObserver(observer); update()
         onDispose { vm.previewSliderGuide(token, null); lifecycle.removeObserver(observer) }
     }
-    if (kinds.isNotEmpty()) CollapsibleSection(R.string.slider_travel) {
-        Help(R.string.slider_travel_help)
-        kinds.forEach { kind ->
-            val volume = kind == SliderKind.VOLUME
-            val travel = if (volume) handle.volumeTravelDp else handle.brightnessTravelDp
-            SettingSlider(if (volume) R.string.volume_travel else R.string.brightness_travel, travel, 48f..600f,
-                t(R.string.dp_value, travel.roundToInt()), default = 240f) { value ->
-                vm.editHandle(handle.id) { if (volume) it.copy(volumeTravelDp = value) else it.copy(brightnessTravelDp = value) }
+    if (kinds.isNotEmpty()) DependentSettings(R.string.slide_to_adjust) {
+        CollapsibleSection(R.string.slider_travel) {
+            Help(R.string.slider_travel_help)
+            kinds.forEach { kind ->
+                val volume = kind == SliderKind.VOLUME
+                val travel = if (volume) handle.volumeTravelDp else handle.brightnessTravelDp
+                SettingSlider(if (volume) R.string.volume_travel else R.string.brightness_travel, travel, 48f..600f,
+                    t(R.string.dp_value, travel.roundToInt()), default = 240f) { value ->
+                    vm.editHandle(handle.id) { if (volume) it.copy(volumeTravelDp = value) else it.copy(brightnessTravelDp = value) }
+                }
+                Toggle(if (volume) R.string.volume_travel_guide else R.string.brightness_travel_guide,
+                    R.string.slider_guide_help, selected == kind, default = false) { guide = if (it) kind else null }
             }
-            Toggle(if (volume) R.string.volume_travel_guide else R.string.brightness_travel_guide,
-                R.string.slider_guide_help, selected == kind, default = false) { guide = if (it) kind else null }
         }
     }
 }

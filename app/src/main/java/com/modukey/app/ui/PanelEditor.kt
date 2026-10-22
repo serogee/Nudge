@@ -68,27 +68,33 @@ import kotlin.math.roundToInt
     Section(R.string.layout) {
         OptionRow(t(R.string.layout), PanelMode.entries, l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
         OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
-        CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
-        if (l.mode == PanelMode.FIXED) {
-            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
-            Help(R.string.fixed_help)
-        } else {
-            SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
-                t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f) { value -> layout { it.copy(extentFraction = value) } }
-            Help(R.string.scrollable_help)
+        DependentSettings(R.string.direction) {
+            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
+        }
+        DependentSettings(R.string.layout) {
+            if (l.mode == PanelMode.FIXED) {
+                CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
+                Help(R.string.fixed_help)
+            } else {
+                SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
+                    t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f) { value -> layout { it.copy(extentFraction = value) } }
+                Help(R.string.scrollable_help)
+            }
         }
         SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
         if (g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))
     }
     Section(R.string.position) {
-        Toggle(R.string.follow_handle, R.string.follow_handle_help, l.followHandle, default = true) { value -> layout { it.copy(followHandle = value) } }
-        if (l.followHandle) {
-            SettingSlider(R.string.offset_x, l.offsetXDp, -240f..240f, t(R.string.dp_value, l.offsetXDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetXDp = value) } }
-            SettingSlider(R.string.offset_y, l.offsetYDp, -240f..240f, t(R.string.dp_value, l.offsetYDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetYDp = value) } }
-            Help(R.string.offset_help)
-        } else {
-            PercentSlider(R.string.center_x, l.x, default = .5f) { value -> layout { it.copy(x = value) } }
-            PercentSlider(R.string.center_y, l.y, default = .5f) { value -> layout { it.copy(y = value) } }
+        Toggle(R.string.follow_handle, R.string.follow_handle_help, l.followHandle, default = true, optionsExpanded = true) { value -> layout { it.copy(followHandle = value) } }
+        DependentSettings(R.string.follow_handle) {
+            if (l.followHandle) {
+                SettingSlider(R.string.offset_x, l.offsetXDp, -240f..240f, t(R.string.dp_value, l.offsetXDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetXDp = value) } }
+                SettingSlider(R.string.offset_y, l.offsetYDp, -240f..240f, t(R.string.dp_value, l.offsetYDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetYDp = value) } }
+                Help(R.string.offset_help)
+            } else {
+                PercentSlider(R.string.center_x, l.x, default = .5f) { value -> layout { it.copy(x = value) } }
+                PercentSlider(R.string.center_y, l.y, default = .5f) { value -> layout { it.copy(y = value) } }
+            }
         }
     }
     Section(R.string.outside_touch) {
@@ -96,8 +102,8 @@ import kotlin.math.roundToInt
         Help(R.string.outside_help)
     }
     Section(R.string.panel_timeout) {
-        Toggle(R.string.auto_close_panel, R.string.auto_close_help, p.autoCloseEnabled, default = false) { value -> vm.editPanel(entry.id) { it.copy(autoCloseEnabled = value) } }
-        if (p.autoCloseEnabled) {
+        Toggle(R.string.auto_close_panel, R.string.auto_close_help, p.autoCloseEnabled, default = false, optionsExpanded = p.autoCloseEnabled) { value -> vm.editPanel(entry.id) { it.copy(autoCloseEnabled = value) } }
+        if (p.autoCloseEnabled) DependentSettings(R.string.auto_close_panel) {
             DurationInput(R.string.close_after, p.autoCloseMs, 1000L..60000L, default = 3000) { value -> vm.editPanel(entry.id) { it.copy(autoCloseMs = value) } }
             Help(R.string.panel_timeout_help)
         }
@@ -112,19 +118,26 @@ import kotlin.math.roundToInt
         SettingSlider(R.string.opacity, p.opacity, 0f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
         SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
         OptionRow(t(R.string.icon_shape), IconShape.entries, p.iconShape, IconShape.ROUNDED_SQUARE) { value -> vm.editPanel(entry.id) { it.copy(iconShape = value) } }
-        if (p.iconShape != IconShape.CIRCLE) SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
-            t(R.string.percent, (p.iconCornerFraction * 100).roundToInt()), default = .25f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
+        if (p.iconShape != IconShape.CIRCLE) DependentSettings(R.string.icon_shape) {
+            SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
+                t(R.string.percent, (p.iconCornerFraction * 100).roundToInt()), default = .25f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
+        }
         Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
-        Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
-        if (!p.automaticButtonColor) ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
+        Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true, optionsExpanded = !p.automaticButtonColor) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
+        if (!p.automaticButtonColor) DependentSettings(R.string.automatic_button_color) {
+            ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
+        }
         PercentSlider(R.string.button_opacity, p.buttonOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(buttonOpacity = value) } }
-        Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
-        if (!p.automaticIconColor) ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
+        Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true, optionsExpanded = !p.automaticIconColor) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
+        if (!p.automaticIconColor) DependentSettings(R.string.automatic_icon_color) {
+            ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
+        }
         PercentSlider(R.string.icon_opacity, p.iconOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(iconOpacity = value) } }
         ActiveButtonControls(p) { value -> vm.editPanel(entry.id) { it.copy(activeAppearance = value) } }
         SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
         OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack)
+            Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack, Modifier.weight(1f))
+            Icon(AppIcons.Down, null, Modifier.size(18.dp))
         }
         if (p.iconPack.isNotBlank() && packs.none { it.packageName == p.iconPack }) Help(R.string.pack_unavailable)
     }

@@ -61,7 +61,9 @@ There is no setting to hide handles during every screenshot method. Android's su
 
 Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement beyond the distance does not restart its timer. Returning below the distance, with touch-slop tolerance, resets the timer. Any direction measures displacement from the starting point and is the default for existing and new handles. Inward only measures displacement away from the edge.
 
-Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled and multitouch gestures do not activate a handle. Ordinary swipes still reject outward and mainly parallel movement.
+Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled and multitouch gestures do not activate a handle. Inward-only swipes reject outward and mainly parallel movement.
+
+Ordinary swipes offer **Distance direction** in **Swipe settings**. **Inward only** remains the default for new and existing handles. **Any direction** measures the straight-line distance from the first touch, including diagonal and parallel movement. Moving back reduces that distance; the path length is not accumulated. This choice is independent of Swipe and hold. Schema 19 retains the choice in backups, copies, and saved handles.
 
 Timing controls use numeric inputs in milliseconds. Each input shows its minimum and maximum. Valid entries update the draft immediately. Finishing an out-of-range entry applies the nearest limit. An empty or oversized entry restores the last valid value. Reset restores that control's default. These inputs also cover handle hiding, panel closing, and brightness popup closing.
 
@@ -222,9 +224,13 @@ Expand **Appearance** to edit the brightness background, track, fill, and icon c
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
 
+## Settings with additional options
+
+Settings that offer more options show a chevron. A small bent arrow identifies controls that depend on a parent setting. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
+
 ## Brightness percentages and calibration
 
-Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
+Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Home provides optional calibration below the brightness slider controls at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Home, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
 
 Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
 
@@ -245,13 +251,17 @@ Schema 17 adds panel active colors. Older panels receive automatic active colors
 
 ## Continuous adjustment from a handle
 
-In a gesture selector, select exactly one popup and enable **Slide to adjust**. Tap does not offer this option. A swipe starts adjustment as soon as it reaches its distance. Hold and swipe and hold start at their deadlines, including when normal hold execution uses On release. Keep your finger down, then move up or down. The current value is the starting point. Horizontal movement after activation does not change it. Release ends adjustment and does not run the action again.
+In a gesture selector, select exactly one popup and enable **Slide to adjust**. Tap does not offer this option. A swipe opens its popup as soon as it reaches its distance. **Start adjustment** defaults to **After hold** for new and existing swipe bindings. Keep your finger still, then slide without lifting it. **Adjustment hold time** accepts 100 to 1,000 ms and defaults to 200 ms. Movement beyond an 8 dp radius restarts this timer, including horizontal or diagonal movement. Small jitter does not restart it. Releasing before activation leaves the slider value unchanged.
+
+When the hold ends, a brief ready cue follows that swipe's haptic setting and Android's haptic policy. The current system value and finger position become the new starting point. The first 8 dp of vertical movement is ignored; further motion adjusts proportionally. This initial tolerance applies once. Reversing direction then responds immediately. **Immediate** retains adjustment as soon as the popup opens, without the extra hold or initial tolerance. An assigned button action still runs when the popup opens; the guard delays only slide adjustment.
+
+Hold and swipe and hold start adjustment at their existing deadlines, including when normal hold execution uses On release. They do not add this extra hold. Keep your finger down, then move up or down. Horizontal movement after adjustment starts does not change the value. Release ends adjustment and does not run the action again.
 
 Any continuous swipe stage disables swipe and hold for that handle. Its saved assignment stays intact. The next swipe stage resumes after release; its sequence timeout starts then.
 
 **Slider travel** sets a separate full-range distance for media volume and brightness on each handle. The default is 240 dp; the range is 48-600 dp. Volume uses the media stream's actual system range and rounds to its available steps. Brightness uses the same percentage mapping and device calibration as Return brightness. Values clamp at their endpoints, and reversing responds immediately. The optional editor guide shows the full distance at real size, its endpoints, and the current-value anchor. Arrows identify endpoints outside the screen. The guide neither moves a native popup nor changes system values.
 
-Brightness stays open while held, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes. Schema 18 retains each binding's option and both travel distances in backups and copies. Earlier backups keep ordinary popup behavior.
+Brightness stays open while held, including during the adjustment hold, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes and hold callbacks. Schema 18 retains each binding's option and both travel distances in backups and copies. Schema 20 also retains the activation choice and adjustment hold time. Backups before schema 18 keep ordinary popup behavior.
 
 Automated checks cover capture, proportional motion, limits, timers, cancellation, and persistence. Native volume touch ownership, popup coexistence, and brightness calibration still require checks on the target HyperOS device.
 

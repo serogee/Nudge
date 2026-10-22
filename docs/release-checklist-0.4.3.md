@@ -1,5 +1,7 @@
 # Nudge 0.4.3 release checklist
 
+Publication confirmed on 2026-10-23: [v0.4.3](https://github.com/serogee/Nudge/releases/tag/v0.4.3) is stable, published at 2026-10-22T15:05:57Z. The steps below are the original preparation record. Use [the 0.4.4 checklist](release-checklist-0.4.4.md) for the next release. Publication does not establish device test results.
+
 Version: **0.4.3**, code **12**. Baseline: published **v0.4.2**, code **11**.
 
 GitHub confirms v0.4.2 is a stable release, published at 2026-10-20T05:59:39Z. This was checked on 2026-10-22.

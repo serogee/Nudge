@@ -40,7 +40,6 @@ import com.modukey.app.updates.*
         if(busy) CircularProgressIndicator()
     }
     HyperOsSetup(vm, openSettings)
-    BrightnessCalibrationSection()
     Section(R.string.dnd) {
         Help(R.string.policy_required); Help(R.string.dnd_other_rule)
         OutlinedButton(onClick={ openSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }) { Text(t(R.string.open_policy)) }
@@ -119,7 +118,7 @@ import com.modukey.app.updates.*
                 }
             }
             Help(R.string.autostart_note)
-            if (open) {
+            if (open) DependentSettings(R.string.hyperos_setup) {
                 Text(t(R.string.open_accessibility), style = MaterialTheme.typography.titleSmall)
                 Help(R.string.setup_accessibility)
                 OutlinedButton(onClick = { openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS) }) { Text(t(R.string.open_accessibility)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Open, null, Modifier.size(16.dp)) }
