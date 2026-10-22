@@ -2,6 +2,8 @@ package com.modukey.app
 
 import android.app.Application
 import android.media.AudioManager
+import android.app.KeyguardManager
+import android.os.PowerManager
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
@@ -18,6 +20,8 @@ import com.modukey.app.platform.UnlockRequests
 import com.modukey.app.platform.LocalDiagnostics
 import com.modukey.app.platform.NativeVolumeController
 import com.modukey.app.platform.ServiceStatusStore
+import com.modukey.app.platform.AutomaticBrightnessCalibration
+import com.modukey.app.platform.ControllerCalibrationAccess
 import kotlinx.coroutines.*
 
 private val Application.preferences by preferencesDataStore("trigger_settings", produceMigrations = {
@@ -35,6 +39,9 @@ class NudgeApplication : Application() {
     val shortcuts = ShortcutRuntime()
     val handlePauses = HandlePauses()
     val brightness by lazy { BrightnessController(this) }
+    val automaticCalibration by lazy { AutomaticBrightnessCalibration(ControllerCalibrationAccess(brightness), {
+        getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
+    }) }
     val icons by lazy { IconRepository(this) }
     val unlocks = UnlockRequests()
     val diagnostics by lazy { LocalDiagnostics(this, scope) }
@@ -50,6 +57,7 @@ class NudgeApplication : Application() {
     override fun onTerminate() {
         // Used by emulated application lifecycles; Android ends a real process without this callback.
         scope.cancel()
+        automaticCalibration.close()
         brightness.close()
         super.onTerminate()
     }

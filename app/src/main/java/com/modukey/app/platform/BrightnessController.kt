@@ -19,6 +19,11 @@ class BrightnessController(context: Context) {
     private val resolver = app.contentResolver
     private val session = BrightnessSession()
     val calibration = BrightnessCalibration(app)
+    private val calibrationRestore = BrightnessCalibrationRestore(app)
+    val calibrationNeedsRecovery get() = calibrationRestore.pending
+    internal fun beginCalibration(): Boolean { close(); return calibrationRestore.begin() }
+    internal fun restoreAfterCalibration() = calibrationRestore.restore()
+    internal fun keepBrightnessAfterCalibration() = calibrationRestore.discard()
     private var observer: ContentObserver? = null
     // SCREEN_BRIGHTNESS uses 1..255. Private hardware resources can use a different scale.
     private val minimum = 1
@@ -37,6 +42,7 @@ class BrightnessController(context: Context) {
     private fun minimumLevel() = calibration.scale.samples?.first() ?: minimum
     private fun maximumLevel() = calibration.scale.samples?.last() ?: maximum
     fun toggleAutomatic(): BrightnessResult {
+        if (calibrationNeedsRecovery) return BrightnessResult.FAILED
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return changing {
             val before = read()
@@ -48,6 +54,7 @@ class BrightnessController(context: Context) {
         }
     }
     fun adjust(increase: Boolean): BrightnessResult {
+        if (calibrationNeedsRecovery) return BrightnessResult.FAILED
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return try {
             val before = read().level
@@ -61,6 +68,7 @@ class BrightnessController(context: Context) {
         } catch (_: RuntimeException) { BrightnessResult.FAILED }
     }
     fun setFraction(value: Float): BrightnessResult {
+        if (calibrationNeedsRecovery) return BrightnessResult.FAILED
         if (!value.isFinite()) return BrightnessResult.FAILED
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return try { setLevel(calibration.scale.level(value)) }
@@ -78,6 +86,7 @@ class BrightnessController(context: Context) {
     }
 
     fun toggle(preset: BrightnessPreset, settings: BrightnessReturnSettings = BrightnessReturnSettings()): BrightnessResult {
+        if (calibrationNeedsRecovery) return BrightnessResult.FAILED
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS
         return changing {
             val change = session.change(preset, read(), minimumLevel(), maximumLevel(), settings, calibration.scale.level(settings.normalized().fraction))

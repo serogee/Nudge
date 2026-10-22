@@ -16,6 +16,8 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 private data class OpenPanel(val panelId: String, val handleId: String? = null, val testing: Boolean = false)
 private enum class PanelCloseReason { APP_CHANGED, BACK, OUTSIDE_TOUCH, WINDOW_DETACHED, TIMEOUT, SCREEN_STATE, EDITOR_CHANGED,
@@ -126,6 +128,13 @@ class EdgeAccessibilityService : AccessibilityService() {
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.sliderGuidePreview.state.collect { frames?.request() } }
             scope?.launch { app.brightnessPreview.state.collect { frames?.request() } }
+            scope?.launch { app.automaticCalibration.state.map { it.phase == AutomaticCalibrationPhase.RUNNING }.distinctUntilChanged().collect { calibrating ->
+                if (calibrating) {
+                    hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }
+                    sessions.clear(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows()
+                }
+                frames?.request()
+            } }
             scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.editor.state.collect { hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
             scope?.launch { app.editor.tests.collect { request ->
@@ -157,6 +166,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     override fun onTaskRemoved(rootIntent: Intent?) { app.diagnostics.record("Task removed; service remains system managed"); super.onTaskRemoved(rootIntent) }
 
     private fun reason(config: AppConfiguration, h: HandleConfig, landscape: Boolean = screen().landscape, ignorePause: Boolean = false): HandleAvailability {
+        if (app.automaticCalibration.state.value.phase == AutomaticCalibrationPhase.RUNNING) return HandleAvailability.PAUSED
         val base = HandleEligibility.reason(config, h,
         getSystemService(PowerManager::class.java).isInteractive, getSystemService(KeyguardManager::class.java).isKeyguardLocked,
         landscape, foreground)
@@ -346,7 +356,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             val fraction = if (guideRequest.kind == SliderKind.VOLUME) app.volume.read()?.fraction else app.brightness.fraction()
             if (fraction != null) sliderGuideHost?.show(guideRequest, guideHandle, s, fraction) else sliderGuideHost?.hide()
         } else sliderGuideHost?.hide()
-        if (app.brightnessPreview.state.value && !brightnessOpen && selected == null && awake && !locked) {
+        if (app.brightnessPreview.state.value && app.automaticCalibration.state.value.phase != AutomaticCalibrationPhase.RUNNING && !brightnessOpen && selected == null && awake && !locked) {
             brightnessOpen = false; brightnessOwner = null
             brightnessHost?.show(config.brightnessPopup, s, editing = true)
         } else if (brightnessOpen && awake && selected == null &&

@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Accept a native brightness calibration minimum of zero. Reject negative or repeated samples.
+- Add optional automatic brightness calibration in Home. Enable a separate temporary accessibility service, then select Start calibration.
+- Measure five positions through the native brightness control. Restore the original brightness and mode before Save. Keep manual calibration for unsupported controls.
+- Retain a device-local restoration record after interruption or failed restoration. Offer Restore previous brightness or Keep current brightness.
 
 ## 0.4.4 - 2026-10-23
 

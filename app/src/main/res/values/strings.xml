@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Nudge</string>
     <string name="service_name">Nudge handles</string>
-    <string name="service_description">Use edge gestures to run actions or open panels. Touch areas receive touches even when hidden. Nudge does not read screen content.</string>
+    <string name="service_description">Use edge gestures to run actions or open panels. Touch areas receive touches even when hidden. The handle service does not read window content.</string>
     <string name="home">Home</string>
     <string name="handles">Handles</string>
     <string name="master_help">Allow enabled handles to receive gestures.</string>
@@ -503,7 +503,6 @@
     <string name="brightness_calibration">Brightness calibration</string>
     <string name="brightness_calibration_help">Calibrate if Return brightness does not match your phone’s brightness slider.</string>
     <string name="brightness_calibrated">Brightness uses your saved calibration. Calibration stays on this device.</string>
-    <string name="calibrate_brightness">Calibrate brightness</string>
     <string name="reset_brightness_calibration">Reset calibration</string>
     <string name="brightness_calibration_steps">Turn off automatic brightness. Open Control center and set its brightness slider to the requested position. Return to Home and select Capture.</string>
     <string name="brightness_calibration_position">Set the native brightness slider to %1$d%%.</string>

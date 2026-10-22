@@ -17,16 +17,21 @@ import com.modukey.app.R
 @Composable fun BrightnessCalibrationSection() {
     val app = LocalContext.current.applicationContext as NudgeApplication
     val controller = app.brightness
+    val automatic by app.automaticCalibration.state.collectAsState()
     var open by rememberSaveable { mutableStateOf(false) }
     var samples by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var error by rememberSaveable { mutableStateOf(false) }
     var calibrated by remember { mutableStateOf(controller.calibration.calibrated) }
+    LaunchedEffect(automatic.phase) { calibrated = controller.calibration.calibrated }
     Section(R.string.brightness_calibration) {
         Help(if (calibrated) R.string.brightness_calibrated else R.string.brightness_calibration_help)
-        OutlinedButton(onClick = { samples = emptyList(); error = false; open = true }) { Text(t(R.string.calibrate_brightness)) }
+        OutlinedButton(onClick = { app.automaticCalibration.discard(); samples = emptyList(); error = false; open = true },
+            enabled = !automatic.busy && automatic.phase != com.modukey.app.platform.AutomaticCalibrationPhase.REVIEW && !controller.calibrationNeedsRecovery) { Text(t(R.string.manual_brightness_calibration)) }
+        AutomaticBrightnessCalibrationControls()
         if (calibrated) TextButton(onClick = {
+            app.automaticCalibration.discard()
             error = !controller.calibration.reset(); calibrated = controller.calibration.calibrated
-        }) { Text(t(R.string.reset_brightness_calibration)) }
+        }, enabled = !automatic.busy && automatic.phase != com.modukey.app.platform.AutomaticCalibrationPhase.REVIEW && !controller.calibrationNeedsRecovery) { Text(t(R.string.reset_brightness_calibration)) }
         if (error && !open) Help(R.string.brightness_calibration_failed)
     }
     if (open) AlertDialog(onDismissRequest = { open = false }, title = { Text(t(R.string.brightness_calibration)) }, text = {
