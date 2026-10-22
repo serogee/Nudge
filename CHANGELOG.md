@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Place Slide to adjust below its volume or brightness option. Keep action and layout options below their parent controls.
+- Replace nesting arrows with subtle left lines across additional settings.
 - Accept a native brightness calibration minimum of zero. Reject negative or repeated samples.
 - Add optional automatic brightness calibration in Home. Enable a separate temporary accessibility service, then select Start calibration.
 - Measure five positions through the native brightness control. Restore the original brightness and mode before Save. Keep manual calibration for unsupported controls.

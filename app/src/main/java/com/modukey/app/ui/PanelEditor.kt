@@ -67,10 +67,6 @@ import kotlin.math.roundToInt
     }
     Section(R.string.layout) {
         OptionRow(t(R.string.layout), PanelMode.entries, l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
-        OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
-        DependentSettings(R.string.direction) {
-            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
-        }
         DependentSettings(R.string.layout) {
             if (l.mode == PanelMode.FIXED) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
@@ -80,6 +76,10 @@ import kotlin.math.roundToInt
                     t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f) { value -> layout { it.copy(extentFraction = value) } }
                 Help(R.string.scrollable_help)
             }
+        }
+        OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
+        DependentSettings(R.string.direction) {
+            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
         }
         SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
         if (g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))

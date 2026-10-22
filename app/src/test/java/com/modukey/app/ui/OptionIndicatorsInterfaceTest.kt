@@ -58,7 +58,8 @@ class OptionIndicatorsInterfaceTest {
             .assertIsDisplayed()
     }
 
-    @Test fun dependentColorOptionsAppearAndRetainTheirValuesWhenTheParentChanges() {
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun dependentColorOptionsAppearAndRetainTheirValuesWhenTheParentChanges() {
         val savedColor = 0xFFCC8833L
         val panel = mutableStateOf(PanelConfig(activeAppearance = ActiveButtonAppearance(background = savedColor)))
         rule.activity.setContent { NudgeTheme {
@@ -74,6 +75,13 @@ class OptionIndicatorsInterfaceTest {
         rule.onNodeWithContentDescription(custom, useUnmergedTree = true).assertExists()
         rule.onNodeWithContentDescription(app.getString(R.string.edit_color, app.getString(R.string.active_background_color)))
             .performScrollTo().assertIsEnabled()
+        val output = File("build/outputs/ui-review/dependent-options.png")
+        output.parentFile?.mkdirs()
+        val bitmap = rule.runOnIdle {
+            val view = rule.activity.window.decorView
+            Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+        }
+        output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         rule.onNodeWithContentDescription(app.getString(R.string.automatic_active_background)).performScrollTo().performClick()
         rule.onNodeWithContentDescription(custom, useUnmergedTree = true).assertDoesNotExist()
         rule.runOnIdle { assertEquals(savedColor, panel.value.activeAppearance.background) }
