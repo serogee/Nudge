@@ -47,6 +47,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun raise(value: HandleWindowSpec) {
         val previous = view ?: return attach(value)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
+        next.setDrawingOwner(false)
         next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
         next.inheritVisibility(previous)
         val p = params(value)
@@ -57,27 +58,25 @@ internal class HandleWindowHost(private val context: Context, private val manage
         }
         cancelHandoff?.invoke(); cancelHandoff = null
         view = next; layout = p; added = true; changed(next)
-        previous.cancelGesture()
-        // Keep one drawn bar until the new window has produced a frame.
+        previous.retireInput()
+        // Keep one drawing owner until the successor's first frame is ready.
         if (!previous.isAttachedToWindow) {
             manager.removeViewImmediate(previous)
-            if (retiring == null) return
+            if (retiring == null) { next.setDrawingOwner(true); return }
         } else if (retiring == null) retiring = previous else manager.removeViewImmediate(previous)
         val observer = next.viewTreeObserver
-        var scheduled = false
-        val finish = Runnable {
+        val ready = ViewTreeObserver.OnPreDrawListener {
             cancelHandoff?.invoke(); cancelHandoff = null
             val old = retiring; retiring = null
+            old?.setDrawingOwner(false)
+            next.setDrawingOwner(true)
             if (old != null) try { manager.removeViewImmediate(old) } catch (error: RuntimeException) { cleanupError(error) }
+            true
         }
-        val drawn = ViewTreeObserver.OnDrawListener {
-            if (!scheduled) { scheduled = true; next.postOnAnimation(finish) }
-        }
-        observer.addOnDrawListener(drawn)
+        observer.addOnPreDrawListener(ready)
         cancelHandoff = {
-            next.removeCallbacks(finish)
             val currentObserver = next.viewTreeObserver
-            if (currentObserver.isAlive) currentObserver.removeOnDrawListener(drawn)
+            if (currentObserver.isAlive) currentObserver.removeOnPreDrawListener(ready)
         }
     }
     override fun detach() {

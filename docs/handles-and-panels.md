@@ -254,3 +254,10 @@ Any continuous swipe stage disables swipe and hold for that handle. Its saved as
 Brightness stays open while held, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes. Schema 18 retains each binding's option and both travel distances in backups and copies. Earlier backups keep ordinary popup behavior.
 
 Automated checks cover capture, proportional motion, limits, timers, cancellation, and persistence. Native volume touch ownership, popup coexistence, and brightness calibration still require checks on the target HyperOS device.
+
+
+## Handle window handoff
+
+Opening a panel can require raising its handles above the panel. The successor window stays transparent until its first pre-draw. At that boundary, the old handle stops drawing and is removed before the successor draws. Only one visible handle contributes opacity. Retiring handles no longer accept input or accessibility clicks. Rapid raises retain one drawing owner. Captured gestures and their return animations still finish before a raise, and full-screen reveal state carries into the replacement.
+
+Automated checks cover ownership, alpha composition, rapid replacement, failed attachment, cleanup, and reveal state. A physical HyperOS check is still needed for compositor timing and the visible result.

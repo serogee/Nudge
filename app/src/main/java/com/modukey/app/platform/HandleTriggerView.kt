@@ -24,6 +24,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var hideIndicator = false
     private var animationsEnabled = true
     private var previewQuarterTurns = 0
+    internal var drawingEnabled = true; private set
+    private var retired = false
     var gesturePolicy: () -> HandleGesturePolicy = { HandleGesturePolicy() }
     private var policy = HandleGesturePolicy()
     private var gesture = recognizer()
@@ -146,6 +148,11 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         softHide = previous.softHide.copyForWindow(SystemClock.uptimeMillis())
         updateSoftHide(); invalidate()
     }
+    internal fun setDrawingOwner(enabled: Boolean) { drawingEnabled = enabled; invalidate() }
+    internal fun retireInput() {
+        retired = true; cancelGesture(); isClickable = false
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+    }
     fun resetSoftHide() { softHide.reset(); animator?.cancel(); bounce = 0f; scheduleExpiry(); invalidate() }
     private fun updateSoftHide() {
         softHide.configure(!editing && settings.softHideEnabled, fullScreen, settings.softHideDelayMs, SystemClock.uptimeMillis())
@@ -189,6 +196,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         systemGestureExclusionRects = if (editing || edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))
     }
     override fun onDraw(canvas: Canvas) {
+        if (!drawingEnabled) return
         canvas.save()
         when (previewQuarterTurns) {
             1 -> { canvas.translate(width.toFloat(), 0f); canvas.rotate(90f) }
@@ -241,7 +249,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     }
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (editing) return false
+        if (editing || retired) return false
         touchY = event.rawY
         eventTime = event.eventTime; eventUptime = SystemClock.uptimeMillis()
         when (event.actionMasked) {
@@ -268,7 +276,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         return true
     }
     override fun performClick(): Boolean {
-        if (editing || sliderMove != null) return false
+        if (editing || retired || sliderMove != null) return false
         super.performClick(); completeGesture(GestureKind.TAP); return true
     }
 }

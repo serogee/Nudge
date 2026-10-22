@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Prevent overlapping visible handles from increasing brightness when a panel opens.
+
 - Recognize swipe-and-hold by displacement and keep its timer during movement beyond the threshold.
 
 - Remove the brightness and MIUI background comparison samples.
