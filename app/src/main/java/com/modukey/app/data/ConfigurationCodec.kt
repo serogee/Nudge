@@ -8,13 +8,12 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 14 adds the global handle-animation setting. */
+/** Schema 18 adds continuous slider bindings and handle travel distances. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 14
+    const val SCHEMA = 18
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
-        .put("hideHandleIndicators", config.hideHandleIndicators)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
         .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
@@ -52,13 +51,15 @@ object ConfigurationCodec {
                         else -> GestureTarget.panel(ids[value.last().digitToInt() - 1])
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
-                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness")).also { target ->
+                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness"), it.optBoolean("slideToAdjust")).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
                             require(target.action?.action != ButtonAction.EMPTY)
                         }
                     }
                 }
-                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000))
+                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000),
+                    indicatorHidden = if (schema >= 16) h.optBoolean("indicatorHidden") else root.optBoolean("hideHandleIndicators"),
+                    volumeTravelDp = h.float("volumeTravelDp", 240f), brightnessTravelDp = h.float("brightnessTravelDp", 240f))
             }
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
@@ -71,7 +72,6 @@ object ConfigurationCodec {
             val panelIds = panels.map { it.id }.toSet()
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
             AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts,
-                hideHandleIndicators = root.optBoolean("hideHandleIndicators"),
                 handleAnimationsEnabled = root.optBoolean("handleAnimationsEnabled", true)).normalized()
         }
     }
@@ -106,6 +106,7 @@ object ConfigurationCodec {
         holdTimeMs = t.optLong("holdTimeMs", 500), swipeHoldTimeMs = t.optLong("swipeHoldTimeMs", 500),
         swipeHoldDistanceDp = t.float("swipeHoldDistanceDp", if (schema < 9) t.float("swipeDistance", 24f) else 24f),
         swipeHoldTimeoutMs = t.optLong("swipeHoldTimeoutMs", if (schema < 9) t.optLong("swipeTime", 600) else 600),
+        swipeHoldDistanceMode = enumValueOf(t.optString("swipeHoldDistanceMode", "ANY_DIRECTION")),
         holdExecution = enumValueOf(t.optString("holdExecution", "ON_RELEASE")),
         swipeHoldExecution = enumValueOf(t.optString("swipeHoldExecution", "ON_RELEASE")),
         swipeFeedback = feedback(t, "swipeFeedback"), swipeHoldFeedback = feedback(t, "swipeHoldFeedback"),
@@ -127,15 +128,17 @@ object ConfigurationCodec {
             .put("holdTimeMs", s.holdTimeMs).put("swipeHoldTimeMs", s.swipeHoldTimeMs)
             .put("swipeHoldDistanceDp", s.swipeHoldDistanceDp).put("swipeHoldTimeoutMs", s.swipeHoldTimeoutMs)
             .put("holdExecution", s.holdExecution.name).put("swipeHoldExecution", s.swipeHoldExecution.name)
+            .put("swipeHoldDistanceMode", s.swipeHoldDistanceMode.name)
             .put("swipeFeedback", feedback(s.swipeFeedback)).put("swipeHoldFeedback", feedback(s.swipeHoldFeedback))
             .put("holdFeedback", feedback(s.holdFeedback)).put("tapFeedback", feedback(s.tapFeedback))
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
-            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness)
+            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness).put("slideToAdjust", target.slideToAdjust)
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)
-            .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs)
+            .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs).put("indicatorHidden", h.indicatorHidden)
+            .put("volumeTravelDp", h.volumeTravelDp).put("brightnessTravelDp", h.brightnessTravelDp)
     }
     private fun brightness(p: JSONObject, schema: Int) = BrightnessPopupSettings(
         side = enumValueOf(p.optString("side", "OPPOSITE_VOLUME")), volumeSide = enumValueOf(p.optString("volumeSide", "RIGHT")),
@@ -159,13 +162,15 @@ object ConfigurationCodec {
         b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")),
         enumValueOf(b.optString("handleScope", "ALL")),
         b.optJSONObject("brightnessReturn")?.let { BrightnessReturnSettings(it.optBoolean("usePrevious", true), it.float("fraction", .5f)) }
-            ?: BrightnessReturnSettings())
+            ?: BrightnessReturnSettings(),
+        toggleScope = enumValueOf(b.optString("toggleScope", "ALL")), visibilityScope = enumValueOf(b.optString("visibilityScope", "ALL")))
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
         .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name).put("emptyAppearance", b.emptyAppearance.name)
         .put("handleScope", b.handleScope.name)
         .put("brightnessReturn", JSONObject().put("usePrevious", b.brightnessReturn.usePrevious).put("fraction", b.brightnessReturn.fraction))
+        .put("toggleScope", b.toggleScope.name).put("visibilityScope", b.visibilityScope.name)
     private fun panel(p: JSONObject, schema: Int) = PanelConfig(
         buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),
@@ -176,7 +181,10 @@ object ConfigurationCodec {
         automaticIconColor = p.optBoolean("automaticIconColor", true), iconColor = p.optLong("iconColor", 0xFFFFFFFF),
         autoCloseEnabled = p.optBoolean("autoCloseEnabled"), autoCloseMs = p.optLong("autoCloseMs", 3_000),
         closeAnimation = enumValueOf(p.optString("closeAnimation", p.optString("animation", "NONE"))),
-        buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f))
+        buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
+        activeAppearance = p.optJSONObject("activeAppearance")?.let { ActiveButtonAppearance(
+            it.optBoolean("useBackground", true), it.optBoolean("useIcon", true), it.optBoolean("automaticBackground", true), it.optLong("background", 0xFF3482FF),
+            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance())
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
         .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
@@ -185,5 +193,8 @@ object ConfigurationCodec {
         .put("automaticIconColor", p.automaticIconColor).put("iconColor", p.iconColor)
         .put("autoCloseEnabled", p.autoCloseEnabled).put("autoCloseMs", p.autoCloseMs)
         .put("closeAnimation", p.closeAnimation.name).put("buttonOpacity", p.buttonOpacity).put("iconOpacity", p.iconOpacity)
+        .put("activeAppearance", JSONObject().put("useBackground", p.activeAppearance.useBackground).put("useIcon", p.activeAppearance.useIcon)
+            .put("automaticBackground", p.activeAppearance.automaticBackground).put("background", p.activeAppearance.background)
+            .put("automaticIcon", p.activeAppearance.automaticIcon).put("icon", p.activeAppearance.icon))
         .put("buttons", array(p.buttons.map(::button)))
 }

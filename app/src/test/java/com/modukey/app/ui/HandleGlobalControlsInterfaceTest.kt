@@ -46,7 +46,7 @@ class HandleGlobalControlsInterfaceTest {
         pause.performScrollTo().assertIsOn().performClick()
         rule.runOnIdle { assertTrue(app.handlePauses.state.value.isEmpty()) }
         hide.performScrollTo().assertIsOff().performClick()
-        rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators); assertEquals(before, app.configuration.state.value!!.handles) }
+        rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators); assertEquals(before.map { it.copy(indicatorHidden = true) }, app.configuration.state.value!!.handles) }
         hide.performScrollTo().assertIsOn().performClick()
         rule.runOnIdle { assertFalse(app.configuration.state.value!!.hideHandleIndicators); assertEquals(before, app.configuration.state.value!!.handles) }
         rule.onNodeWithText("Resume handles").assertDoesNotExist()
@@ -78,9 +78,9 @@ class HandleGlobalControlsInterfaceTest {
         rule.runOnIdle { assertEquals(ButtonAction.TOGGLE_HANDLE_VISIBILITY, selected) }
     }
     @Test fun visibilityActionShowsItsCurrentOnAndOffState() {
-        val state = mutableStateOf(SoundState())
+        val state = mutableStateOf(SoundState(enabledHandleIds = setOf("a")))
         rule.activity.setContent { NudgeTheme { PanelButtonFace(PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY), PanelConfig(), 56.dp,
-            state.value, true) { state.value = state.value.copy(handleIndicatorsHidden = !state.value.handleIndicatorsHidden) } } }
+            state.value, true) { state.value = state.value.copy(hiddenIndicatorIds = if (state.value.hiddenIndicatorIds.isEmpty()) setOf("a") else emptySet()) } } }
         rule.onNodeWithContentDescription("Toggle handle visibility. On").assertIsSelected().performClick()
         rule.onNodeWithContentDescription("Toggle handle visibility. Off").assertIsNotSelected().performClick()
         rule.onNodeWithContentDescription("Toggle handle visibility. On").assertIsSelected()

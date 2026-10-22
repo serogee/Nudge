@@ -5,6 +5,9 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.WindowInsets
 import android.os.Looper
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -14,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.Shadows.shadowOf
 import java.time.Duration
 
@@ -26,7 +30,9 @@ class HandleWindowHostTest {
     private class PendingWindows(private val delegate: WindowManager, private val attachViews: Boolean = false) : WindowManager by delegate {
         val registered = linkedMapOf<View, ViewGroup.LayoutParams>()
         var adds = 0; var removes = 0
+        var rejectNext = false
         override fun addView(view: View, params: ViewGroup.LayoutParams) {
+            if (rejectNext) { rejectNext = false; throw IllegalStateException("Rejected window") }
             if (attachViews) delegate.addView(view, params)
             check(registered.put(view, params) == null); adds++
         }
@@ -36,6 +42,41 @@ class HandleWindowHostTest {
         override fun removeViewImmediate(view: View) {
             check(registered.remove(view) != null); if (attachViews) delegate.removeViewImmediate(view); removes++
         }
+    }
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun translucentAlphaStaysConstantAcrossRapidRaisesAndTheirFirstFrames() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java), attachViews = true)
+        var active: HandleTriggerView? = null
+        val host = HandleWindowHost(app, windows, {}, {}) { active = it }
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(indicatorVisible = true, indicatorOpacity = .45f), Edge.LEFT, false)
+        fun alpha(): Int {
+            val bitmap = Bitmap.createBitmap(16, 120, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            windows.registered.keys.forEach { it.layout(0, 0, 16, 120); it.draw(canvas) }
+            val pixels = IntArray(16 * 120); bitmap.getPixels(pixels, 0, 16, 0, 0, 16, 120); bitmap.recycle()
+            return pixels.maxOf { Color.alpha(it) }
+        }
+        try {
+            host.attach(spec); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(50))
+            val expected = alpha(); assertTrue(expected in 1..254)
+            repeat(4) { host.raise(spec); assertEquals(expected, alpha()) }
+            active!!.viewTreeObserver.dispatchOnPreDraw()
+            assertEquals(expected, alpha()); assertEquals(1, windows.registered.size)
+        } finally { host.detach() }
+    }
+    @Test fun failedReplacementKeepsTheOriginalDrawingAndAcceptingInput() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        var active: HandleTriggerView? = null; var actions = 0
+        val host = HandleWindowHost(app, windows, { actions++ }, {}) { active = it }
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(indicatorVisible = true), Edge.LEFT, false)
+        try {
+            host.attach(spec); val original = active!!
+            windows.rejectNext = true
+            try { host.raise(spec); fail() } catch (_: IllegalStateException) { }
+            assertSame(original, active); assertTrue(original.drawingEnabled)
+            assertTrue(original.performClick()); assertEquals(1, actions)
+            assertEquals(setOf(original), windows.registered.keys)
+        } finally { host.detach() }
     }
     @Test fun raisingKeepsTheDrawnHandleUntilItsReplacementDrawsAndCleanupCancelsTheHandoff() {
         val windows = PendingWindows(app.getSystemService(WindowManager::class.java), attachViews = true)
@@ -50,11 +91,15 @@ class HandleWindowHostTest {
             assertEquals(2, windows.registered.size)
             assertTrue(original in windows.registered); assertTrue(original.isAttachedToWindow)
             assertNotSame(original, active)
+            assertTrue(original.drawingEnabled); assertFalse(active!!.drawingEnabled)
+            assertFalse(original.performClick())
             host.raise(spec)
             assertEquals("Rapid raises keep one old bar", 2, windows.registered.size)
             assertTrue(original in windows.registered)
-            // Deliver the draw event explicitly; legacy Robolectric skips window drawing.
-            active!!.viewTreeObserver.dispatchOnDraw()
+            assertEquals(1, windows.registered.keys.count { (it as HandleTriggerView).drawingEnabled })
+            // Deliver the frame boundary explicitly; legacy Robolectric skips window drawing.
+            active!!.viewTreeObserver.dispatchOnPreDraw()
+            assertTrue(active!!.drawingEnabled); assertFalse(original.drawingEnabled)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
             assertEquals(setOf(active), windows.registered.keys)
             assertFalse(original.isAttachedToWindow)

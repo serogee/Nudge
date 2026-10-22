@@ -7,6 +7,7 @@ import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
 import com.modukey.app.core.ShortcutRuntime
 import com.modukey.app.core.BrightnessPreview
+import com.modukey.app.core.SliderGuidePreview
 import com.modukey.app.core.EditorSession
 import com.modukey.app.core.HandlePauses
 import com.modukey.app.platform.BrightnessController
@@ -30,6 +31,7 @@ class NudgeApplication : Application() {
         name.ifBlank { getString(R.string.handle_name, handle + 1) }, panel + 1)
     val editor = EditorSession()
     val brightnessPreview = BrightnessPreview()
+    val sliderGuidePreview = SliderGuidePreview()
     val shortcuts = ShortcutRuntime()
     val handlePauses = HandlePauses()
     val brightness by lazy { BrightnessController(this) }

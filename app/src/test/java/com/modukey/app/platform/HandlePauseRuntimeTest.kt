@@ -58,6 +58,24 @@ class HandlePauseRuntimeTest {
     private fun button(f: Fixture) = ReflectionHelpers.callInstanceMethod<Void>(f.service, "runButton",
         ClassParameter.from(PanelButton::class.java, f.panel.settings.buttons.single()))
 
+    @Test fun combinedButtonKeepsItsPanelUsableAndTogglesSeparateGroups() {
+        val f = fixture()
+        val combined = f.panel.settings.buttons.single().copy(action = ButtonAction.TOGGLE_AND_HIDE_HANDLES,
+            toggleScope = HandleGroupScope.CURRENT, visibilityScope = HandleGroupScope.OTHERS)
+        app.configuration.update { it.editPanel(f.panel.id) { p -> p.copy(settings = p.settings.copy(buttons = listOf(combined))) } }
+        gesture(f); await { app.status.state.value.panelId == f.panel.id }
+        fun press() = ReflectionHelpers.callInstanceMethod<Void>(f.service, "runButton", ClassParameter.from(PanelButton::class.java, combined))
+        press()
+        await { app.handlePauses.state.value == setOf(f.owner.id) && app.configuration.state.value!!.hiddenIndicatorIds == setOf("other") }
+        assertEquals(f.panel.id, app.status.state.value.panelId)
+        press()
+        await { app.handlePauses.state.value.isEmpty() && app.configuration.state.value!!.hiddenIndicatorIds.isEmpty() }
+        assertEquals(f.panel.id, app.status.state.value.panelId)
+        val invalid = combined.copy(toggleScope = HandleGroupScope.CURRENT, visibilityScope = HandleGroupScope.ALL)
+        assertFalse(PanelActions(f.service).execute("", invalid, false).succeeded)
+        assertTrue(app.configuration.state.value!!.hiddenIndicatorIds.isEmpty()); assertTrue(app.handlePauses.state.value.isEmpty())
+    }
+
     @Test fun visibilityActionKeepsWindowsAndGesturesWhilePreservingSavedAppearance() {
         val f = fixture()
         app.configuration.update { config -> config.copy(handles = config.handles.map { h ->
@@ -71,8 +89,8 @@ class HandlePauseRuntimeTest {
         assertFalse(actions.execute(f.owner.id, toggle, false).close)
         await { views.values.all { ReflectionHelpers.getField<Boolean>(it, "hideIndicator") } }
         assertTrue(app.configuration.state.value!!.hideHandleIndicators)
-        assertTrue(actions.snapshot().handleIndicatorsHidden)
-        assertEquals(saved, app.configuration.state.value!!.handles)
+        assertEquals(saved.map { it.id }.toSet(), actions.snapshot().hiddenIndicatorIds)
+        assertEquals(saved.map { it.copy(indicatorHidden = true) }, app.configuration.state.value!!.handles)
         assertEquals(original.keys, views.keys)
         original.forEach { (id, view) -> assertSame(view, views[id]) }
         views.getValue(f.owner.id).performClick()

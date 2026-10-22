@@ -4,6 +4,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class HoldRecognitionTest {
+    @Test fun anyDirectionCountsDisplacementAndContinuedSidewaysMovement() {
+        for (edge in Edge.entries) {
+            val g = HandleGesture(edge, 24f, 600, 8f, swipeHoldImmediately = true)
+            g.down(100f, 100f, 0); g.move(130f, 100f, 100); g.move(100f, 150f, 300)
+            assertEquals(600L, g.nextDeadline()); assertEquals(GestureKind.SWIPE_HOLD, g.poll(600))
+            assertNull(g.up(100f, 150f, 700))
+        }
+    }
+    @Test fun inwardModeIgnoresParallelMotionButRetreatResetsTheDwell() {
+        val g = HandleGesture(Edge.LEFT, 24f, 600, 8f, swipeHoldImmediately = true, holdDistanceMode = SwipeHoldDistanceMode.INWARD_ONLY)
+        g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(30f, 200f, 300)
+        assertEquals(600L, g.nextDeadline())
+        g.move(8f, 200f, 400); assertNull(g.nextDeadline()); assertNull(g.poll(600))
+        g.move(30f, 200f, 700); assertEquals(1200L, g.nextDeadline())
+        assertNull(g.poll(1199)); assertEquals(GestureKind.SWIPE_HOLD, g.poll(1200))
+    }
+    @Test fun accumulatedTravelInsideTheDistanceDoesNotQualify() {
+        val g = HandleGesture(Edge.LEFT, 24f, 600, 8f, swipeHoldImmediately = true)
+        g.down(0f, 0f, 0)
+        for (time in 1..10) g.move(if (time % 2 == 0) 12f else -12f, 0f, time * 50L)
+        assertNull(g.nextDeadline()); assertNull(g.up(12f, 0f, 1200))
+    }
     @Test fun independentSwipeHoldDistanceDoesNotChangeOrdinarySwipeDistance() {
         val g = HandleGesture(Edge.LEFT, 60f, 600, 8f, holdDistance = 24f)
         g.down(0f, 0f, 0); g.move(30f, 0f, 100)
@@ -31,10 +53,10 @@ class HoldRecognitionTest {
         g.down(0f, 0f, 0); g.move(9f, 11f, 50); g.move(30f, 12f, 100)
         assertEquals(GestureKind.SWIPE_HOLD, g.up(30f, 12f, 650))
     }
-    @Test fun ongoingMovementRestartsTheDwellAndCancellationRemovesTheDeadline() {
+    @Test fun movementBeyondTheDistanceKeepsTheDwellAndCancellationRemovesTheDeadline() {
         val g = HandleGesture(Edge.LEFT, 24f, 600, 8f, swipeHoldImmediately = true)
         g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(60f, 0f, 400)
-        assertEquals(900L, g.nextDeadline()); assertNull(g.poll(899))
+        assertEquals(600L, g.nextDeadline()); assertNull(g.poll(599))
         g.cancel(); assertNull(g.nextDeadline()); assertNull(g.poll(900)); assertNull(g.up(60f, 0f, 1000))
     }
     @Test fun releaseModeDoesNotScheduleADeadline() {

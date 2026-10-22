@@ -26,12 +26,20 @@ class HoldTimingTest {
         g.down(0f, 0f, 0); g.move(30f, 0f, 100)
         assertEquals(GestureKind.SWIPE, g.up(30f, 0f, 200))
     }
-    @Test fun `movement after a swipe restarts the selected stationary interval`() {
+    @Test fun `movement beyond the threshold keeps the selected hold interval`() {
         val g = gesture(swipeHold = 900)
         g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(50f, 0f, 800)
-        assertNull(g.up(50f, 0f, 1_699))
+        assertNull(g.up(50f, 0f, 999))
         g.down(0f, 0f, 0); g.move(30f, 0f, 100); g.move(50f, 0f, 800)
-        assertEquals(GestureKind.SWIPE_HOLD, g.up(50f, 0f, 1_700))
+        assertEquals(GestureKind.SWIPE_HOLD, g.up(50f, 0f, 1_000))
+    }
+    @Test fun `retreat below the threshold restarts the hold interval after recrossing`() {
+        val g = gesture(swipeHold = 900)
+        for (release in listOf(1_799L, 1_800L)) {
+            g.down(0f, 0f, 0); g.move(30f, 0f, 100)
+            g.move(10f, 0f, 800); g.move(50f, 0f, 900)
+            assertEquals(if (release == 1_800L) GestureKind.SWIPE_HOLD else null, g.up(50f, 0f, release))
+        }
     }
     @Test fun `long hold does not bypass cancellation or late swipe thresholds`() {
         val g = gesture(hold = 3_000, swipeHold = 3_000)

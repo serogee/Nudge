@@ -8,18 +8,22 @@ import kotlin.math.roundToInt
 
 @Composable fun HandleGestureSettings(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel) {
     val s = h.trigger
-    @Composable fun binding(slot: GestureSlot) = GestureBindingRow(config, slot, h.target(slot), vm) { value ->
+    @Composable fun binding(slot: GestureSlot) = GestureBindingRow(config, slot, h.target(slot), vm, enabled = slot != GestureSlot.SWIPE_HOLD || !h.hasContinuousSwipe) { value ->
         vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) }
     }
     Section(R.string.gestures) {
         GestureSlot.entries.forEach { binding(it) }
+        if (h.hasContinuousSwipe) Help(R.string.slide_swipe_hold_conflict)
     }
+    SliderTravelControls(h, vm)
     CollapsibleSection(R.string.swipe_settings) {
         SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = v) } }
         DurationInput(R.string.swipe_time, s.swipeTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v) } }
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }
     }
     CollapsibleSection(R.string.swipe_hold_settings) {
+        OptionRow(t(R.string.swipe_hold_distance_mode), SwipeHoldDistanceMode.entries, s.swipeHoldDistanceMode, SwipeHoldDistanceMode.ANY_DIRECTION) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceMode = v) } }
+        Help(R.string.swipe_hold_distance_mode_help)
         SettingSlider(R.string.swipe_hold_distance, s.swipeHoldDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeHoldDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceDp = v) } }
         DurationInput(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v) } }
         DurationInput(R.string.swipe_hold_time, s.swipeHoldTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v) } }

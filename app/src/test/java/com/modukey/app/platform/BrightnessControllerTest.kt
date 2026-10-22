@@ -58,6 +58,20 @@ class BrightnessControllerTest {
     }
     private fun level() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS)
     private fun mode() = Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE)
+    @Test fun manualMaximumUsesReturnOnTheFirstPressAndRemainsActiveForAFullReturn() {
+        Writes.allowed = true
+        for (usePrevious in listOf(true, false)) {
+            set(255, false); app.brightness.close()
+            assertTrue(app.brightness.status().maximum)
+            assertEquals(BrightnessResult.CHANGED, app.brightness.toggle(BrightnessPreset.MAXIMUM, BrightnessReturnSettings(usePrevious, .5f)))
+            assertEquals(22, level()); assertFalse(app.brightness.status().maximum)
+        }
+        set(255, false)
+        assertEquals(BrightnessResult.ALREADY_SET, app.brightness.toggle(BrightnessPreset.MAXIMUM, BrightnessReturnSettings(true, 1f)))
+        assertTrue(app.brightness.status().maximum)
+        assertEquals(BrightnessResult.CHANGED, app.brightness.toggle(BrightnessPreset.MAXIMUM))
+        assertEquals(22, level())
+    }
     @Test fun synchronousPanelSnapshotsCannotClearPresetsDuringOwnWrites() {
         Writes.allowed = true; set(100, true)
         Writes.onWrite = { app.brightness.status() }
@@ -65,10 +79,10 @@ class BrightnessControllerTest {
         app.brightness.toggle(BrightnessPreset.MINIMUM)
         assertTrue(app.brightness.status().minimum)
         app.brightness.toggle(BrightnessPreset.MINIMUM)
-        assertEquals(128, level()); assertEquals(0, mode())
+        assertEquals(22, level()); assertEquals(0, mode())
         assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
         app.brightness.toggle(BrightnessPreset.MAXIMUM); app.brightness.toggle(BrightnessPreset.MAXIMUM)
-        assertEquals(128, level())
+        assertEquals(22, level())
     }
     @Test fun customReturnAndUnavailablePreviousWorkThroughTheActionExecutor() {
         Writes.allowed = true
@@ -81,27 +95,27 @@ class BrightnessControllerTest {
             shadowOf(Looper.getMainLooper()).idle()
             assertTrue(if (action == ButtonAction.BRIGHTNESS_MAXIMUM) actions.snapshot().maximumBrightness else actions.snapshot().minimumBrightness)
             assertTrue(actions.execute("owner", button, false).succeeded)
-            assertEquals(65, level()); assertEquals(0, mode())
+            assertEquals(6, level()); assertEquals(0, mode())
             assertFalse(actions.snapshot().maximumBrightness); assertFalse(actions.snapshot().minimumBrightness)
             set(255, true)
             val previous = button.copy(brightnessReturn = BrightnessReturnSettings(true, .75f))
             actions.execute("owner", previous, false); actions.execute("owner", previous, false)
-            assertEquals(192, level()); assertEquals(0, mode())
+            assertEquals(68, level()); assertEquals(0, mode())
             assertFalse(actions.snapshot().maximumBrightness); assertFalse(actions.snapshot().minimumBrightness)
         }
     }
     @Test fun sliderUsesPublicRangeAndPresetsHaveOwnedActiveStates() {
         Writes.allowed = true; set(100, false)
-        app.brightness.setFraction(.25f); assertEquals(65, level())
-        app.brightness.setFraction(.5f); assertEquals(128, level())
-        app.brightness.setFraction(.75f); assertEquals(192, level())
+        app.brightness.setFraction(.25f); assertEquals(6, level())
+        app.brightness.setFraction(.5f); assertEquals(22, level())
+        app.brightness.setFraction(.75f); assertEquals(68, level())
         assertEquals(.75f, app.brightness.fraction(), .003f)
         assertFalse(app.brightness.status().maximum)
         app.brightness.toggle(BrightnessPreset.MAXIMUM)
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals(255, level()); assertTrue(app.brightness.status().maximum)
         app.brightness.toggle(BrightnessPreset.MAXIMUM)
-        assertEquals(192, level()); assertFalse(app.brightness.status().maximum)
+        assertEquals(68, level()); assertFalse(app.brightness.status().maximum)
         app.brightness.toggle(BrightnessPreset.MINIMUM); shadowOf(Looper.getMainLooper()).idle()
         assertEquals(1, level()); assertTrue(app.brightness.status().minimum)
         set(70, false); assertFalse(app.brightness.status().minimum)
@@ -116,7 +130,7 @@ class BrightnessControllerTest {
             assertEquals(preset == BrightnessPreset.MAXIMUM, app.brightness.status().maximum)
             val endpoint = if (preset == BrightnessPreset.MAXIMUM) 1f else 0f
             assertEquals(BrightnessResult.ALREADY_SET, app.brightness.setFraction(endpoint))
-            assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+            assertEquals(preset == BrightnessPreset.MAXIMUM, app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
         }
     }
     @Test fun unchangedEndpointSliderInputRefreshesTheOpenPanelState() {
@@ -137,7 +151,7 @@ class BrightnessControllerTest {
                 MotionEvent.obtain(0, 10, action, 30f, 0f, 0).let { view.onTouchEvent(it); it.recycle() }
             }
             assertEquals(255, level())
-            assertFalse(states.last().maximum); assertFalse(states.last().minimum)
+            assertTrue(states.last().maximum); assertFalse(states.last().minimum)
         } finally { host.hide(); activity.pause().stop().destroy() }
     }
     @Test fun externalEndpointNotificationsClearOwnershipWithoutIntermediateReads() {
@@ -152,7 +166,7 @@ class BrightnessControllerTest {
             resolver.notifyChange(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), null)
             shadowOf(Looper.getMainLooper()).idle()
             assertEquals(endpoint, level())
-            assertFalse(app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
+            assertEquals(preset == BrightnessPreset.MAXIMUM, app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
         }
     }
     @Test fun automaticToggleKeepsLevelAndHandlesDenialAndFailedWrites() {
@@ -192,7 +206,7 @@ class BrightnessControllerTest {
         Writes.allowed = true; set(100, true)
         assertEquals(BrightnessResult.CHANGED, app.brightness.adjust(true))
         assertTrue(level() > 100); assertEquals(0, mode())
-        app.brightness.adjust(false); assertEquals(100, level())
+        app.brightness.adjust(false); assertEquals(100.0, level().toDouble(), 1.0)
         app.brightness.toggle(BrightnessPreset.MAXIMUM)
         app.brightness.setFraction(.3f); val changed = level()
         app.brightness.toggle(BrightnessPreset.MAXIMUM); app.brightness.toggle(BrightnessPreset.MAXIMUM)
@@ -201,6 +215,8 @@ class BrightnessControllerTest {
         assertEquals(BrightnessResult.ALREADY_SET, app.brightness.adjust(false))
         app.brightness.setFraction(2f); assertEquals(1f, app.brightness.fraction())
         assertEquals(BrightnessResult.ALREADY_SET, app.brightness.adjust(true))
+        app.brightness.setFraction(0f)
+        assertEquals(BrightnessResult.CHANGED, app.brightness.adjust(true)); assertTrue(level() > 1)
         assertEquals(BrightnessResult.FAILED, app.brightness.setFraction(Float.NaN))
         Writes.allowed = false
         assertEquals(BrightnessResult.NEED_ACCESS, app.brightness.adjust(true))
@@ -242,9 +258,9 @@ class BrightnessControllerTest {
         app.brightness.toggle(BrightnessPreset.MAXIMUM); shadowOf(Looper.getMainLooper()).idle()
         val maximum = level()
         set(80, false); set(maximum, false)
-        assertFalse(app.brightness.status().maximum)
+        assertTrue(app.brightness.status().maximum)
         assertEquals(BrightnessResult.CHANGED, app.brightness.toggle(BrightnessPreset.MAXIMUM))
-        assertEquals(maximum, level())
+        assertEquals(22, level())
         set(75, false)
         app.brightness.toggle(BrightnessPreset.MINIMUM); app.brightness.toggle(BrightnessPreset.MINIMUM)
         assertEquals(75, level()); assertEquals(0, mode())

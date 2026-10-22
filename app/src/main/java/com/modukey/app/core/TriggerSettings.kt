@@ -2,6 +2,7 @@ package com.modukey.app.core
 
 enum class Edge { LEFT, RIGHT, BOTTOM }
 enum class Activation { SWIPE, TAP, LONG_PRESS }
+enum class SwipeHoldDistanceMode { ANY_DIRECTION, INWARD_ONLY }
 
 data class Placement(val edge: Edge = Edge.RIGHT, val position: Float = 0.65f)
 
@@ -39,6 +40,7 @@ data class TriggerSettings(
     val swipeHoldFeedback: GestureFeedback = GestureFeedback(haptics),
     val holdFeedback: GestureFeedback = GestureFeedback(haptics),
     val tapFeedback: GestureFeedback = GestureFeedback(haptics),
+    val swipeHoldDistanceMode: SwipeHoldDistanceMode = SwipeHoldDistanceMode.ANY_DIRECTION,
 ) {
     fun feedback(kind: GestureKind) = when (kind) {
         GestureKind.SWIPE -> swipeFeedback; GestureKind.SWIPE_HOLD -> swipeHoldFeedback

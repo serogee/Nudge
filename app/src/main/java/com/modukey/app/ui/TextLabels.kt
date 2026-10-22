@@ -27,9 +27,13 @@ import com.modukey.app.core.*
     ButtonAction.BRIGHTNESS_AUTOMATIC -> R.string.brightness_automatic
     ButtonAction.TOGGLE_HANDLES -> R.string.toggle_handles
     ButtonAction.TOGGLE_HANDLE_VISIBILITY -> R.string.toggle_handle_visibility
+    ButtonAction.TOGGLE_AND_HIDE_HANDLES -> R.string.toggle_and_hide_handles
     ButtonAction.NOTIFICATIONS -> R.string.notifications; ButtonAction.CONTROL_PANEL -> R.string.control_panel
     ButtonAction.BRIGHTNESS_UP -> R.string.brightness_up; ButtonAction.BRIGHTNESS_DOWN -> R.string.brightness_down
     HandleToggleScope.ALL -> R.string.all_handles; HandleToggleScope.CURRENT -> R.string.current_handle; HandleToggleScope.OTHERS -> R.string.other_handles
+    HandleGroupScope.NONE -> R.string.no_handles_target; HandleGroupScope.ALL -> R.string.all_handles
+    HandleGroupScope.CURRENT -> R.string.current_handle; HandleGroupScope.OTHERS -> R.string.other_handles
+    SwipeHoldDistanceMode.ANY_DIRECTION -> R.string.any_direction; SwipeHoldDistanceMode.INWARD_ONLY -> R.string.inward_only
     ButtonAction.EMPTY -> R.string.empty_button
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash
     IconShape.CIRCLE -> R.string.circle; IconShape.ROUNDED_SQUARE -> R.string.rounded_square; IconShape.SQUIRCLE -> R.string.squircle

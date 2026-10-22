@@ -19,7 +19,7 @@ import com.modukey.app.core.*
 data class SoundState(val volume: Int = 0, val muted: Boolean = false, val ringer: Int = AudioManager.RINGER_MODE_NORMAL, val dnd: Boolean = false, val ownDnd: Boolean = false,
     val maximumBrightness: Boolean = false, val minimumBrightness: Boolean = false, val enabledHandleIds: Set<String> = emptySet(),
     val pausedHandleIds: Set<String> = emptySet(), val ownerHandleId: String? = null, val handlesEnabled: Boolean = false, val automaticBrightness: Boolean = false,
-    val handleIndicatorsHidden: Boolean = false)
+    val hiddenIndicatorIds: Set<String> = emptySet())
 data class ActionResult(val close: Boolean = false, val message: Int? = null, val succeeded: Boolean = true)
 interface ActionExecutor {
     fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot? = null): ActionResult
@@ -45,18 +45,26 @@ class PanelActions(private val service: AccessibilityService,
         SoundState(audio.getStreamVolume(AudioManager.STREAM_MUSIC), audio.isStreamMute(AudioManager.STREAM_MUSIC), audio.ringerMode, dnd, own,
             brightness.maximum, brightness.minimum, config?.handles?.filter { it.enabled }?.mapTo(mutableSetOf()) { it.id }.orEmpty(),
             app.handlePauses.state.value, handlesEnabled = config?.enabled == true, automaticBrightness = brightness.automatic,
-            handleIndicatorsHidden = config?.hideHandleIndicators == true)
+            hiddenIndicatorIds = config?.hiddenIndicatorIds.orEmpty())
     } catch (_: RuntimeException) { SoundState() }
 
     override fun execute(handleId: String, button: PanelButton, testing: Boolean, gestureSlot: GestureSlot?): ActionResult = try {
         when (button.action) {
             ButtonAction.EMPTY -> ActionResult()
             ButtonAction.CLOSE_PANELS -> ActionResult(close = true)
-            ButtonAction.TOGGLE_HANDLE_VISIBILITY -> {
-                if (app.configuration.state.value == null) ActionResult(succeeded = false, message = R.string.action_failed)
+            ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
+                val config = app.configuration.state.value
+                val combined = button.action == ButtonAction.TOGGLE_AND_HIDE_HANDLES
+                val change = config?.let { handleControlChange(it, handleId.takeIf(String::isNotBlank), app.handlePauses.state.value,
+                    if (combined) button.toggleScope else HandleGroupScope.NONE,
+                    if (combined) button.visibilityScope else HandleGroupScope.valueOf(button.handleScope.name)) }
+                if (change == null) ActionResult(succeeded = false, message = R.string.handle_toggle_unavailable)
                 else {
-                    app.configuration.update { it.copy(hideHandleIndicators = !it.hideHandleIndicators) }
-                    app.configuration.flush()
+                    if (change.visibilityTargets.isNotEmpty()) {
+                        app.configuration.update { it.hideIndicators(change.visibilityTargets, change.hidden) }
+                        app.configuration.flush()
+                    }
+                    app.handlePauses.setTargets(change.pauseTargets, change.paused)
                     ActionResult()
                 }
             }

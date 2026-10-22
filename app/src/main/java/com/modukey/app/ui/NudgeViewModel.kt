@@ -32,7 +32,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     val status = app.status.state
     val pausedHandles = app.handlePauses.state
     fun pauseHandles(paused: Boolean) { app.configuration.state.value?.let { app.handlePauses.setAll(paused, it) } }
-    fun hideVisibleHandles(hidden: Boolean) { edit { it.copy(hideHandleIndicators = hidden) }; flush() }
+    fun hideVisibleHandles(hidden: Boolean) { edit { it.hideIndicators(hidden) }; flush() }
     fun setHandleAnimationsEnabled(enabled: Boolean) { edit { it.copy(handleAnimationsEnabled = enabled) }; flush() }
     private val launcherShortcuts = PinnedShortcuts(app, app.icons)
     val shortcutSupported = MutableStateFlow<Boolean?>(null)
@@ -180,6 +180,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         if (configuration.value?.includePrereleases == value) return
         updateChecker.clear(); edit { it.copy(includePrereleases = value) }; flush()
     }
+    fun previewSliderGuide(token: Any, request: SliderGuideRequest?) { if (request != null) app.sliderGuidePreview.begin(token, request) else app.sliderGuidePreview.end(token) }
     fun previewBrightness(token: Any, enabled: Boolean) { if (enabled) app.brightnessPreview.begin(token) else app.brightnessPreview.end(token) }
     fun openBrightnessAccess() {
         try { app.startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

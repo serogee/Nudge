@@ -1,15 +1,11 @@
 package com.modukey.app.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -61,12 +57,6 @@ import kotlin.math.roundToInt
             SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..64f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), default = defaults.cornerRadiusDp) { v -> edit { it.copy(cornerRadiusDp = v) } }
             Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true) { v -> edit { it.copy(showBackground = v) } }
             Toggle(R.string.slider_show_automatic, R.string.slider_automatic_help, s.showAutomaticToggle, default = true) { v -> edit { it.copy(showAutomaticToggle = v) } }
-            Text(t(R.string.slider_background_preview), style = MaterialTheme.typography.titleSmall)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SliderBackgroundSample(R.string.brightness_slider, if (s.showBackground) Color(s.background).copy(alpha = s.backgroundOpacity) else Color.Transparent,
-                    Color(s.track).copy(alpha = s.trackOpacity), Color(s.fill).copy(alpha = s.fillOpacity), s.cornerRadiusDp, Modifier.weight(1f))
-                SliderBackgroundSample(R.string.miui_volume_background, Color(0xFF202122), Color(0xFF3C3C3E), Color(0xFF999A9C), 28f, Modifier.weight(1f))
-            }
             ColorPicker(s.background, title = R.string.slider_background, enabled = s.showBackground, default = defaults.background) { v -> edit { it.copy(background = v) } }
             PercentSlider(R.string.slider_background_opacity, s.backgroundOpacity, enabled = s.showBackground, default = 1f) { v -> edit { it.copy(backgroundOpacity = v) } }
             ColorPicker(s.track, title = R.string.slider_track, default = defaults.track) { v -> edit { it.copy(track = v) } }
@@ -78,20 +68,5 @@ import kotlin.math.roundToInt
             OutlinedButton(onClick = vm::openBrightnessAccess) { Text(t(R.string.open_brightness_access)) }
             Help(R.string.brightness_access_help)
         }
-    }
-}
-
-@Composable private fun SliderBackgroundSample(@androidx.annotation.StringRes label: Int, background: Color, track: Color, fill: Color,
-    cornerRadius: Float, modifier: Modifier = Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Surface(Modifier.fillMaxWidth().height(104.dp), shape = RoundedCornerShape(cornerRadius.dp), color = background,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-            Box(contentAlignment = Alignment.Center) {
-                Box(Modifier.width(20.dp).height(76.dp).background(track, RoundedCornerShape(10.dp)), contentAlignment = Alignment.BottomCenter) {
-                    Box(Modifier.fillMaxWidth().fillMaxHeight(.56f).background(fill, RoundedCornerShape(10.dp)))
-                }
-            }
-        }
-        Text(t(label), style = MaterialTheme.typography.bodySmall, maxLines = 2)
     }
 }

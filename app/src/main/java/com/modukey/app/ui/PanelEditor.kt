@@ -121,6 +121,7 @@ import kotlin.math.roundToInt
         Toggle(R.string.automatic_icon_color, R.string.auto_icon_help, p.automaticIconColor, default = true) { value -> vm.editPanel(entry.id) { it.copy(automaticIconColor = value) } }
         if (!p.automaticIconColor) ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
         PercentSlider(R.string.icon_opacity, p.iconOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(iconOpacity = value) } }
+        ActiveButtonControls(p) { value -> vm.editPanel(entry.id) { it.copy(activeAppearance = value) } }
         SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
         OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {
             Text(packs.firstOrNull { it.packageName == p.iconPack }?.label ?: if (p.iconPack.isBlank()) t(R.string.original_icons) else p.iconPack)

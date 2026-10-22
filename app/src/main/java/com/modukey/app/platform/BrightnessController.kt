@@ -9,7 +9,6 @@ import com.modukey.app.core.BrightnessPreset
 import com.modukey.app.core.BrightnessReturnSettings
 import com.modukey.app.core.BrightnessSession
 import com.modukey.app.core.BrightnessValue
-import kotlin.math.roundToInt
 
 enum class BrightnessResult { CHANGED, ALREADY_SET, NEED_ACCESS, FAILED }
 data class BrightnessStatus(val maximum: Boolean = false, val minimum: Boolean = false, val automatic: Boolean = false)
@@ -19,6 +18,7 @@ class BrightnessController(context: Context) {
     private val app = context.applicationContext
     private val resolver = app.contentResolver
     private val session = BrightnessSession()
+    val calibration = BrightnessCalibration(app)
     private var observer: ContentObserver? = null
     // SCREEN_BRIGHTNESS uses 1..255. Private hardware resources can use a different scale.
     private val minimum = 1
@@ -28,11 +28,14 @@ class BrightnessController(context: Context) {
     fun status(): BrightnessStatus = try {
         if (writing) lastStatus else {
             val current = read(); session.observe(current); observeIfNeeded()
-            BrightnessStatus(session.active(BrightnessPreset.MAXIMUM, current), session.active(BrightnessPreset.MINIMUM, current), current.automatic).also { lastStatus = it }
+            BrightnessStatus(!current.automatic && current.level == maximumLevel(), session.active(BrightnessPreset.MINIMUM, current), current.automatic).also { lastStatus = it }
         }
     } catch (_: RuntimeException) { BrightnessStatus() }
     val canWrite get() = Settings.System.canWrite(app)
-    fun fraction(): Float = runCatching { ((read().level - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f) }.getOrDefault(.5f)
+    fun fraction(): Float = runCatching { calibration.scale.fraction(read().level) }.getOrDefault(.5f)
+    fun calibrationSample(): Int? = runCatching { read().takeUnless { it.automatic }?.level }.getOrNull()
+    private fun minimumLevel() = calibration.scale.samples?.first() ?: minimum
+    private fun maximumLevel() = calibration.scale.samples?.last() ?: maximum
     fun toggleAutomatic(): BrightnessResult {
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return changing {
@@ -47,14 +50,20 @@ class BrightnessController(context: Context) {
     fun adjust(increase: Boolean): BrightnessResult {
         if (!canWrite) return BrightnessResult.NEED_ACCESS
         return try {
-            val step = ((maximum - minimum) * .05f).roundToInt().coerceAtLeast(1)
-            setLevel((read().level + if (increase) step else -step).coerceIn(minimum, maximum))
+            val before = read().level
+            val target = calibration.scale.level((calibration.scale.fraction(before) + if (increase) .05f else -.05f).coerceIn(0f, 1f))
+            val next = when {
+                increase && target <= before && before < maximumLevel() -> before + 1
+                !increase && target >= before && before > minimumLevel() -> before - 1
+                else -> target
+            }
+            setLevel(next)
         } catch (_: RuntimeException) { BrightnessResult.FAILED }
     }
     fun setFraction(value: Float): BrightnessResult {
         if (!value.isFinite()) return BrightnessResult.FAILED
         if (!canWrite) return BrightnessResult.NEED_ACCESS
-        return try { setLevel(minimum + ((maximum - minimum) * value.coerceIn(0f, 1f)).roundToInt()) }
+        return try { setLevel(calibration.scale.level(value)) }
         catch (_: RuntimeException) { BrightnessResult.FAILED }
     }
     private fun setLevel(level: Int): BrightnessResult = changing {
@@ -71,7 +80,11 @@ class BrightnessController(context: Context) {
     fun toggle(preset: BrightnessPreset, settings: BrightnessReturnSettings = BrightnessReturnSettings()): BrightnessResult {
         if (!Settings.System.canWrite(app)) return BrightnessResult.NEED_ACCESS
         return changing {
-            val change = session.change(preset, read(), minimum, maximum, settings)
+            val change = session.change(preset, read(), minimumLevel(), maximumLevel(), settings, calibration.scale.level(settings.normalized().fraction))
+            if (change.after == change.before) {
+                session.applied(change)
+                return@changing BrightnessResult.ALREADY_SET
+            }
             if (!write(change.after)) {
                 // Undo a partial write only while its values still match this action.
                 val partial = read()
