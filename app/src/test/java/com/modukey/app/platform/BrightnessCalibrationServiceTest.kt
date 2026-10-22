@@ -58,11 +58,11 @@ class BrightnessCalibrationServiceTest {
         destroy = { controller.destroy() }
         return controller.get().also { ReflectionHelpers.callInstanceMethod<Void>(it, "onServiceConnected") }
     }
-    private fun provideBrightnessWindow(service: BrightnessCalibrationService, writes: MutableList<Int>) {
+    private fun provideBrightnessWindow(service: BrightnessCalibrationService, writes: MutableList<Int>, initial: Float = 50f) {
         val node = AccessibilityNodeInfo.obtain().apply {
             packageName = NativeBrightnessNode.SYSTEM_UI; viewIdResourceName = "com.android.systemui:id/brightness_slider"
             isEnabled = true; isVisibleToUser = true
-            rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 100f, 50f)
+            rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 100f, initial)
             addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS)
         }
         shadowOf(node).setOnPerformActionListener { code, args ->
@@ -133,6 +133,18 @@ class BrightnessCalibrationServiceTest {
         assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
         assertNull(ReflectionHelpers.getField(service, "overlay"))
         val count = writes.size; idle(5_000); assertEquals(count, writes.size)
+    }
+    @Test fun startingAtNativeMinimumCapturesTheUnchangedFirstPosition() {
+        val service = fixture(); val writes = mutableListOf<Int>()
+        Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 0)
+        Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0)
+        provideBrightnessWindow(service, writes, initial = 0f)
+        app.automaticCalibration.start(); idle(3_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
+        assertEquals(listOf(0, 16, 64, 144, 255), app.automaticCalibration.state.value.samples)
+        assertEquals(listOf(25, 50, 75, 100), writes)
+        assertEquals(0, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+        assertEquals(0, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
     }
     @Test fun taskRemovalCancelsAndRestoresTheActiveRun() {
         val service = fixture(); val writes = mutableListOf<Int>(); provideBrightnessWindow(service, writes)

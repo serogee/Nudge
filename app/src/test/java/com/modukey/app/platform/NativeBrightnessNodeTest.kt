@@ -42,9 +42,33 @@ class NativeBrightnessNodeTest {
         val textOnly = root("container").apply { contentDescription = "Brightness"; text = "Brightness" }
         assertNull(NativeBrightnessNode.read(listOf(textOnly)))
     }
+    @Test fun pluginResourceNamesAreAcceptedOnlyForSystemUiOwnedBrightnessControls() {
+        val actions = mutableListOf<Float>()
+        fun plugin() = slider("brightness_slider", action = { _, args ->
+            actions += args!!.getFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE); true
+        }).apply { viewIdResourceName = "miui.systemui.plugin:id/brightness_slider" }
+        val control = NativeBrightnessNode.read(listOf(plugin()))!!
+        assertTrue(NativeBrightnessNode.move(listOf(plugin()), control, .25f))
+        assertEquals(listOf(16384f), actions)
+        assertNull(NativeBrightnessNode.read(listOf(plugin().apply { packageName = "other.app" })))
+    }
+    @Test fun relatedColorAndDimmingControlsCannotInheritBrightnessIdentity() {
+        assertNull(NativeBrightnessNode.read(listOf(slider("brightness_temperature"))))
+        assertNull(NativeBrightnessNode.read(listOf(slider("reduce_brightness_slider"))))
+        val brightness = node("brightness_container")
+        val color = node("color_temperature")
+        shadowOf(color).addChild(slider()); shadowOf(brightness).addChild(color)
+        assertNull(NativeBrightnessNode.read(listOf(brightness)))
+    }
+    @Test fun anAlreadySelectedPositionDoesNotNeedAnotherNativeAction() {
+        val control = NativeBrightnessNode.read(listOf(root()))!!
+        assertTrue(NativeBrightnessNode.move(listOf(root(action = { _, _ ->
+            fail("An unchanged native position must not require a write"); false
+        })), control, .5f))
+    }
     @Test fun ambiguousHiddenAndReadOnlyControlsAreRejected() {
         val ambiguous = node("brightness_container")
-        shadowOf(ambiguous).addChild(slider("first")); shadowOf(ambiguous).addChild(slider("second"))
+        shadowOf(ambiguous).addChild(slider("slider")); shadowOf(ambiguous).addChild(slider("seekbar"))
         assertNull(NativeBrightnessNode.read(listOf(ambiguous)))
         assertNull(NativeBrightnessNode.read(listOf(slider("brightness_slider").apply { isVisibleToUser = false })))
         val readOnly = node("brightness_slider").apply { rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 100f, 50f) }

@@ -8,6 +8,8 @@
 - Retain a device-local restoration record after interruption or failed restoration. Offer Restore previous brightness or Keep current brightness.
 - Refresh an open brightness preview when an automatic calibration is saved.
 - Keep results awaiting Save when an already disabled calibration service sends a late interruption.
+- Accept known brightness control IDs from System UI plugin resources. Reject unrelated color and dimming sliders.
+- Accept calibration positions that are already selected without requiring another native slider action.
 
 ## 0.4.4 - 2026-10-23
 
