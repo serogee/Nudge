@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Accept a native brightness calibration minimum of zero. Reject negative or repeated samples.
+
 ## 0.4.4 - 2026-10-23
 
 ### Added

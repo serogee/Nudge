@@ -38,7 +38,7 @@ import com.modukey.app.R
     }, confirmButton = {
         TextButton(onClick = {
             val value = controller.calibrationSample()
-            if (value == null || value !in 1..65535 || samples.lastOrNull()?.let { value <= it } == true) error = true
+            if (value == null || value !in 0..65535 || samples.lastOrNull()?.let { value <= it } == true) error = true
             else {
                 val next = samples + value
                 if (next.size == 5) {
