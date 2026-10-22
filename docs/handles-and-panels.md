@@ -224,21 +224,21 @@ Jump to touch remains the default for new and existing configurations. Previews 
 
 ## Brightness percentages and calibration
 
-Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device?s no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
+Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
 
 Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
 
 ## Scoped visibility and combined handle control
 
-Toggle handle visibility offers All handles, This handle, and Other handles. It targets enabled handles. If any target is hidden, the action reveals the group; otherwise it hides the group. Revealing still respects each handle?s visible-handle and full-screen hiding settings. Visibility suppression stays saved per handle. The Handles tab applies its visibility switch to every saved handle, including disabled handles, and shows it on only when all are hidden.
+Toggle handle visibility offers All handles, This handle, and Other handles. It targets enabled handles. If any target is hidden, the action reveals the group; otherwise it hides the group. Revealing still respects each handle's visible-handle and full-screen hiding settings. Visibility suppression stays saved per handle. The Handles tab applies its visibility switch to every saved handle, including disabled handles, and shows it on only when all are hidden.
 
 Toggle and hide handles has separate Handles to toggle and Handles to hide/show scopes: None, All handles, This handle, and Other handles. Select at least one group. Each group toggles independently. A partly paused group resumes; a partly hidden group shows. Pauses remain temporary and do not change saved Enable switches. Both groups are validated before either changes. This handle and Other handles require an invoking handle; Home shortcuts ask for one. An open panel remains usable after its invoking handle is paused.
 
-Schema 16 saves per-handle visibility and both combined scopes. Earlier global hiding migrates to each saved handle. Duplication and Add import retain each handle?s own hiding state.
+Schema 16 saves per-handle visibility and both combined scopes. Earlier global hiding migrates to each saved handle. Duplication and Add import retain each handle's own hiding state.
 
 ## Active button colors
 
-Panel Appearance provides separate active background and icon controls. Each supports automatic or selected colors. Turn either effect off independently. Existing button and icon opacity controls still apply. Standalone icons use an outline for the active background effect. Image icons keep their artwork. Inactive and Active previews show the result. There are no per-button color overrides. DND selection follows Nudge?s own rule on Android 15 and later.
+Panel Appearance provides separate active background and icon controls. Each supports automatic or selected colors. Turn either effect off independently. Existing button and icon opacity controls still apply. Standalone icons use an outline for the active background effect. Image icons keep their artwork. Inactive and Active previews show the result. There are no per-button color overrides. DND selection follows Nudge's own rule on Android 15 and later.
 
 Schema 17 adds panel active colors. Older panels receive automatic active colors. Backups, duplication, and Add import retain them.
 
@@ -249,7 +249,7 @@ In a gesture selector, select exactly one popup and enable **Slide to adjust**. 
 
 Any continuous swipe stage disables swipe and hold for that handle. Its saved assignment stays intact. The next swipe stage resumes after release; its sequence timeout starts then.
 
-**Slider travel** sets a separate full-range distance for media volume and brightness on each handle. The default is 240 dp; the range is 48?600 dp. Volume uses the media stream's actual system range and rounds to its available steps. Brightness uses the same percentage mapping and device calibration as Return brightness. Values clamp at their endpoints, and reversing responds immediately. The optional editor guide shows the full distance at real size, its endpoints, and the current-value anchor. Arrows identify endpoints outside the screen. The guide neither moves a native popup nor changes system values.
+**Slider travel** sets a separate full-range distance for media volume and brightness on each handle. The default is 240 dp; the range is 48-600 dp. Volume uses the media stream's actual system range and rounds to its available steps. Brightness uses the same percentage mapping and device calibration as Return brightness. Values clamp at their endpoints, and reversing responds immediately. The optional editor guide shows the full distance at real size, its endpoints, and the current-value anchor. Arrows identify endpoints outside the screen. The guide neither moves a native popup nor changes system values.
 
 Brightness stays open while held, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes. Schema 18 retains each binding's option and both travel distances in backups and copies. Earlier backups keep ordinary popup behavior.
 
