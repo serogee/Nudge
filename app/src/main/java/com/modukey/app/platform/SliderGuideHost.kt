@@ -1,6 +1,7 @@
 package com.modukey.app.platform
 
 import android.content.Context
+import android.annotation.SuppressLint
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -14,6 +15,7 @@ import com.modukey.app.core.*
 /** A noninteractive, full-size distance reference that exists only in the handle editor. */
 internal class SliderGuideHost(private val context: Context, private val manager: WindowManager) {
     private var view: GuideView? = null
+    @SuppressLint("RtlHardcoded") // Overlay coordinates refer to physical display edges.
     fun show(request: SliderGuideRequest, handle: HandleConfig, screen: ScreenSpace, fraction: Float) {
         val next = view ?: GuideView(context).also {
             view = it

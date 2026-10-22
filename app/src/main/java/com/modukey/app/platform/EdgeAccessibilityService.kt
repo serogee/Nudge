@@ -268,7 +268,9 @@ class EdgeAccessibilityService : AccessibilityService() {
             if (owns) sliderBinding = null
             if (target.brightness) brightnessHost?.holdFromHandle(false)
             val current = app.configuration.state.value?.handle(handle.id)
-            if (!completed || !owns || current?.target(slot) != target) sessions.reset(handle.id)
+            val panelOwned = target.panelId == null || open?.let { it.handleId == handle.id && it.panelId == target.panelId } == true
+            val resetsSequence = target.action?.action in listOf(ButtonAction.CLOSE_PANELS, ButtonAction.SCREENSHOT)
+            if (!completed || !owns || current?.target(slot) != target || !panelOwned || resetsSequence) sessions.reset(handle.id)
             else sessions.submitted(current, stage, target, SystemClock.elapsedRealtime())
         }
         if (!captured) { driver.finish(true); return false }

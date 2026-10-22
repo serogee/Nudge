@@ -109,4 +109,32 @@ class SliderGestureRuntimeTest {
         app.sliderGuidePreview.end(token)
         assertEquals(before, app.brightness.fraction(), .001f)
     }
+    @Test fun releaseKeepsTheSwipeSequenceResetAfterItsPanelCloses() {
+        val (service, view) = fixture()
+        val panel = SavedPanel(settings = PanelConfig(autoCloseEnabled = true, autoCloseMs = 1000))
+        val target = GestureTarget.panel(panel.id).copy(brightness = true, slideToAdjust = true)
+        app.configuration.update { it.copy(panels = listOf(panel)).editHandle("slider") { h -> h.copy(bindings = mapOf(
+            GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME)) } }
+        await { app.configuration.state.value?.handle("slider")?.target(GestureSlot.SWIPE_1) == target }
+        touch(view, MotionEvent.ACTION_DOWN, 100); touch(view, MotionEvent.ACTION_MOVE, 200, x = 31f)
+        assertNotNull(ReflectionHelpers.getField<Any?>(service, "open"))
+        idle(1500)
+        assertNull(ReflectionHelpers.getField<Any?>(service, "open")); assertTrue(view.isTouching)
+        assertTrue(host(service).visible)
+        touch(view, MotionEvent.ACTION_UP, 1800, x = 31f)
+        val sessions = ReflectionHelpers.getField<GestureSessions>(service, "sessions")
+        assertEquals(0, sessions.next(app.configuration.state.value!!.handle("slider")!!, GestureKind.SWIPE, android.os.SystemClock.elapsedRealtime()).second)
+    }
+    @Test fun releaseDoesNotRestoreASwipeStageForAClosePanelsAction() {
+        val (service, view) = fixture()
+        val target = GestureTarget(brightness = true, slideToAdjust = true, action = PanelButton(action = ButtonAction.CLOSE_PANELS))
+        app.configuration.update { it.editHandle("slider") { h -> h.copy(bindings = mapOf(
+            GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME)) } }
+        await { app.configuration.state.value?.handle("slider")?.target(GestureSlot.SWIPE_1) == target }
+        touch(view, MotionEvent.ACTION_DOWN, 100); touch(view, MotionEvent.ACTION_MOVE, 200, x = 31f)
+        assertTrue(host(service).visible)
+        touch(view, MotionEvent.ACTION_UP, 300, x = 31f)
+        val sessions = ReflectionHelpers.getField<GestureSessions>(service, "sessions")
+        assertEquals(0, sessions.next(app.configuration.state.value!!.handle("slider")!!, GestureKind.SWIPE, android.os.SystemClock.elapsedRealtime()).second)
+    }
 }
