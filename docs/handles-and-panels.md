@@ -218,7 +218,7 @@ The automatic brightness control is a horizontal pill below the slider. Its touc
 
 Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
 
-Expand **Appearance** to compare the configured brightness slider background with the MIUI volume slider background color, #202122. The preview uses the selected track and fill colors for the brightness sample.
+Expand **Appearance** to edit the brightness background, track, fill, and icon colors. The live Preview brightness slider switch remains available.
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
 

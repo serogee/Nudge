@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="edit_color">Edit %1$s</string>
-    <string name="miui_volume_background">MIUI volume slider background</string>
-    <string name="slider_background_preview">Background preview</string>
 </resources>

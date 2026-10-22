@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Remove the brightness and MIUI background comparison samples.
+
 - Match brightness percentages to slider positions and return directly from a manually selected maximum.
 
 ### Added
