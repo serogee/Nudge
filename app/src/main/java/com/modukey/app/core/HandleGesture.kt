@@ -9,7 +9,8 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private val holdDistance: Float = distance, private val holdSwipeTimeout: Long = timeout,
     private val holdImmediately: Boolean = false, private val swipeHoldImmediately: Boolean = false,
     private val holdDistanceMode: SwipeHoldDistanceMode = SwipeHoldDistanceMode.ANY_DIRECTION,
-    private val swipeImmediately: Boolean = false, private val swipeHoldEnabled: Boolean = true) {
+    private val swipeImmediately: Boolean = false, private val swipeHoldEnabled: Boolean = true,
+    private val swipeDistanceMode: SwipeDistanceMode = SwipeDistanceMode.INWARD_ONLY) {
     private var active = false
     private var cancelled = false
     var emitted = false; private set
@@ -19,7 +20,10 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private var crossed = false; private var holdCrossed = false; private var holdReady = false
     private var moved = false; private var inward = 0f; private var parallel = 0f
     private fun holdMeasure() = if (holdDistanceMode == SwipeHoldDistanceMode.ANY_DIRECTION) radial else inward
-    val pullDistance get() = if (active && !cancelled && moved) holdMeasure().coerceAtLeast(0f) else 0f
+    private fun validSwipeDistance() = if (swipeDistanceMode == SwipeDistanceMode.ANY_DIRECTION) radial >= distance
+        else inward >= distance && inward > abs(parallel)
+    val pullDistance get() = if (active && !cancelled && moved)
+        maxOf(holdMeasure(), if (swipeDistanceMode == SwipeDistanceMode.ANY_DIRECTION) radial else inward).coerceAtLeast(0f) else 0f
     fun down(x: Float, y: Float, time: Long) {
         active = true; cancelled = false; emitted = false; crossed = false; holdCrossed = false; holdReady = false; moved = false
         this.x = x; this.y = y; start = time; stableAt = time; inward = 0f; parallel = 0f; radial = 0f
@@ -34,8 +38,9 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
         if (radial > slop) moved = true
         val c = components(dx, dy); inward = c.first; parallel = c.second
         val parallelLimit = maxOf(slop * 2f, minOf(distance, holdDistance))
-        if (moved && (inward < -slop || (abs(parallel) > parallelLimit && abs(parallel) > inward.coerceAtLeast(0f) * 1.5f))) swipeCancelled = true
-        if (!swipeCancelled && !crossed && inward >= distance && inward > abs(parallel) && time - start <= timeout) crossed = true
+        if (swipeDistanceMode == SwipeDistanceMode.INWARD_ONLY && moved &&
+            (inward < -slop || (abs(parallel) > parallelLimit && abs(parallel) > inward.coerceAtLeast(0f) * 1.5f))) swipeCancelled = true
+        if (!swipeCancelled && !crossed && validSwipeDistance() && time - start <= timeout) crossed = true
         val measure = holdMeasure()
         if (!holdQualified && measure >= holdDistance && time - start <= holdSwipeTimeout) holdQualified = true
         if (holdQualified) {
@@ -53,7 +58,7 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     fun poll(time: Long): GestureKind? {
         if (!active || cancelled || emitted || time < start) return null
         val kind = when {
-            swipeImmediately && crossed && !swipeCancelled && inward >= distance && inward > abs(parallel) -> GestureKind.SWIPE
+            swipeImmediately && crossed && !swipeCancelled && validSwipeDistance() -> GestureKind.SWIPE
             !moved && holdImmediately && time - start >= holdTime -> GestureKind.HOLD
             swipeHoldEnabled && validHold() && swipeHoldImmediately && time - stableAt >= swipeHoldTime -> GestureKind.SWIPE_HOLD
             else -> null
@@ -69,7 +74,7 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
         val kind = if (!moved) when { time - start <= 250 -> GestureKind.TAP; time - start >= holdTime -> GestureKind.HOLD; else -> null }
         else when {
             swipeHoldEnabled && validHold() && (holdReady || time - stableAt >= swipeHoldTime) -> GestureKind.SWIPE_HOLD
-            !swipeCancelled && crossed && inward >= distance && inward > abs(parallel) && time - start <= timeout -> GestureKind.SWIPE
+            !swipeCancelled && crossed && validSwipeDistance() && time - start <= timeout -> GestureKind.SWIPE
             else -> null
         }
         emitted = kind != null

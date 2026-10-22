@@ -17,6 +17,8 @@ import kotlin.math.roundToInt
     }
     SliderTravelControls(h, vm)
     CollapsibleSection(R.string.swipe_settings) {
+        OptionRow(t(R.string.swipe_hold_distance_mode), SwipeDistanceMode.entries, s.swipeDistanceMode, SwipeDistanceMode.INWARD_ONLY) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceMode = v) } }
+        Help(R.string.swipe_distance_mode_help)
         SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = v) } }
         DurationInput(R.string.swipe_time, s.swipeTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v) } }
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }

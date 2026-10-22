@@ -75,7 +75,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs ||
             this.settings.swipeHoldDistanceDp != settings.swipeHoldDistanceDp || this.settings.swipeHoldTimeoutMs != settings.swipeHoldTimeoutMs ||
             this.settings.holdExecution != settings.holdExecution || this.settings.swipeHoldExecution != settings.swipeHoldExecution ||
-            this.settings.swipeHoldDistanceMode != settings.swipeHoldDistanceMode) {
+            this.settings.swipeHoldDistanceMode != settings.swipeHoldDistanceMode || this.settings.swipeDistanceMode != settings.swipeDistanceMode) {
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
         this.settings = settings; this.edge = edge; this.editing = editing
@@ -97,7 +97,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         settings.swipeHoldDistanceDp * resources.displayMetrics.density, settings.swipeHoldTimeoutMs,
         settings.holdExecution == HoldExecution.AFTER_TIME || policy.holdAtDeadline,
         settings.swipeHoldExecution == HoldExecution.AFTER_TIME || policy.swipeHoldAtDeadline, settings.swipeHoldDistanceMode,
-        policy.swipeAtDistance, policy.swipeHoldEnabled)
+        policy.swipeAtDistance, policy.swipeHoldEnabled, settings.swipeDistanceMode)
     fun captureSlider(move: (Float) -> Unit, ended: (Boolean) -> Unit): Boolean {
         if (!touching || editing || sliderMove != null) return false
         sliderMove = move; sliderEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)

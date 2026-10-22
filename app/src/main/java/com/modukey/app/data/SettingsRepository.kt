@@ -43,6 +43,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
             activation = enumValue(p[stringPreferencesKey("activation")], Activation.SWIPE),
             swipeDistanceDp = p[floatPreferencesKey("swipe.distance")] ?: 24f,
             swipeTimeoutMs = p[longPreferencesKey("swipe.timeout")] ?: 600L,
+            swipeDistanceMode = enumValue(p[stringPreferencesKey("swipe.direction")], SwipeDistanceMode.INWARD_ONLY),
             haptics = p[booleanPreferencesKey("haptics")] ?: false,
             excludedPackages = p[stringSetPreferencesKey("excluded.packages")] ?: emptySet(),
             includePrereleases = p[booleanPreferencesKey("updates.include.prereleases")] ?: false,
@@ -71,6 +72,7 @@ class DataStoreSettingsRepository(private val store: DataStore<Preferences>) : S
         p[stringPreferencesKey("activation")] = s.activation.name
         p[floatPreferencesKey("swipe.distance")] = s.swipeDistanceDp
         p[longPreferencesKey("swipe.timeout")] = s.swipeTimeoutMs
+        p[stringPreferencesKey("swipe.direction")] = s.swipeDistanceMode.name
         p[booleanPreferencesKey("haptics")] = s.haptics
         p[stringSetPreferencesKey("excluded.packages")] = s.excludedPackages
         p[booleanPreferencesKey("updates.include.prereleases")] = s.includePrereleases

@@ -63,6 +63,7 @@ class SettingsController(private val repository: SettingsRepository, private val
         field("activation", before.activation, after.activation) { s, v -> s.copy(activation = v) }
         field("swipe.distance", before.swipeDistanceDp, after.swipeDistanceDp) { s, v -> s.copy(swipeDistanceDp = v) }
         field("swipe.timeout", before.swipeTimeoutMs, after.swipeTimeoutMs) { s, v -> s.copy(swipeTimeoutMs = v) }
+        field("swipe.direction", before.swipeDistanceMode, after.swipeDistanceMode) { s, v -> s.copy(swipeDistanceMode = v) }
         field("haptics", before.haptics, after.haptics) { s, v -> s.copy(haptics = v) }
         field("exclusions", before.excludedPackages, after.excludedPackages) { s, v -> s.copy(excludedPackages = v) }
         field("updates.include.prereleases", before.includePrereleases, after.includePrereleases) { s, v -> s.copy(includePrereleases = v) }

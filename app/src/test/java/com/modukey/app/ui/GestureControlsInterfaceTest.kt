@@ -23,6 +23,25 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class GestureControlsInterfaceTest {
+    @Test fun ordinarySwipeDirectionCanChangeWithoutChangingSwipeHold() {
+        val app = ready()
+        editGestures()
+        rule.onNodeWithContentDescription("Show Swipe settings").performScrollTo().performClick()
+        rule.onNodeWithText("Inward only").performScrollTo().performClick()
+        rule.onNodeWithText("Any direction").performClick()
+        rule.runOnIdle {
+            val settings = app.configuration.preview.value!!.handles.single().trigger
+            assertEquals(SwipeDistanceMode.ANY_DIRECTION, settings.swipeDistanceMode)
+            assertEquals(SwipeHoldDistanceMode.ANY_DIRECTION, settings.swipeHoldDistanceMode)
+        }
+        rule.onNodeWithContentDescription("Reset Distance direction").performScrollTo().performClick()
+        rule.runOnIdle {
+            val settings = app.configuration.preview.value!!.handles.single().trigger
+            assertEquals(SwipeDistanceMode.INWARD_ONLY, settings.swipeDistanceMode)
+            assertEquals(SwipeHoldDistanceMode.ANY_DIRECTION, settings.swipeHoldDistanceMode)
+        }
+    }
+
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @After fun cleanup() { (rule.activity.application as NudgeApplication).onTerminate() }
 

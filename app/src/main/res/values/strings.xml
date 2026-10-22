@@ -506,6 +506,7 @@
     <string name="capture_brightness">Capture</string>
     <string name="brightness_calibration_failed">Cannot save this sample. Turn off automatic brightness. Each sample must be higher than the previous sample.</string>
     <string name="swipe_hold_distance_mode">Distance direction</string>
+    <string name="swipe_distance_mode_help">Any direction uses the straight-line distance from the first touch. Moving back reduces this distance. Inward only follows the handle’s edge.</string>
     <string name="any_direction">Any direction</string>
     <string name="inward_only">Inward only</string>
     <string name="swipe_hold_distance_mode_help">Measure from the starting point. Hold beyond the distance. Moving back below the distance restarts the hold.</string>
