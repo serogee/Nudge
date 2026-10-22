@@ -501,7 +501,7 @@
     <string name="brightness_calibrated">Brightness uses your saved calibration. Calibration stays on this device.</string>
     <string name="calibrate_brightness">Calibrate brightness</string>
     <string name="reset_brightness_calibration">Reset calibration</string>
-    <string name="brightness_calibration_steps">Turn off automatic brightness. Open Control center and set its brightness slider to the requested position. Return here and select Capture.</string>
+    <string name="brightness_calibration_steps">Turn off automatic brightness. Open Control center and set its brightness slider to the requested position. Return to Home and select Capture.</string>
     <string name="brightness_calibration_position">Set the native brightness slider to %1$d%%.</string>
     <string name="capture_brightness">Capture</string>
     <string name="brightness_calibration_failed">Cannot save this sample. Turn off automatic brightness. Each sample must be higher than the previous sample.</string>

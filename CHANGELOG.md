@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Move brightness calibration to Home, below the brightness slider controls.
+
 ## 0.4.3 - 2026-10-22
 
 ### Added

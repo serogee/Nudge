@@ -40,7 +40,6 @@ import com.modukey.app.updates.*
         if(busy) CircularProgressIndicator()
     }
     HyperOsSetup(vm, openSettings)
-    BrightnessCalibrationSection()
     Section(R.string.dnd) {
         Help(R.string.policy_required); Help(R.string.dnd_other_rule)
         OutlinedButton(onClick={ openSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }) { Text(t(R.string.open_policy)) }

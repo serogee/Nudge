@@ -224,7 +224,7 @@ Jump to touch remains the default for new and existing configurations. Previews 
 
 ## Brightness percentages and calibration
 
-Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
+Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Home provides optional calibration below the brightness slider controls at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Home, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
 
 Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
 
