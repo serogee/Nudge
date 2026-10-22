@@ -2,7 +2,6 @@ package com.modukey.app.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
@@ -17,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.core.net.toUri
 import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 import com.modukey.app.platform.*
@@ -36,7 +36,7 @@ import com.modukey.app.platform.*
     }
     fun openSettings(write: Boolean = false) {
         try {
-            context.startActivity(if (write) Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${context.packageName}"))
+            context.startActivity(if (write) Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, "package:${context.packageName}".toUri())
                 else Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         } catch (_: ActivityNotFoundException) { coordinator.settingsUnavailable() }
         catch (_: SecurityException) { coordinator.settingsUnavailable() }

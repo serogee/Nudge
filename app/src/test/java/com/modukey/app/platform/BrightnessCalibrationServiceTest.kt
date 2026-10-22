@@ -111,6 +111,8 @@ class BrightnessCalibrationServiceTest {
         assertEquals(listOf(AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS, AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE), shadowOf(service).globalActionsPerformed)
         assertTrue(shadowOf(service).gesturesDispatched.isEmpty())
         assertEquals(0, service.serviceInfo.eventTypes)
+        service.onInterrupt()
+        assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
         val count = writes.size; idle(30_000); assertEquals(count, writes.size)
     }
     @Test fun overlayCancelRestoresBrightnessAndDiscardsPendingWork() {

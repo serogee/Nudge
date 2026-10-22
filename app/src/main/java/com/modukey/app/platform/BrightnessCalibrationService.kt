@@ -33,7 +33,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     private var status: TextView? = null
     private val manager get() = getSystemService(WindowManager::class.java)
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) { coordinator.cancel(AutomaticCalibrationError.LOCKED) }
+        override fun onReceive(context: Context?, intent: Intent?) { if (!stopping) coordinator.cancel(AutomaticCalibrationError.LOCKED) }
     }
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -98,7 +98,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         disableSelf()
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
-    override fun onInterrupt() { coordinator.cancel(AutomaticCalibrationError.DISCONNECTED); close() }
+    override fun onInterrupt() { coordinator.disconnected(this); close() }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val current = getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0

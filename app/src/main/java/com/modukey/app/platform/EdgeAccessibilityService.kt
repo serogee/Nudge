@@ -128,12 +128,12 @@ class EdgeAccessibilityService : AccessibilityService() {
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.sliderGuidePreview.state.collect { frames?.request() } }
             scope?.launch { app.brightnessPreview.state.collect { frames?.request() } }
-            scope?.launch { app.automaticCalibration.state.map { it.phase == AutomaticCalibrationPhase.RUNNING }.distinctUntilChanged().collect { calibrating ->
-                if (calibrating) {
+            scope?.launch { app.automaticCalibration.state.map { it.phase }.distinctUntilChanged().collect { phase ->
+                if (phase == AutomaticCalibrationPhase.RUNNING) {
                     hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }
                     sessions.clear(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows()
                 }
-                frames?.request()
+                frames?.request(); panelHost?.refreshSound()
             } }
             scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.editor.state.collect { hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
