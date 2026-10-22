@@ -8,13 +8,12 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 15 adds swipe-and-hold distance modes. */
+/** Schema 16 adds saved per-handle visibility and combined handle actions. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 15
+    const val SCHEMA = 16
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
-        .put("hideHandleIndicators", config.hideHandleIndicators)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
         .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
@@ -58,7 +57,8 @@ object ConfigurationCodec {
                         }
                     }
                 }
-                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000))
+                HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000),
+                    indicatorHidden = if (schema >= 16) h.optBoolean("indicatorHidden") else root.optBoolean("hideHandleIndicators"))
             }
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
@@ -71,7 +71,6 @@ object ConfigurationCodec {
             val panelIds = panels.map { it.id }.toSet()
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
             AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts,
-                hideHandleIndicators = root.optBoolean("hideHandleIndicators"),
                 handleAnimationsEnabled = root.optBoolean("handleAnimationsEnabled", true)).normalized()
         }
     }
@@ -137,7 +136,7 @@ object ConfigurationCodec {
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)
-            .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs)
+            .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs).put("indicatorHidden", h.indicatorHidden)
     }
     private fun brightness(p: JSONObject, schema: Int) = BrightnessPopupSettings(
         side = enumValueOf(p.optString("side", "OPPOSITE_VOLUME")), volumeSide = enumValueOf(p.optString("volumeSide", "RIGHT")),
@@ -161,13 +160,15 @@ object ConfigurationCodec {
         b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")),
         enumValueOf(b.optString("handleScope", "ALL")),
         b.optJSONObject("brightnessReturn")?.let { BrightnessReturnSettings(it.optBoolean("usePrevious", true), it.float("fraction", .5f)) }
-            ?: BrightnessReturnSettings())
+            ?: BrightnessReturnSettings(),
+        toggleScope = enumValueOf(b.optString("toggleScope", "ALL")), visibilityScope = enumValueOf(b.optString("visibilityScope", "ALL")))
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
         .put("showVolumePopup", b.showVolumePopup).put("iconContainer", b.iconContainer.name).put("emptyAppearance", b.emptyAppearance.name)
         .put("handleScope", b.handleScope.name)
         .put("brightnessReturn", JSONObject().put("usePrevious", b.brightnessReturn.usePrevious).put("fraction", b.brightnessReturn.fraction))
+        .put("toggleScope", b.toggleScope.name).put("visibilityScope", b.visibilityScope.name)
     private fun panel(p: JSONObject, schema: Int) = PanelConfig(
         buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),

@@ -67,10 +67,8 @@ import com.modukey.app.core.*
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
             item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it) } }
             item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false) { draft = draft.copy(brightness = it) } }
-            if (draft.action?.action == ButtonAction.TOGGLE_HANDLES) item {
-                val action = requireNotNull(draft.action)
-                OptionRow(t(R.string.handle_toggle_scope), HandleToggleScope.entries, action.handleScope, HandleToggleScope.ALL) { draft = draft.copy(action = action.copy(handleScope = it)) }
-                Help(R.string.handle_toggle_help)
+            if (draft.action?.action in listOf(ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)) item {
+                HandleActionControls(requireNotNull(draft.action)) { draft = draft.copy(action = it) }
             }
             if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) item {
                 val action = requireNotNull(draft.action)
@@ -88,6 +86,7 @@ import com.modukey.app.core.*
             }
         }
     }, confirmButton = { Button(onClick = { choose(draft) }, enabled = (draft.panelId == null || config.panel(draft.panelId) != null) &&
+        (draft.action?.action != ButtonAction.TOGGLE_AND_HIDE_HANDLES || draft.action?.hasHandleGroups == true) &&
         (draft.action?.action != ButtonAction.OPEN_APP || draft.action?.appPackage?.isNotBlank() == true)) { Text(t(R.string.save)) } },
         dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })
 }

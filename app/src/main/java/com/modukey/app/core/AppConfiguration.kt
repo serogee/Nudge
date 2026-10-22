@@ -18,7 +18,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
 enum class PanelMode { FIXED, SCROLLABLE }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
-enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, TOGGLE_HANDLES, TOGGLE_HANDLE_VISIBILITY, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
+enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, TOGGLE_HANDLES, TOGGLE_HANDLE_VISIBILITY, TOGGLE_AND_HIDE_HANDLES, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
 enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
@@ -36,6 +36,8 @@ data class PanelButton(
     val emptyAppearance: EmptyAppearance = EmptyAppearance.SLASH,
     val handleScope: HandleToggleScope = HandleToggleScope.ALL,
     val brightnessReturn: BrightnessReturnSettings = BrightnessReturnSettings(),
+    val toggleScope: HandleGroupScope = HandleGroupScope.ALL,
+    val visibilityScope: HandleGroupScope = HandleGroupScope.ALL,
 ) {
     fun normalized() = copy(brightnessReturn = brightnessReturn.normalized())
 }
@@ -92,6 +94,7 @@ data class HandleConfig(
     val trigger: TriggerSettings = TriggerSettings(),
     val bindings: Map<GestureSlot, GestureTarget> = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME),
     val volumeSequenceMs: Long = 3_000,
+    val indicatorHidden: Boolean = false,
 ) {
     fun target(slot: GestureSlot) = bindings[slot] ?: GestureTarget.NONE
     fun normalized() = copy(name = name.take(80), trigger = trigger.normalized().copy(enabled = false, includePrereleases = false, activation = Activation.SWIPE),
@@ -110,9 +113,12 @@ data class AppConfiguration(
     val panels: List<SavedPanel> = emptyList(),
     val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
     val shortcuts: List<HomeShortcut> = emptyList(),
-    val hideHandleIndicators: Boolean = false,
     val handleAnimationsEnabled: Boolean = true,
 ) {
+    val hideHandleIndicators get() = handles.isNotEmpty() && handles.all { it.indicatorHidden }
+    val hiddenIndicatorIds get() = handles.filter { it.indicatorHidden }.mapTo(mutableSetOf()) { it.id }
+    fun hideIndicators(hidden: Boolean) = copy(handles = handles.map { it.copy(indicatorHidden = hidden) })
+    fun hideIndicators(targets: Set<String>, hidden: Boolean) = copy(handles = handles.map { if (it.id in targets) it.copy(indicatorHidden = hidden) else it })
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
         return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->

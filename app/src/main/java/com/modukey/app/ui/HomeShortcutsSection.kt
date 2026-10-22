@@ -52,7 +52,7 @@ import com.modukey.app.core.*
         var name by remember(button.id) { mutableStateOf(context.buttonLabel(button)) }
         var owner by remember(button.id) { mutableStateOf(config.handles.firstOrNull()?.id) }
         var expanded by remember { mutableStateOf(false) }
-        val needsOwner = button.action == ButtonAction.TOGGLE_HANDLES && button.handleScope != HandleToggleScope.ALL
+        val needsOwner = button.needsHandleOwner
         AlertDialog(onDismissRequest = { naming = null }, title = { Text(t(R.string.add_shortcut)) }, text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { PanelButtonFace(button, PanelConfig(background = 0xFF202122), 64.dp) }

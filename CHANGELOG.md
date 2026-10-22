@@ -12,6 +12,9 @@
 
 ### Added
 
+- Save visibility for All handles, This handle, or Other handles.
+- Combine independent pause/resume and hide/show groups in one button.
+
 - Choose Any direction or Inward only for swipe-and-hold distance.
 
 - Calibrate brightness against the native slider on this device.

@@ -227,3 +227,11 @@ Jump to touch remains the default for new and existing configurations. Previews 
 Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device?s no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
 
 Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
+
+## Scoped visibility and combined handle control
+
+Toggle handle visibility offers All handles, This handle, and Other handles. It targets enabled handles. If any target is hidden, the action reveals the group; otherwise it hides the group. Revealing still respects each handle?s visible-handle and full-screen hiding settings. Visibility suppression stays saved per handle. The Handles tab applies its visibility switch to every saved handle, including disabled handles, and shows it on only when all are hidden.
+
+Toggle and hide handles has separate Handles to toggle and Handles to hide/show scopes: None, All handles, This handle, and Other handles. Select at least one group. Each group toggles independently. A partly paused group resumes; a partly hidden group shows. Pauses remain temporary and do not change saved Enable switches. Both groups are validated before either changes. This handle and Other handles require an invoking handle; Home shortcuts ask for one. An open panel remains usable after its invoking handle is paused.
+
+Schema 16 saves per-handle visibility and both combined scopes. Earlier global hiding migrates to each saved handle. Duplication and Add import retain each handle?s own hiding state.

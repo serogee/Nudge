@@ -509,4 +509,17 @@
     <string name="any_direction">Any direction</string>
     <string name="inward_only">Inward only</string>
     <string name="swipe_hold_distance_mode_help">Measure from the starting point. Hold beyond the distance. Moving back below the distance restarts the hold.</string>
+    <string name="toggle_and_hide_handles">Toggle and hide handles</string>
+    <string name="handles_to_toggle">Handles to toggle</string>
+    <string name="handles_to_hide">Handles to hide/show</string>
+    <string name="no_handles_target">None</string>
+    <string name="handle_visibility_scope_help">Hide or show the selected enabled handles. Keep their gestures and saved appearance. Visibility changes stay saved.</string>
+    <string name="toggle_and_hide_help">Toggle each group independently. Paused handles resume. Hidden handles show. Visibility stays saved. Pauses reset when the service restarts.</string>
+    <string name="handle_group_required">Select at least one group.</string>
+    <string name="combined_handle_state">%1$s. Gestures: %2$s. Visibility: %3$s.</string>
+    <string name="handle_group_running">Running</string>
+    <string name="handle_group_paused">Paused</string>
+    <string name="handle_group_visible">Shown</string>
+    <string name="handle_group_hidden">Hidden</string>
+    <string name="handle_group_mixed">Mixed</string>
 </resources>

@@ -86,15 +86,37 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
         ButtonAction.BRIGHTNESS_MAXIMUM -> state.maximumBrightness
         ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
         ButtonAction.BRIGHTNESS_AUTOMATIC -> state.automaticBrightness
-        ButtonAction.TOGGLE_HANDLE_VISIBILITY -> !state.handleIndicatorsHidden
+        ButtonAction.TOGGLE_HANDLE_VISIBILITY -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
+            targets.isNotEmpty() && targets.none { it in state.hiddenIndicatorIds }
+        }
+        ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
+            val paused = handleGroupTargets(button.toggleScope, state.ownerHandleId, state.enabledHandleIds)
+            val hidden = handleGroupTargets(button.visibilityScope, state.ownerHandleId, state.enabledHandleIds)
+            button.hasHandleGroups &&
+                (button.toggleScope == HandleGroupScope.NONE || (paused.isNotEmpty() && paused.all { it in state.pausedHandleIds })) &&
+                (button.visibilityScope == HandleGroupScope.NONE || (hidden.isNotEmpty() && hidden.all { it in state.hiddenIndicatorIds }))
+        }
         ButtonAction.TOGGLE_HANDLES -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
             state.handlesEnabled && targets.isNotEmpty() && targets.none { it in state.pausedHandleIds }
         }
         else -> false
     }
     val isToggle = button.action in setOf(ButtonAction.MEDIA_MUTE, ButtonAction.SILENT, ButtonAction.VIBRATE, ButtonAction.DND,
-        ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_AUTOMATIC, ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY)
-    val description = if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
+        ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM, ButtonAction.BRIGHTNESS_AUTOMATIC, ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)
+    val description = if (button.action == ButtonAction.TOGGLE_AND_HIDE_HANDLES) {
+        fun group(scope: HandleGroupScope, affected: Set<String>, off: Int, on: Int): String {
+            val targets = handleGroupTargets(scope, state.ownerHandleId, state.enabledHandleIds)
+            return context.getString(when {
+                scope == HandleGroupScope.NONE || targets.isEmpty() -> R.string.no_handles_target
+                targets.all { it in affected } -> on
+                targets.none { it in affected } -> off
+                else -> R.string.handle_group_mixed
+            })
+        }
+        context.getString(R.string.combined_handle_state, title,
+            group(button.toggleScope, state.pausedHandleIds, R.string.handle_group_running, R.string.handle_group_paused),
+            group(button.visibilityScope, state.hiddenIndicatorIds, R.string.handle_group_visible, R.string.handle_group_hidden))
+    } else if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
     val shape = iconShape(panel)
     val container = if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_ICON) true else when (button.iconContainer) {
         IconContainer.DEFAULT -> panel.iconBackground
@@ -137,6 +159,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.BRIGHTNESS_MINIMUM -> Icon(AppIcons.BrightnessMinimum, null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLES -> Icon(AppIcons.Handle, null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLE_VISIBILITY -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
+        ButtonAction.TOGGLE_AND_HIDE_HANDLES -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
         ButtonAction.NOTIFICATIONS -> Icon(AppIcons.Notifications, null, modifier, tint = tint)
         ButtonAction.CONTROL_PANEL -> Icon(AppIcons.ControlPanel, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_UP -> Icon(AppIcons.BrightnessUp, null, modifier, tint = tint)
