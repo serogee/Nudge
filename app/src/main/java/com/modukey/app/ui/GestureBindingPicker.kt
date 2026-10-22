@@ -16,23 +16,23 @@ import androidx.compose.ui.unit.dp
 import com.modukey.app.R
 import com.modukey.app.core.*
 
-@Composable fun GestureBindingRow(config: AppConfiguration, slot: GestureSlot, target: GestureTarget, vm: NudgeViewModel, change: (GestureTarget) -> Unit) {
+@Composable fun GestureBindingRow(config: AppConfiguration, slot: GestureSlot, target: GestureTarget, vm: NudgeViewModel, enabled: Boolean = true, change: (GestureTarget) -> Unit) {
     val context = LocalContext.current
     var picking by remember { mutableStateOf(false) }
     val default = if (slot == GestureSlot.SWIPE_1) GestureTarget.VOLUME else GestureTarget.NONE
     Column {
-        SettingTitle(t(label(slot)), reset = if (target != default) ({ change(default) }) else null)
-        OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth()) {
+        SettingTitle(t(label(slot)), enabled = enabled, reset = if (enabled && target != default) ({ change(default) }) else null)
+        OutlinedButton(onClick = { picking = true }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
             if (target.panelId != null || target.action != null) {
                 Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
             }
             Text(context.targetLabel(config, target), Modifier.weight(1f)); Icon(AppIcons.Edit, null, Modifier.size(18.dp))
         }
     }
-    if (picking) GestureBindingPicker(config, target, vm, { picking = false }) { change(it); picking = false }
+    if (picking && enabled) GestureBindingPicker(config, slot, target, vm, { picking = false }) { change(it); picking = false }
 }
 
-@Composable private fun GestureBindingPicker(config: AppConfiguration, original: GestureTarget, vm: NudgeViewModel, dismiss: () -> Unit, choose: (GestureTarget) -> Unit) {
+@Composable private fun GestureBindingPicker(config: AppConfiguration, slot: GestureSlot, original: GestureTarget, vm: NudgeViewModel, dismiss: () -> Unit, choose: (GestureTarget) -> Unit) {
     val context = LocalContext.current
     var draft by remember { mutableStateOf(original) }
     var pendingApp by remember { mutableStateOf<PanelButton?>(null) }
@@ -42,7 +42,7 @@ import com.modukey.app.core.*
             ActionPicker({ page = 0 }, includeEmpty = false) { selected ->
                 val action = (draft.action ?: PanelButton()).copy(action = selected, showVolumePopup = false)
                 if (selected == ButtonAction.OPEN_APP) { pendingApp = action; vm.loadApps(); page = 2 }
-                else { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action); page = 0 }
+                else { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action, slideToAdjust = draft.slideToAdjust); page = 0 }
             }
             return
         }
@@ -50,23 +50,26 @@ import com.modukey.app.core.*
             AppPicker(vm, { pendingApp = null; page = 0 }) { app ->
                 val action = (pendingApp ?: draft.action ?: PanelButton(action = ButtonAction.OPEN_APP)).copy(
                     appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label)
-                draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action)
+                draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, action = action, slideToAdjust = draft.slideToAdjust)
                 pendingApp = null; page = 0
             }
             return
         }
         3 -> {
-            PanelTargetPicker(config, { page = 0 }) { id -> draft = GestureTarget.panel(id, draft.volume).copy(brightness = draft.brightness); page = 0 }
+            PanelTargetPicker(config, { page = 0 }) { id -> draft = GestureTarget.panel(id, draft.volume).copy(brightness = draft.brightness, slideToAdjust = draft.slideToAdjust); page = 0 }
             return
         }
     }
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.gesture_action)) }, text = {
         LazyColumn(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume) } }
+            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = GestureTarget(brightness = draft.brightness, volume = draft.volume, slideToAdjust = draft.slideToAdjust) } }
             item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
-            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it) } }
-            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false) { draft = draft.copy(brightness = it) } }
+            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false) { draft = draft.copy(volume = it).normalized() } }
+            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false) { draft = draft.copy(brightness = it).normalized() } }
+            if (slot != GestureSlot.TAP && (draft.volume xor draft.brightness)) item {
+                Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, draft.slideToAdjust, default = false) { draft = draft.copy(slideToAdjust = it) }
+            }
             if (draft.action?.action in listOf(ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)) item {
                 HandleActionControls(requireNotNull(draft.action)) { draft = draft.copy(action = it) }
             }
@@ -85,7 +88,7 @@ import com.modukey.app.core.*
                 }
             }
         }
-    }, confirmButton = { Button(onClick = { choose(draft) }, enabled = (draft.panelId == null || config.panel(draft.panelId) != null) &&
+    }, confirmButton = { Button(onClick = { choose(draft.normalized()) }, enabled = (draft.panelId == null || config.panel(draft.panelId) != null) &&
         (draft.action?.action != ButtonAction.TOGGLE_AND_HIDE_HANDLES || draft.action?.hasHandleGroups == true) &&
         (draft.action?.action != ButtonAction.OPEN_APP || draft.action?.appPackage?.isNotBlank() == true)) { Text(t(R.string.save)) } },
         dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })

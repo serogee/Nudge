@@ -1,0 +1,12 @@
+<resources>
+    <string name="slide_to_adjust">Slide to adjust</string>
+    <string name="slide_to_adjust_help">Keep your finger down after activation. Slide up to increase the value. Slide down to decrease it.</string>
+    <string name="slide_swipe_hold_conflict">Swipe and hold is unavailable while a swipe uses Slide to adjust. Its saved action stays available after you disable that option.</string>
+    <string name="slider_travel">Slider travel</string>
+    <string name="slider_travel_help" formatted="false">Set the vertical distance for a full change from 0% to 100%. A shorter distance changes the value faster.</string>
+    <string name="volume_travel">Volume travel</string>
+    <string name="brightness_travel">Brightness travel</string>
+    <string name="volume_travel_guide">Show volume travel guide</string>
+    <string name="brightness_travel_guide">Show brightness travel guide</string>
+    <string name="slider_guide_help">Show the full distance beside this handle while editing. Arrows mark endpoints outside the screen. The guide does not change values.</string>
+</resources>

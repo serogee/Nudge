@@ -4,9 +4,13 @@ import java.util.UUID
 
 enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
-data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false) {
+data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false,
+    val slideToAdjust: Boolean = false) {
     val isNone get() = panelId == null && !volume && action == null && !brightness
-    fun normalized() = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
+    fun normalized(): GestureTarget {
+        val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
+        return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness))
+    }
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
         val NONE = GestureTarget()
@@ -96,11 +100,16 @@ data class HandleConfig(
     val bindings: Map<GestureSlot, GestureTarget> = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME),
     val volumeSequenceMs: Long = 3_000,
     val indicatorHidden: Boolean = false,
+    val volumeTravelDp: Float = 240f,
+    val brightnessTravelDp: Float = 240f,
 ) {
     fun target(slot: GestureSlot) = bindings[slot] ?: GestureTarget.NONE
+    val hasContinuousSwipe get() = GestureSlot.entries.take(3).any { target(it).normalized().slideToAdjust }
+    fun runtimeTarget(slot: GestureSlot) = if (slot == GestureSlot.SWIPE_HOLD && hasContinuousSwipe) GestureTarget.NONE else target(slot)
     fun normalized() = copy(name = name.take(80), trigger = trigger.normalized().copy(enabled = false, includePrereleases = false, activation = Activation.SWIPE),
-        bindings = GestureSlot.entries.associateWith { target(it).normalized() },
-        volumeSequenceMs = volumeSequenceMs.coerceIn(1_000, 10_000))
+        bindings = GestureSlot.entries.associateWith { slot -> target(slot).normalized().let { if (slot == GestureSlot.TAP) it.copy(slideToAdjust = false) else it } },
+        volumeSequenceMs = volumeSequenceMs.coerceIn(1_000, 10_000),
+        volumeTravelDp = volumeTravelDp.valid(240f).coerceIn(48f, 600f), brightnessTravelDp = brightnessTravelDp.valid(240f).coerceIn(48f, 600f))
     fun duplicate() = copy(id = newId(), enabled = false, bindings = bindings.mapValues { it.value.duplicate() })
 }
 

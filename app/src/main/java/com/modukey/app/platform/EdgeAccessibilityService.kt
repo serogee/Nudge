@@ -42,6 +42,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private var registry: OverlayRegistry<String, HandleWindowSpec>? = null
     private var frames: FrameCoalescer? = null
+    private var sliderGuideHost: SliderGuideHost? = null
     private var brightnessHost: BrightnessPopupHost? = null
     private var brightnessOpen = false
     private var brightnessOwner: String? = null
@@ -60,6 +61,8 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var screenshots: NativeScreenshotRequest? = null
     private var systemPanels: NativeSystemPanelRequest? = null
     private val sessions = GestureSessions()
+    private data class SliderBinding(val handleId: String, val slot: GestureSlot, val target: GestureTarget)
+    private var sliderBinding: SliderBinding? = null
     private val haptics by lazy { GestureHaptics(this) }
     private val errors = mutableMapOf<String, String>()
     private val frame = Choreographer.FrameCallback { frames?.onFrame() }
@@ -90,6 +93,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             { hideBrightness(); screenshots?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
             { performGlobalAction(it) },
             { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
+        sliderGuideHost = SliderGuideHost(this, manager)
         brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(animate = true); refresh() }, {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }, changed = { panelHost?.refreshSound() })
@@ -106,7 +110,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         registry = OverlayRegistry { id -> HandleWindowHost(this, manager, { activate(id, it) }, { sessions.reset(id) }, { frames?.request() }, { error ->
             app.diagnostics.record("Handle handoff cleanup failed", error)
         }) { view ->
-            if (view == null) views.remove(id) else views[id] = view
+            if (view == null) views.remove(id) else { view.gesturePolicy = { gesturePolicy(id) }; views[id] = view }
         } }
         try {
             displays = getSystemService(DisplayManager::class.java)
@@ -120,6 +124,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
+            scope?.launch { app.sliderGuidePreview.state.collect { frames?.request() } }
             scope?.launch { app.brightnessPreview.state.collect { frames?.request() } }
             scope?.launch { app.handlePauses.state.collect { frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.editor.state.collect { hideBrightness(); screenshots?.cancel(); systemPanels?.cancel(); views.values.forEach { it.cancelGesture() }; sessions.clear(); dismissPanel(PanelCloseReason.EDITOR_CHANGED); clearPanelWindows(); refresh() } }
@@ -141,6 +146,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); rebuildHandles() }
     private fun rebuildHandles() {
+        sliderGuideHost?.hide()
         views.values.forEach { it.cancelGesture(); it.resetSoftHide() }
         registry?.clear()?.values?.forEach { app.diagnostics.record("Handle rotation cleanup failed", it) }
         frames?.request()
@@ -179,10 +185,13 @@ class EdgeAccessibilityService : AccessibilityService() {
             GestureKind.TAP -> GestureSlot.TAP
             GestureKind.HOLD -> GestureSlot.HOLD
         }
+        val continuous = target.slideToAdjust && (target.volume xor target.brightness) && views[id]?.isTouching == true
+        if (continuous) { cancelSlider(); if (target.brightness) brightnessHost?.holdFromHandle(true) }
         var submitted = target.panelId != null
+        var volumeSubmitted = false
         if (target.volume && target.action?.action !in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) {
-            when (val result = app.volume.show()) {
-                VolumeResult.Requested -> submitted = true
+            when (val result = if (continuous) app.volume.showMedia() else app.volume.show()) {
+                VolumeResult.Requested -> { submitted = true; volumeSubmitted = true }
                 is VolumeResult.Failed -> {
                     app.diagnostics.record("Volume request failed: ${result.message}")
                     Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show()
@@ -194,16 +203,77 @@ class EdgeAccessibilityService : AccessibilityService() {
             refresh()
             actions?.execute(id, if (action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) action.copy(showVolumePopup = target.volume) else action, testing = false, gestureSlot = slot)?.let { result ->
                 submitted = submitted || result.succeeded
+                if (target.volume && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)) volumeSubmitted = result.succeeded
                 result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
             }
         }
-        if (target.brightness) actions?.showBrightness(id, slot)?.let { result ->
-            submitted = submitted || result.succeeded
-            result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+        if (target.brightness) {
+            if (continuous) brightnessHost?.holdFromHandle(true)
+            actions?.showBrightness(id, slot)?.let { result ->
+                submitted = submitted || result.succeeded
+                result.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+            }
         }
-        if (submitted) sessions.submitted(handle, stage, target, now) else sessions.reset(id)
+        val sliding = continuous && ((target.volume && volumeSubmitted) ||
+            (target.brightness && brightnessHost?.visible == true && app.brightness.canWrite)) && beginSlider(handle, slot, target, stage)
+        if (continuous && target.brightness && !sliding) brightnessHost?.holdFromHandle(false)
+        if (submitted) {
+            sessions.submitted(handle, stage, target, now)
+            if (sliding && stage != null) sessions.keepWhileTouch(id)
+        } else sessions.reset(id)
         if (target.action?.action in listOf(ButtonAction.CLOSE_PANELS, ButtonAction.SCREENSHOT)) sessions.reset(id)
         refresh()
+    }
+    private fun gesturePolicy(id: String): HandleGesturePolicy {
+        val h = app.configuration.state.value?.handle(id) ?: return HandleGesturePolicy()
+        val next = sessions.next(h, GestureKind.SWIPE, SystemClock.elapsedRealtime()).first.normalized()
+        return HandleGesturePolicy(next.slideToAdjust, h.target(GestureSlot.HOLD).normalized().slideToAdjust,
+            h.runtimeTarget(GestureSlot.SWIPE_HOLD).normalized().slideToAdjust, !h.hasContinuousSwipe)
+    }
+    private fun cancelSlider() {
+        val old = sliderBinding ?: return
+        sliderBinding = null
+        views[old.handleId]?.cancelGesture()
+        sessions.reset(old.handleId)
+    }
+    private fun beginSlider(handle: HandleConfig, slot: GestureSlot, target: GestureTarget, stage: Int?): Boolean {
+        val view = views[handle.id] ?: return false
+        val config = app.configuration.state.value ?: return false
+        if (!view.isTouching || app.editor.state.value != null || reason(config, handle) != HandleAvailability.ACTIVE) return false
+        val initial = if (target.volume) app.volume.read()?.fraction else app.brightness.fraction()
+        if (initial == null) { Toast.makeText(this, R.string.volume_failed, Toast.LENGTH_SHORT).show(); return false }
+        if (target.brightness) brightnessHost?.holdFromHandle(true)
+        val binding = SliderBinding(handle.id, slot, target)
+        val travel = (if (target.volume) handle.volumeTravelDp else handle.brightnessTravelDp) * resources.displayMetrics.density
+        val driver = SliderDragSession(view, initial, view.touchY, travel, write = { fraction ->
+            if (target.volume) app.volume.setFraction(fraction) else {
+                when (app.brightness.setFraction(fraction)) {
+                    BrightnessResult.CHANGED, BrightnessResult.ALREADY_SET -> {
+                        panelHost?.refreshSound()
+                        val scale = app.brightness.calibration.scale
+                        SliderApplied(app.brightness.fraction(), scale.quantum(scale.level(fraction)))
+                    }
+                    else -> null
+                }
+            }
+        }, keepOpen = if (target.volume) ({ app.volume.read() != null && app.volume.showMedia() == VolumeResult.Requested }) else null, failed = {
+            cancelSlider()
+            if (target.brightness) hideBrightness()
+            Toast.makeText(this, if (target.volume) R.string.volume_failed else if (!app.brightness.canWrite)
+                R.string.brightness_access_required else R.string.brightness_failed, Toast.LENGTH_SHORT).show()
+        })
+        val captured = view.captureSlider(driver::move) { cancelled ->
+            val completed = driver.finish(cancelled)
+            val owns = sliderBinding === binding
+            if (owns) sliderBinding = null
+            if (target.brightness) brightnessHost?.holdFromHandle(false)
+            val current = app.configuration.state.value?.handle(handle.id)
+            if (!completed || !owns || current?.target(slot) != target) sessions.reset(handle.id)
+            else sessions.submitted(current, stage, target, SystemClock.elapsedRealtime())
+        }
+        if (!captured) { driver.finish(true); return false }
+        sliderBinding = binding; driver.start()
+        return true
     }
     private fun replacePanel(next: OpenPanel?, keepSession: String) {
         panelTimeout?.stop(); open?.handleId?.takeIf { it != keepSession }?.let(sessions::reset)
@@ -257,11 +327,21 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (scope == null) return
         val selected = app.editor.state.value
         val config = (if (selected != null) app.configuration.preview.value else app.configuration.state.value) ?: return
+        sliderBinding?.let { binding ->
+            val h = config.handle(binding.handleId)
+            if (selected != null || h == null || h.target(binding.slot) != binding.target || reason(config, h) != HandleAvailability.ACTIVE) cancelSlider()
+        }
         if (softHideForeground != foreground) { views.values.forEach { it.resetSoftHide() }; softHideForeground = foreground }
         val s = screen()
         val awake = getSystemService(PowerManager::class.java).isInteractive
         val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
-        if (app.brightnessPreview.state.value && selected == null && awake && !locked) {
+        val guideRequest = app.sliderGuidePreview.state.value
+        val guideHandle = config.handle(guideRequest?.handleId)
+        if (guideRequest != null && guideHandle != null && selected?.handleId == guideRequest.handleId && awake && !locked) {
+            val fraction = if (guideRequest.kind == SliderKind.VOLUME) app.volume.read()?.fraction else app.brightness.fraction()
+            if (fraction != null) sliderGuideHost?.show(guideRequest, guideHandle, s, fraction) else sliderGuideHost?.hide()
+        } else sliderGuideHost?.hide()
+        if (app.brightnessPreview.state.value && !brightnessOpen && selected == null && awake && !locked) {
             brightnessOpen = false; brightnessOwner = null
             brightnessHost?.show(config.brightnessPopup, s, editing = true)
         } else if (brightnessOpen && awake && selected == null &&
@@ -369,11 +449,14 @@ class EdgeAccessibilityService : AccessibilityService() {
         return shown
     }
     private fun hideBrightness(animate: Boolean = false) {
+        if (sliderBinding?.target?.brightness == true) cancelSlider()
         brightnessOpen = false; brightnessOwner?.let(sessions::reset); brightnessOwner = null
         brightnessHost?.hide(animate)
     }
     private fun stopSession() {
+        cancelSlider()
         raiseHandles = false
+        sliderGuideHost?.hide(); sliderGuideHost = null
         app.shortcuts.unbind(this)
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null

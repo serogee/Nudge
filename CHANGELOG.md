@@ -12,6 +12,8 @@
 
 ### Added
 
+- Keep a handle gesture pressed to adjust media volume or brightness, with separate travel distances and editor guides.
+
 - Customize active background and icon colors for each panel.
 
 - Save visibility for All handles, This handle, or Other handles.

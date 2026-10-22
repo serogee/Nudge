@@ -27,6 +27,8 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     private var settings = BrightnessPopupSettings()
     private var animationEdge = Edge.RIGHT
     private var preview = false
+    private var externalTouch = false
+    private var directTouch = false
     private var observing = false
     private var timeoutMs = 3_000L
     private val handler = Handler(Looper.getMainLooper())
@@ -36,7 +38,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
     }
     val visible get() = view != null
     fun show(settings: BrightnessPopupSettings, screen: ScreenSpace, editing: Boolean): Boolean {
-        if (view != null && preview != editing) hide()
+        if (view != null && preview != editing) { val held = externalTouch; hide(); externalTouch = held }
         if (view == null) finishClosing()
         preview = editing; timeoutMs = settings.timeoutMs
         val b = BrightnessPopupGeometry.calculate(screen.usable, screen.density, settings)
@@ -52,7 +54,7 @@ internal class BrightnessPopupHost(private val context: Context, private val man
                     if (result == BrightnessResult.FAILED || result == BrightnessResult.NEED_ACCESS) {
                         dismissed(); failure(if (result == BrightnessResult.NEED_ACCESS) R.string.brightness_access_required else R.string.brightness_failed)
                     }
-                }, { active -> handler.removeCallbacks(timeout); if (!active && view != null && !preview) handler.postDelayed(timeout, timeoutMs) }, dismissed, {
+                }, { active -> directTouch = active; restartTimeout() }, dismissed, {
                     val result = brightness.toggleAutomatic()
                     changed()
                     if (result == BrightnessResult.NEED_ACCESS || result == BrightnessResult.FAILED)
@@ -72,15 +74,27 @@ internal class BrightnessPopupHost(private val context: Context, private val man
             } else {
                 current.configure(settings, editing, brightness.fraction(), brightness.status().automatic)
                 val before = layout
-                if (before?.x != p.x || before.y != p.y || before.width != p.width || before.height != p.height) {
+                if (before?.x != p.x || before.y != p.y || before.width != p.width || before.height != p.height || before.flags != p.flags) {
                     current.cancelInput(); manager.updateViewLayout(current, p); layout = p
                 }
             }
             return true
         } catch (_: RuntimeException) { hide(); failure(R.string.overlay_error); return false }
     }
-    fun restartTimeout() { handler.removeCallbacks(timeout); if (!preview && view != null) handler.postDelayed(timeout, timeoutMs) }
+    fun restartTimeout() { handler.removeCallbacks(timeout); if (!preview && view != null && !externalTouch && !directTouch) handler.postDelayed(timeout, timeoutMs) }
+    fun holdFromHandle(active: Boolean) {
+        externalTouch = active; restartTimeout()
+        val p = layout ?: return
+        if (preview) return
+        val flags = if (active) p.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else p.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        if (flags != p.flags) {
+            p.flags = flags
+            try { view?.let { manager.updateViewLayout(it, p) } }
+            catch (_: RuntimeException) { hide(); failure(R.string.overlay_error) }
+        }
+    }
     fun hide(animate: Boolean = false) {
+        externalTouch = false; directTouch = false
         val previous = view
         if (previous == null) { if (!animate) finishClosing(); return }
         handler.removeCallbacks(timeout)
@@ -118,7 +132,8 @@ internal class BrightnessPopupHost(private val context: Context, private val man
         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
-            (if (editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0), PixelFormat.TRANSLUCENT).apply {
+            (if (editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                else if (externalTouch) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0), PixelFormat.TRANSLUCENT).apply {
         gravity = Gravity.TOP or Gravity.LEFT; x = b.x.roundToInt(); y = b.y.roundToInt(); setFitInsetsTypes(0)
         layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         title = context.getString(R.string.brightness_slider)

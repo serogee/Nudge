@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 17 adds panel active-button appearance. */
+/** Schema 18 adds continuous slider bindings and handle travel distances. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 17
+    const val SCHEMA = 18
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -51,14 +51,15 @@ object ConfigurationCodec {
                         else -> GestureTarget.panel(ids[value.last().digitToInt() - 1])
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
-                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness")).also { target ->
+                            if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness"), it.optBoolean("slideToAdjust")).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
                             require(target.action?.action != ButtonAction.EMPTY)
                         }
                     }
                 }
                 HandleConfig(id, h.optString("name"), h.optBoolean("enabled"), trigger(h.getJSONObject("trigger"), schema), targets, h.optLong("volumeSequenceMs", 3_000),
-                    indicatorHidden = if (schema >= 16) h.optBoolean("indicatorHidden") else root.optBoolean("hideHandleIndicators"))
+                    indicatorHidden = if (schema >= 16) h.optBoolean("indicatorHidden") else root.optBoolean("hideHandleIndicators"),
+                    volumeTravelDp = h.float("volumeTravelDp", 240f), brightnessTravelDp = h.float("brightnessTravelDp", 240f))
             }
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
@@ -132,11 +133,12 @@ object ConfigurationCodec {
             .put("holdFeedback", feedback(s.holdFeedback)).put("tapFeedback", feedback(s.tapFeedback))
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {
             val target = h.target(it)
-            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness)
+            put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness).put("slideToAdjust", target.slideToAdjust)
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)
             .put("bindings", bindings).put("volumeSequenceMs", h.volumeSequenceMs).put("indicatorHidden", h.indicatorHidden)
+            .put("volumeTravelDp", h.volumeTravelDp).put("brightnessTravelDp", h.brightnessTravelDp)
     }
     private fun brightness(p: JSONObject, schema: Int) = BrightnessPopupSettings(
         side = enumValueOf(p.optString("side", "OPPOSITE_VOLUME")), volumeSide = enumValueOf(p.optString("volumeSide", "RIGHT")),

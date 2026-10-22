@@ -24,12 +24,18 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var hideIndicator = false
     private var animationsEnabled = true
     private var previewQuarterTurns = 0
+    var gesturePolicy: () -> HandleGesturePolicy = { HandleGesturePolicy() }
+    private var policy = HandleGesturePolicy()
     private var gesture = recognizer()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val guide = Path()
     private val indicator = RectF()
     private val pulledIndicator = Path()
     private var touching = false
+    val isTouching get() = touching
+    var touchY = 0f; private set
+    private var sliderMove: ((Float) -> Unit)? = null
+    private var sliderEnd: ((Boolean) -> Unit)? = null
     private var pull = 0f
     private var pullAnimator: ValueAnimator? = null
     val hasInteraction get() = touching || pullAnimator != null
@@ -87,8 +93,20 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs,
         ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs,
         settings.swipeHoldDistanceDp * resources.displayMetrics.density, settings.swipeHoldTimeoutMs,
-        settings.holdExecution == HoldExecution.AFTER_TIME, settings.swipeHoldExecution == HoldExecution.AFTER_TIME, settings.swipeHoldDistanceMode)
+        settings.holdExecution == HoldExecution.AFTER_TIME || policy.holdAtDeadline,
+        settings.swipeHoldExecution == HoldExecution.AFTER_TIME || policy.swipeHoldAtDeadline, settings.swipeHoldDistanceMode,
+        policy.swipeAtDistance, policy.swipeHoldEnabled)
+    fun captureSlider(move: (Float) -> Unit, ended: (Boolean) -> Unit): Boolean {
+        if (!touching || editing || sliderMove != null) return false
+        sliderMove = move; sliderEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)
+        return true
+    }
+    private fun endSlider(cancelled: Boolean) {
+        val end = sliderEnd; sliderMove = null; sliderEnd = null
+        end?.invoke(cancelled)
+    }
     fun cancelGesture() {
+        endSlider(true)
         gesture.cancel(); gestureHandler.removeCallbacks(deadline); touching = false; resetPull(); onIdle()
         softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry()
     }
@@ -224,25 +242,33 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (editing) return false
+        touchY = event.rawY
         eventTime = event.eventTime; eventUptime = SystemClock.uptimeMillis()
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { resetPull(); touching = true; softHide.touch(true, SystemClock.uptimeMillis()); scheduleExpiry(); gesture.down(event.rawX, event.rawY, event.eventTime); scheduleDeadline(event.eventTime) }
+            MotionEvent.ACTION_DOWN -> {
+                endSlider(true); resetPull(); touching = true; policy = gesturePolicy(); gesture = recognizer()
+                softHide.touch(true, SystemClock.uptimeMillis()); scheduleExpiry(); gesture.down(event.rawX, event.rawY, event.eventTime); scheduleDeadline(event.eventTime)
+            }
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> cancelGesture()
             MotionEvent.ACTION_MOVE -> if (event.pointerCount == 1) {
-                gesture.move(event.rawX, event.rawY, event.eventTime)
-                updatePull()
-                gesture.poll(event.eventTime)?.let(::completeGesture); scheduleDeadline(event.eventTime)
+                val slide = sliderMove
+                if (slide != null) slide(event.rawY) else {
+                    gesture.move(event.rawX, event.rawY, event.eventTime)
+                    updatePull()
+                    gesture.poll(event.eventTime)?.let(::completeGesture); scheduleDeadline(event.eventTime)
+                }
             } else cancelGesture()
             MotionEvent.ACTION_UP -> {
                 softHide.touch(false, SystemClock.uptimeMillis()); gestureHandler.removeCallbacks(deadline)
-                val kind = gesture.up(event.rawX, event.rawY, event.eventTime)
+                val slide = sliderMove
+                val kind = if (slide != null) { slide(event.rawY); endSlider(false); null } else gesture.up(event.rawX, event.rawY, event.eventTime)
                 touching = false; releasePull(); kind?.let(::completeGesture); scheduleExpiry()
             }
         }
         return true
     }
     override fun performClick(): Boolean {
-        if (editing) return false
+        if (editing || sliderMove != null) return false
         super.performClick(); completeGesture(GestureKind.TAP); return true
     }
 }

@@ -241,3 +241,16 @@ Schema 16 saves per-handle visibility and both combined scopes. Earlier global h
 Panel Appearance provides separate active background and icon controls. Each supports automatic or selected colors. Turn either effect off independently. Existing button and icon opacity controls still apply. Standalone icons use an outline for the active background effect. Image icons keep their artwork. Inactive and Active previews show the result. There are no per-button color overrides. DND selection follows Nudge?s own rule on Android 15 and later.
 
 Schema 17 adds panel active colors. Older panels receive automatic active colors. Backups, duplication, and Add import retain them.
+
+
+## Continuous adjustment from a handle
+
+In a gesture selector, select exactly one popup and enable **Slide to adjust**. Tap does not offer this option. A swipe starts adjustment as soon as it reaches its distance. Hold and swipe and hold start at their deadlines, including when normal hold execution uses On release. Keep your finger down, then move up or down. The current value is the starting point. Horizontal movement after activation does not change it. Release ends adjustment and does not run the action again.
+
+Any continuous swipe stage disables swipe and hold for that handle. Its saved assignment stays intact. The next swipe stage resumes after release; its sequence timeout starts then.
+
+**Slider travel** sets a separate full-range distance for media volume and brightness on each handle. The default is 240 dp; the range is 48?600 dp. Volume uses the media stream's actual system range and rounds to its available steps. Brightness uses the same percentage mapping and device calibration as Return brightness. Values clamp at their endpoints, and reversing responds immediately. The optional editor guide shows the full distance at real size, its endpoints, and the current-value anchor. Arrows identify endpoints outside the screen. The guide neither moves a native popup nor changes system values.
+
+Brightness stays open while held, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes. Schema 18 retains each binding's option and both travel distances in backups and copies. Earlier backups keep ordinary popup behavior.
+
+Automated checks cover capture, proportional motion, limits, timers, cancellation, and persistence. Native volume touch ownership, popup coexistence, and brightness calibration still require checks on the target HyperOS device.

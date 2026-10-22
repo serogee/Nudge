@@ -40,4 +40,5 @@ class BrightnessScale(val samples: List<Int>? = null, val minimum: Int = 1, val 
     companion object {
         fun validSamples(values: List<Int>) = values.size == 5 && values.all { it in 1..65535 } && values.zipWithNext().all { (a, b) -> a < b }
     }
+    fun quantum(level: Int) = maxOf(fraction(level + 1) - fraction(level), fraction(level) - fraction(level - 1)).coerceAtLeast(.000001f)
 }
