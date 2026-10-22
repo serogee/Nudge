@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 14 adds the global handle-animation setting. */
+/** Schema 15 adds swipe-and-hold distance modes. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 14
+    const val SCHEMA = 15
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("hideHandleIndicators", config.hideHandleIndicators)
@@ -106,6 +106,7 @@ object ConfigurationCodec {
         holdTimeMs = t.optLong("holdTimeMs", 500), swipeHoldTimeMs = t.optLong("swipeHoldTimeMs", 500),
         swipeHoldDistanceDp = t.float("swipeHoldDistanceDp", if (schema < 9) t.float("swipeDistance", 24f) else 24f),
         swipeHoldTimeoutMs = t.optLong("swipeHoldTimeoutMs", if (schema < 9) t.optLong("swipeTime", 600) else 600),
+        swipeHoldDistanceMode = enumValueOf(t.optString("swipeHoldDistanceMode", "ANY_DIRECTION")),
         holdExecution = enumValueOf(t.optString("holdExecution", "ON_RELEASE")),
         swipeHoldExecution = enumValueOf(t.optString("swipeHoldExecution", "ON_RELEASE")),
         swipeFeedback = feedback(t, "swipeFeedback"), swipeHoldFeedback = feedback(t, "swipeHoldFeedback"),
@@ -127,6 +128,7 @@ object ConfigurationCodec {
             .put("holdTimeMs", s.holdTimeMs).put("swipeHoldTimeMs", s.swipeHoldTimeMs)
             .put("swipeHoldDistanceDp", s.swipeHoldDistanceDp).put("swipeHoldTimeoutMs", s.swipeHoldTimeoutMs)
             .put("holdExecution", s.holdExecution.name).put("swipeHoldExecution", s.swipeHoldExecution.name)
+            .put("swipeHoldDistanceMode", s.swipeHoldDistanceMode.name)
             .put("swipeFeedback", feedback(s.swipeFeedback)).put("swipeHoldFeedback", feedback(s.swipeHoldFeedback))
             .put("holdFeedback", feedback(s.holdFeedback)).put("tapFeedback", feedback(s.tapFeedback))
         val bindings = JSONObject().apply { GestureSlot.entries.forEach {

@@ -57,11 +57,11 @@ There is no setting to hide handles during every screenshot method. Android's su
 - Tap: release within 250 ms without moving beyond touch slop.
 - Hold: hold still for the selected Hold time. Run at the deadline or after release.
 - Swipe: move inward at least 24 dp and release within 600 ms by default.
-- Swipe and hold: reach its own distance within its own time limit. Hold still, then run at the deadline or after release.
+- Swipe and hold: reach its own distance within its own time limit. Stay beyond that distance, then run at the deadline or after release.
 
-Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement before the dwell ends restarts its timer.
+Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement beyond the distance does not restart its timer. Returning below the distance, with touch-slop tolerance, resets the timer. Any direction measures displacement from the starting point and is the default for existing and new handles. Inward only measures displacement away from the edge.
 
-Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled, multitouch, outward, and mainly parallel gestures do not activate a handle.
+Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled and multitouch gestures do not activate a handle. Ordinary swipes still reject outward and mainly parallel movement.
 
 Timing controls use numeric inputs in milliseconds. Each input shows its minimum and maximum. Valid entries update the draft immediately. Finishing an out-of-range entry applies the nearest limit. An empty or oversized entry restores the last valid value. Reset restores that control's default. These inputs also cover handle hiding, panel closing, and brightness popup closing.
 
@@ -225,3 +225,5 @@ Jump to touch remains the default for new and existing configurations. Previews 
 ## Brightness percentages and calibration
 
 Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device?s no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
+
+Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.

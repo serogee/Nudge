@@ -66,7 +66,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         if (this.edge != edge || this.editing != editing || this.previewQuarterTurns != turns || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
             this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs ||
             this.settings.swipeHoldDistanceDp != settings.swipeHoldDistanceDp || this.settings.swipeHoldTimeoutMs != settings.swipeHoldTimeoutMs ||
-            this.settings.holdExecution != settings.holdExecution || this.settings.swipeHoldExecution != settings.swipeHoldExecution) {
+            this.settings.holdExecution != settings.holdExecution || this.settings.swipeHoldExecution != settings.swipeHoldExecution ||
+            this.settings.swipeHoldDistanceMode != settings.swipeHoldDistanceMode) {
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
         this.settings = settings; this.edge = edge; this.editing = editing
@@ -86,7 +87,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs,
         ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs,
         settings.swipeHoldDistanceDp * resources.displayMetrics.density, settings.swipeHoldTimeoutMs,
-        settings.holdExecution == HoldExecution.AFTER_TIME, settings.swipeHoldExecution == HoldExecution.AFTER_TIME)
+        settings.holdExecution == HoldExecution.AFTER_TIME, settings.swipeHoldExecution == HoldExecution.AFTER_TIME, settings.swipeHoldDistanceMode)
     fun cancelGesture() {
         gesture.cancel(); gestureHandler.removeCallbacks(deadline); touching = false; resetPull(); onIdle()
         softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry()

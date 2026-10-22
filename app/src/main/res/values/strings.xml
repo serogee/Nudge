@@ -88,7 +88,7 @@
     <string name="no_action">No action</string>
     <string name="volume_popup">Volume popup</string>
     <string name="gesture_help">Swipe inward, then release. Further swipes cycle through assigned actions while a panel is open or before the timeout.</string>
-    <string name="hold_help">Hold still for the selected time. Select when the action runs. For Swipe and hold, first swipe inward.</string>
+    <string name="hold_help">For Hold, keep the touch still. For Swipe and hold, stay beyond the selected distance. Select when the action runs.</string>
     <string name="hold_time">Hold time</string>
     <string name="swipe_hold_time">Swipe and hold time</string>
     <string name="swipe_distance">Swipe distance</string>
@@ -505,4 +505,8 @@
     <string name="brightness_calibration_position">Set the native brightness slider to %1$d%%.</string>
     <string name="capture_brightness">Capture</string>
     <string name="brightness_calibration_failed">Cannot save this sample. Turn off automatic brightness. Each sample must be higher than the previous sample.</string>
+    <string name="swipe_hold_distance_mode">Distance direction</string>
+    <string name="any_direction">Any direction</string>
+    <string name="inward_only">Inward only</string>
+    <string name="swipe_hold_distance_mode_help">Measure from the starting point. Hold beyond the distance. Moving back below the distance restarts the hold.</string>
 </resources>

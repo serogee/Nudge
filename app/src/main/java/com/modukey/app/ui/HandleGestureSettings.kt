@@ -20,6 +20,8 @@ import kotlin.math.roundToInt
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }
     }
     CollapsibleSection(R.string.swipe_hold_settings) {
+        OptionRow(t(R.string.swipe_hold_distance_mode), SwipeHoldDistanceMode.entries, s.swipeHoldDistanceMode, SwipeHoldDistanceMode.ANY_DIRECTION) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceMode = v) } }
+        Help(R.string.swipe_hold_distance_mode_help)
         SettingSlider(R.string.swipe_hold_distance, s.swipeHoldDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeHoldDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceDp = v) } }
         DurationInput(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v) } }
         DurationInput(R.string.swipe_hold_time, s.swipeHoldTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v) } }
