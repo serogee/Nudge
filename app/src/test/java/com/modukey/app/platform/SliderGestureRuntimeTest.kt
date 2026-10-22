@@ -1,6 +1,7 @@
 package com.modukey.app.platform
 
 import android.app.KeyguardManager
+import android.media.AudioManager
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
@@ -31,7 +32,8 @@ class SliderGestureRuntimeTest {
         repeat(300) { idle(16); if (condition()) return; Thread.sleep(5) }
         assertTrue(app.diagnostics.details.value, condition())
     }
-    private fun fixture(slot: GestureSlot = GestureSlot.SWIPE_1): Pair<EdgeAccessibilityService, HandleTriggerView> {
+    private fun fixture(slot: GestureSlot = GestureSlot.SWIPE_1, activation: SliderActivation = SliderActivation.AFTER_HOLD,
+        holdMs: Long = 200, kind: SliderKind = SliderKind.BRIGHTNESS): Pair<EdgeAccessibilityService, HandleTriggerView> {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create(); destroy = { controller.destroy() }
         val service = controller.get()
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
@@ -41,8 +43,11 @@ class SliderGestureRuntimeTest {
         BrightnessControllerTest.Writes.allowed = true
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, BrightnessScale().level(.5f))
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0)
+        val audio = app.getSystemService(AudioManager::class.java)
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / 2, 0)
         val handle = HandleConfig(id = "slider", enabled = true, trigger = TriggerSettings(portrait = Placement(Edge.LEFT), landscapeEnabled = true),
-            bindings = mapOf(slot to GestureTarget(brightness = true, slideToAdjust = true)), brightnessTravelDp = 240f)
+            bindings = mapOf(slot to GestureTarget(brightness = kind == SliderKind.BRIGHTNESS, volume = kind == SliderKind.VOLUME,
+                slideToAdjust = true, sliderActivation = activation, sliderHoldMs = holdMs)), brightnessTravelDp = 240f)
         app.configuration.update { AppConfiguration(enabled = true, handles = listOf(handle), brightnessPopup = BrightnessPopupSettings(timeoutMs = 1000)) }
         ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
         await { app.status.state.value.attachedHandleIds.contains(handle.id) }
@@ -55,7 +60,7 @@ class SliderGestureRuntimeTest {
         try { assertTrue(view.onTouchEvent(event)) } finally { event.recycle() }
     }
     @Test fun swipeCapturesOutsideTheHandleWithoutAnInitialJumpAndHoldsPopupUntilRelease() {
-        val (service, view) = fixture()
+        val (service, view) = fixture(activation = SliderActivation.IMMEDIATE)
         val before = app.brightness.fraction()
         touch(view, MotionEvent.ACTION_DOWN, 100)
         touch(view, MotionEvent.ACTION_MOVE, 200, x = 31f)
@@ -68,6 +73,44 @@ class SliderGestureRuntimeTest {
         idle(800); assertTrue(host(service).visible)
         idle(300); assertFalse(host(service).visible)
         assertEquals(released, app.brightness.fraction(), .001f)
+    }
+    @Test fun guardedBrightnessOpensImmediatelyThenWaitsForStillnessAndExcludesInitialMovement() {
+        val (service, view) = fixture(holdMs = 350)
+        val before = app.brightness.fraction()
+        touch(view, MotionEvent.ACTION_DOWN, 100)
+        touch(view, MotionEvent.ACTION_MOVE, 200, x = 31f)
+        assertTrue(host(service).visible)
+        idle(150)
+        touch(view, MotionEvent.ACTION_MOVE, 350, x = 100f, y = 180f)
+        idle(349)
+        assertEquals(before, app.brightness.fraction(), .001f)
+        touch(view, MotionEvent.ACTION_MOVE, 699, x = 101f, y = 179f)
+        idle(1)
+        touch(view, MotionEvent.ACTION_MOVE, 710, x = 101f, y = 171f)
+        idle(32); assertEquals(before, app.brightness.fraction(), .001f)
+        touch(view, MotionEvent.ACTION_MOVE, 750, x = -700f, y = 111f)
+        idle(32); assertEquals(before + .25f, app.brightness.fraction(), .012f)
+        touch(view, MotionEvent.ACTION_UP, 800, x = -700f, y = 87f)
+        assertEquals(before + .35f, app.brightness.fraction(), .012f)
+        idle(1100); assertFalse(host(service).visible)
+    }
+    @Test fun guardedVolumeKeepsTheValueOnEarlyReleaseAndAdjustsWithoutLiftingAfterTheHold() {
+        val (_, view) = fixture(holdMs = 100, kind = SliderKind.VOLUME)
+        val before = app.volume.read()!!
+        touch(view, MotionEvent.ACTION_DOWN, 100)
+        touch(view, MotionEvent.ACTION_MOVE, 200, x = 31f)
+        idle(99)
+        touch(view, MotionEvent.ACTION_MOVE, 299, x = 80f, y = 100f)
+        idle(99)
+        touch(view, MotionEvent.ACTION_UP, 398, x = 80f, y = 0f)
+        idle(300); assertEquals(before.level, app.volume.read()!!.level)
+        touch(view, MotionEvent.ACTION_DOWN, 800)
+        touch(view, MotionEvent.ACTION_MOVE, 900, x = 31f)
+        idle(100)
+        touch(view, MotionEvent.ACTION_MOVE, 1010, x = 31f, y = -48f)
+        idle(32); assertEquals(before.maximum, app.volume.read()!!.level)
+        touch(view, MotionEvent.ACTION_UP, 1100, x = 31f, y = -48f)
+        idle(1100); assertEquals(before.maximum, app.volume.read()!!.level)
     }
     @Test fun holdOverridesReleaseTimingAndCancellationDropsQueuedChanges() {
         val (service, view) = fixture(GestureSlot.HOLD)

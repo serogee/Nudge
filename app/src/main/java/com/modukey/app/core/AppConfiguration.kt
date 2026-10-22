@@ -4,12 +4,13 @@ import java.util.UUID
 
 enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
+enum class SliderActivation { AFTER_HOLD, IMMEDIATE }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false,
-    val slideToAdjust: Boolean = false) {
+    val slideToAdjust: Boolean = false, val sliderActivation: SliderActivation = SliderActivation.AFTER_HOLD, val sliderHoldMs: Long = 200) {
     val isNone get() = panelId == null && !volume && action == null && !brightness
     fun normalized(): GestureTarget {
         val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
-        return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness))
+        return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness), sliderHoldMs = target.sliderHoldMs.coerceIn(100, 1_000))
     }
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {

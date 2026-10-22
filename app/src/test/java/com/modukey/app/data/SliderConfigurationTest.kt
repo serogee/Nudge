@@ -33,4 +33,19 @@ class SliderConfigurationTest {
         assertEquals(240f, h.volumeTravelDp); assertEquals(600f, h.brightnessTravelDp)
         assertEquals(48f, h.copy(volumeTravelDp = 1f).normalized().volumeTravelDp)
     }
+    @Test fun activationAndDwellSurviveBackupAndCopiesWhileSchema19GetsTheGuard() {
+        val target = GestureTarget(volume = true, slideToAdjust = true, sliderActivation = SliderActivation.IMMEDIATE, sliderHoldMs = 650)
+        val config = AppConfiguration(handles = listOf(HandleConfig(bindings = mapOf(GestureSlot.SWIPE_2 to target)))).normalized()
+        assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        assertEquals(target, config.handles.single().duplicate().target(GestureSlot.SWIPE_2))
+        assertEquals(target, AppConfiguration(handles = emptyList()).addCopies(config).handles.single().target(GestureSlot.SWIPE_2))
+        val old = JSONObject(ConfigurationCodec.encode(config)).put("schema", 19)
+        val binding = old.getJSONArray("handles").getJSONObject(0).getJSONObject("bindings").getJSONObject("SWIPE_2")
+        binding.remove("sliderActivation"); binding.remove("sliderHoldMs")
+        val restored = ConfigurationCodec.decode(ConfigurationCodec.upgrade(old.toString())).handles.single().target(GestureSlot.SWIPE_2)
+        assertTrue(restored.slideToAdjust)
+        assertEquals(SliderActivation.AFTER_HOLD, restored.sliderActivation); assertEquals(200L, restored.sliderHoldMs)
+        assertEquals(100L, target.copy(sliderHoldMs = -1).normalized().sliderHoldMs)
+        assertEquals(1_000L, target.copy(sliderHoldMs = Long.MAX_VALUE).normalized().sliderHoldMs)
+    }
 }

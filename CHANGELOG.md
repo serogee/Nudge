@@ -5,6 +5,7 @@
 - Move brightness calibration to Home, below the brightness slider controls.
 - Choose Any direction or Inward only for ordinary swipes. Existing handles keep Inward only.
 - Mark additional settings with chevrons, action-picker gear badges, and subtle parent-setting indicators.
+- Guard swipe volume and brightness adjustment with a stationary hold. Set its time from 100 to 1,000 ms, or select Immediate.
 
 ## 0.4.3 - 2026-10-22
 

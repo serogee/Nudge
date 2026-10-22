@@ -35,8 +35,9 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private val pulledIndicator = Path()
     private var touching = false
     val isTouching get() = touching
+    var touchX = 0f; private set
     var touchY = 0f; private set
-    private var sliderMove: ((Float) -> Unit)? = null
+    private var sliderMove: ((Float, Float, Boolean) -> Unit)? = null
     private var sliderEnd: ((Boolean) -> Unit)? = null
     private var pull = 0f
     private var pullAnimator: ValueAnimator? = null
@@ -98,7 +99,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         settings.holdExecution == HoldExecution.AFTER_TIME || policy.holdAtDeadline,
         settings.swipeHoldExecution == HoldExecution.AFTER_TIME || policy.swipeHoldAtDeadline, settings.swipeHoldDistanceMode,
         policy.swipeAtDistance, policy.swipeHoldEnabled, settings.swipeDistanceMode)
-    fun captureSlider(move: (Float) -> Unit, ended: (Boolean) -> Unit): Boolean {
+    fun captureSlider(move: (Float, Float, Boolean) -> Unit, ended: (Boolean) -> Unit): Boolean {
         if (!touching || editing || sliderMove != null) return false
         sliderMove = move; sliderEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)
         return true
@@ -250,7 +251,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (editing || retired) return false
-        touchY = event.rawY
+        touchX = event.rawX; touchY = event.rawY
         eventTime = event.eventTime; eventUptime = SystemClock.uptimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -260,7 +261,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> cancelGesture()
             MotionEvent.ACTION_MOVE -> if (event.pointerCount == 1) {
                 val slide = sliderMove
-                if (slide != null) slide(event.rawY) else {
+                if (slide != null) slide(event.rawX, event.rawY, true) else {
                     gesture.move(event.rawX, event.rawY, event.eventTime)
                     updatePull()
                     gesture.poll(event.eventTime)?.let(::completeGesture); scheduleDeadline(event.eventTime)
@@ -269,7 +270,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             MotionEvent.ACTION_UP -> {
                 softHide.touch(false, SystemClock.uptimeMillis()); gestureHandler.removeCallbacks(deadline)
                 val slide = sliderMove
-                val kind = if (slide != null) { slide(event.rawY); endSlider(false); null } else gesture.up(event.rawX, event.rawY, event.eventTime)
+                val kind = if (slide != null) { slide(event.rawX, event.rawY, false); endSlider(false); null } else gesture.up(event.rawX, event.rawY, event.eventTime)
                 touching = false; releasePull(); kind?.let(::completeGesture); scheduleExpiry()
             }
         }
