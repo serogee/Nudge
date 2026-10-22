@@ -80,6 +80,7 @@ data class PanelConfig(
     val closeAnimation: PanelAnimation = PanelAnimation.NONE,
     val buttonOpacity: Float = 1f,
     val iconOpacity: Float = 1f,
+    val activeAppearance: ActiveButtonAppearance = ActiveButtonAppearance(),
 ) {
     fun layout(landscape: Boolean) = if (landscape && landscapeOverride) this.landscape else portrait
     fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized(), landscape = landscape.normalized(),
@@ -87,7 +88,7 @@ data class PanelConfig(
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
         autoCloseMs = autoCloseMs.coerceIn(1_000, 60_000),
-        buttonOpacity = buttonOpacity.valid(1f).coerceIn(0f, 1f), iconOpacity = iconOpacity.valid(1f).coerceIn(0f, 1f))
+        buttonOpacity = buttonOpacity.valid(1f).coerceIn(0f, 1f), iconOpacity = iconOpacity.valid(1f).coerceIn(0f, 1f), activeAppearance = activeAppearance.normalized())
 }
 data class HandleConfig(
     val id: String = newId(), val name: String = "", val enabled: Boolean = false,

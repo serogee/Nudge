@@ -12,6 +12,8 @@
 
 ### Added
 
+- Customize active background and icon colors for each panel.
+
 - Save visibility for All handles, This handle, or Other handles.
 - Combine independent pause/resume and hide/show groups in one button.
 

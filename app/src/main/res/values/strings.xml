@@ -522,4 +522,14 @@
     <string name="handle_group_visible">Shown</string>
     <string name="handle_group_hidden">Hidden</string>
     <string name="handle_group_mixed">Mixed</string>
+    <string name="active_button_colors">Active button colors</string>
+    <string name="active_button_colors_help">Set active colors for toggle buttons in this panel. Image icons keep their original colors.</string>
+    <string name="use_active_background">Use active background</string>
+    <string name="automatic_active_background">Automatic active background</string>
+    <string name="active_background_color">Active background color</string>
+    <string name="use_active_icon">Use active icon color</string>
+    <string name="automatic_active_icon">Automatic active icon color</string>
+    <string name="active_icon_color">Active icon color</string>
+    <string name="active_button">Active</string>
+    <string name="inactive_button">Inactive</string>
 </resources>

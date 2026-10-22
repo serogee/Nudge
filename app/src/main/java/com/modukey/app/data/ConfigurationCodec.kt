@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 16 adds saved per-handle visibility and combined handle actions. */
+/** Schema 17 adds panel active-button appearance. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 16
+    const val SCHEMA = 17
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -179,7 +179,10 @@ object ConfigurationCodec {
         automaticIconColor = p.optBoolean("automaticIconColor", true), iconColor = p.optLong("iconColor", 0xFFFFFFFF),
         autoCloseEnabled = p.optBoolean("autoCloseEnabled"), autoCloseMs = p.optLong("autoCloseMs", 3_000),
         closeAnimation = enumValueOf(p.optString("closeAnimation", p.optString("animation", "NONE"))),
-        buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f))
+        buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
+        activeAppearance = p.optJSONObject("activeAppearance")?.let { ActiveButtonAppearance(
+            it.optBoolean("useBackground", true), it.optBoolean("useIcon", true), it.optBoolean("automaticBackground", true), it.optLong("background", 0xFF3482FF),
+            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance())
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
         .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
@@ -188,5 +191,8 @@ object ConfigurationCodec {
         .put("automaticIconColor", p.automaticIconColor).put("iconColor", p.iconColor)
         .put("autoCloseEnabled", p.autoCloseEnabled).put("autoCloseMs", p.autoCloseMs)
         .put("closeAnimation", p.closeAnimation.name).put("buttonOpacity", p.buttonOpacity).put("iconOpacity", p.iconOpacity)
+        .put("activeAppearance", JSONObject().put("useBackground", p.activeAppearance.useBackground).put("useIcon", p.activeAppearance.useIcon)
+            .put("automaticBackground", p.activeAppearance.automaticBackground).put("background", p.activeAppearance.background)
+            .put("automaticIcon", p.activeAppearance.automaticIcon).put("icon", p.activeAppearance.icon))
         .put("buttons", array(p.buttons.map(::button)))
 }

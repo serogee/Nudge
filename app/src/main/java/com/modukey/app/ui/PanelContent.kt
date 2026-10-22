@@ -82,7 +82,7 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
         ButtonAction.MEDIA_MUTE -> state.muted
         ButtonAction.SILENT -> state.ringer == AudioManager.RINGER_MODE_SILENT
         ButtonAction.VIBRATE -> state.ringer == AudioManager.RINGER_MODE_VIBRATE
-        ButtonAction.DND -> state.dnd
+        ButtonAction.DND -> state.ownDnd
         ButtonAction.BRIGHTNESS_MAXIMUM -> state.maximumBrightness
         ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
         ButtonAction.BRIGHTNESS_AUTOMATIC -> state.automaticBrightness
@@ -123,15 +123,10 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
         IconContainer.CONTAINER -> true
         IconContainer.STANDALONE -> false
     }
-    val background = if (panel.automaticButtonColor) {
-        if (selected) Color(0xFF3482FF) else if (Color(panel.background).luminance() < .5f) Color(0xFF3C3C3E) else Color(0xFFE1E3E5)
-    } else Color(panel.buttonColor)
-    val buttonBackground = background.copy(alpha = panel.buttonOpacity)
-    val panelBackground = Color(panel.background).copy(alpha = panel.opacity).compositeOver(MaterialTheme.colorScheme.surface)
-    val behind = if (container) buttonBackground.compositeOver(panelBackground) else panelBackground
-    val tint = if (panel.automaticIconColor) contrastOn(behind) else Color(panel.iconColor)
-    Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(buttonBackground) else Modifier)
-        .then(if (isToggle && selected && (!container || !panel.automaticButtonColor)) Modifier.border(2.dp, tint, shape) else Modifier)
+    val palette = buttonPalette(panel, selected, container, MaterialTheme.colorScheme.surface)
+    val tint = palette.icon
+    Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(palette.background) else Modifier)
+        .then(if (palette.outline != null) Modifier.border(2.dp, palette.outline, shape) else Modifier)
         .then(if (interactive && button.action != ButtonAction.EMPTY) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
         .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics { contentDescription = description; if (isToggle) this.selected = selected } else Modifier), contentAlignment = androidx.compose.ui.Alignment.Center) {
         if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH) ButtonGraphic(button, panel.iconPack, Modifier.size(if (container) cell * .55f else cell).clip(shape).alpha(panel.iconOpacity), tint, cell.value.toInt())

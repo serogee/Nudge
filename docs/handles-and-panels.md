@@ -235,3 +235,9 @@ Toggle handle visibility offers All handles, This handle, and Other handles. It 
 Toggle and hide handles has separate Handles to toggle and Handles to hide/show scopes: None, All handles, This handle, and Other handles. Select at least one group. Each group toggles independently. A partly paused group resumes; a partly hidden group shows. Pauses remain temporary and do not change saved Enable switches. Both groups are validated before either changes. This handle and Other handles require an invoking handle; Home shortcuts ask for one. An open panel remains usable after its invoking handle is paused.
 
 Schema 16 saves per-handle visibility and both combined scopes. Earlier global hiding migrates to each saved handle. Duplication and Add import retain each handle?s own hiding state.
+
+## Active button colors
+
+Panel Appearance provides separate active background and icon controls. Each supports automatic or selected colors. Turn either effect off independently. Existing button and icon opacity controls still apply. Standalone icons use an outline for the active background effect. Image icons keep their artwork. Inactive and Active previews show the result. There are no per-button color overrides. DND selection follows Nudge?s own rule on Android 15 and later.
+
+Schema 17 adds panel active colors. Older panels receive automatic active colors. Backups, duplication, and Add import retain them.
