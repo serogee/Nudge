@@ -55,7 +55,8 @@ class BrightnessStateInterfaceTest {
         }
         for (level in listOf(255, 1)) {
             rule.runOnIdle { Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, level) }
-            rule.onNodeWithContentDescription("Maximum brightness. Off").assertIsNotSelected()
+            if (level == 255) rule.onNodeWithContentDescription("Maximum brightness. On").assertIsSelected()
+            else rule.onNodeWithContentDescription("Maximum brightness. Off").assertIsNotSelected()
             rule.onNodeWithContentDescription("Minimum brightness. Off").assertIsNotSelected()
         }
     }

@@ -138,9 +138,9 @@ The development button editor keeps changes private until Save. Volume up and Vo
 
 Maximum brightness and Minimum brightness are available as panel buttons and direct gesture actions. The first use opens Android's Modify system settings screen if access is missing. Grant access, return, and run the action again. Nudge does not change brightness before access is granted.
 
-Each brightness limit uses manual brightness. Only a Nudge action activates its button. A manual brightness change clears the active state, including a quick drag back to the same limit. App restarts also clear active states. Switching limits activates only the new action.
+Each brightness limit uses manual brightness. Maximum brightness is active whenever manual brightness is at maximum, including after a manual adjustment or app restart. At maximum, one press restores an available previous value or immediately uses Return brightness. Minimum brightness remains active only after a Nudge action. External changes and app restarts discard captured previous values.
 
-Each action has **Use previous brightness**, enabled by default, and **Return brightness**, initially 50%. Tap an active action to return to its previous level and automatic mode when available. Previous maximum brightness is unavailable. Minimum also rejects a previous minimum. If the previous level is unavailable, or Use previous brightness is off, use Return brightness in manual mode. Returning always clears the active state, even if the selected return value equals a limit.
+Each action has **Use previous brightness**, enabled by default, and **Return brightness**, initially 50%. Tap an active action to return to its previous level and automatic mode when available. Previous maximum brightness is unavailable. Minimum also rejects a previous minimum. If the previous level is unavailable, or Use previous brightness is off, use Return brightness in manual mode. Returning clears the restore session. Maximum brightness remains active if the return value is 100%.
 
 The same controls appear for panel buttons, direct gestures, and Home shortcuts. Saved return settings are independent of runtime restore values. Return settings survive backups, duplication, and restarts. Runtime values are never exported. They do not wake the screen. Device brightness limits require a Redmi check.
 
@@ -221,3 +221,7 @@ Home provides **Touch behavior** beside the brightness slider preview. **Jump to
 Expand **Appearance** to compare the configured brightness slider background with the MIUI volume slider background color, #202122. The preview uses the selected track and fill colors for the brightness sample.
 
 Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
+
+## Brightness percentages and calibration
+
+Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Help provides optional calibration at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Help, and select Capture. Samples must increase. Calibration stays in this device?s no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.

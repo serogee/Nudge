@@ -1,7 +1,5 @@
 package com.modukey.app.core
 
-import kotlin.math.roundToInt
-
 enum class BrightnessPreset { MAXIMUM, MINIMUM }
 data class BrightnessValue(val level: Int, val automatic: Boolean)
 data class BrightnessChange(val preset: BrightnessPreset, val before: BrightnessValue, val after: BrightnessValue, val restoring: Boolean)
@@ -19,15 +17,16 @@ class BrightnessSession {
         return owned?.preset == preset && owned?.after == value
     }
     fun change(preset: BrightnessPreset, current: BrightnessValue, minimum: Int, maximum: Int,
-        settings: BrightnessReturnSettings = BrightnessReturnSettings()): BrightnessChange {
+        settings: BrightnessReturnSettings = BrightnessReturnSettings(),
+        returnLevel: Int = BrightnessScale(minimum = minimum, maximum = maximum).level(settings.normalized().fraction)): BrightnessChange {
         observe(current)
         val target = if (preset == BrightnessPreset.MAXIMUM) maximum else minimum
         val previous = owned?.takeIf { it.preset == preset && it.after == current }?.before
-        if (previous != null) {
+        if (previous != null || (preset == BrightnessPreset.MAXIMUM && !current.automatic && current.level == maximum)) {
             val options = settings.normalized()
-            val available = previous.level in minimum until maximum && previous.level != target
-            val after = if (options.usePrevious && available) previous
-                else BrightnessValue(minimum + ((maximum - minimum) * options.fraction).roundToInt(), automatic = false)
+            val available = previous != null && previous.level in minimum until maximum && previous.level != target
+            val after = if (options.usePrevious && available) checkNotNull(previous)
+                else BrightnessValue(returnLevel, automatic = false)
             return BrightnessChange(preset, current, after, restoring = true)
         }
         val after = BrightnessValue(target, automatic = false)

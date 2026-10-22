@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Match brightness percentages to slider positions and return directly from a manually selected maximum.
+
+### Added
+
+- Calibrate brightness against the native slider on this device.
+
 ## 0.4.2 - 2026-10-20
 
 ### Added
