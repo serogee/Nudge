@@ -6,7 +6,7 @@ Each handle has its own gestures, appearance, placement, exclusions, and lock-sc
 
 The default handle uses a 16 × 120 dp touch area on the right edge, centered at 65%. An inward swipe of 24 dp within 600 ms requests the native volume popup without changing volume. The handle can be invisible; its touch area still receives touches.
 
-Version 0.4.2 is published. Version 0.4.3 is in preparation and adds continuous slider input, scoped handle controls, active button colors, and brightness fixes. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
+Version [0.4.3 is published](https://github.com/serogee/Nudge/releases/tag/v0.4.3). Version 0.4.4 is in preparation and adds guarded swipe adjustment, ordinary swipe direction selection, and clearer settings controls. Brightness calibration is now below the brightness slider controls in Home. See [Handles and panels](docs/handles-and-panels.md) for controls and behavior. The archived 0.2.0 build has the earlier per-handle panels.
 
 ## Build
 
@@ -123,9 +123,9 @@ For each new distributed version, commit the completed features/fixes, then incr
 
 ```powershell
 # Preview changes since the latest published release:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.4.3 -FromTag v0.4.2
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -Version 0.4.4 -FromTag v0.4.3
 # After changing version.properties, update that version's changelog and notes:
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag v0.4.2 -Write
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag v0.4.3 -Write
 # Review the generated files, add device observations, and commit the version and notes.
 # Run the signed build from clean main after merging:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateTag
@@ -133,9 +133,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Release.ps1 -CreateT
 
 The generator uses the first line of each full commit message, including messages with body bullets immediately after the title. `feat` becomes Added, `fix` Fixed, `perf` Performance, and build/docs/test/chore commits Maintenance. Other changes go under Changed; `!` or a `BREAKING CHANGE:` footer identifies breaking changes. Scoped and older unscoped titles both work. Each entry includes its commit hash. Scopes and message rules are defined in [.plans/scopes.md](.plans/scopes.md) and [AGENTS.md](AGENTS.md).
 
-`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.4.2` selects the baseline for 0.4.3; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
+`-Write` replaces only the current unreleased version's entry and creates `docs/release-notes-<version>.md`. Re-running it is safe before tagging, but replaces manual edits to those generated notes, so review and add manual compatibility observations after the final generation. Existing released entries are preserved; writing an already tagged version is refused. Previewing a tagged version uses its tag's commit rather than newer work. `-FromTag v0.4.3` selects the baseline for 0.4.4; it must be an ancestor and lower version. No extra tools, network calls, automatic version bumps or GitHub publishing are involved. To check the generator, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Changelog.ps1`.
 
-Established local version tags identify release versions in this repository. The newest tag can remain a working release until marked ready. Version 0.4.3, code 12, is being prepared from published `v0.4.2`, code 11. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
+Established local version tags identify release versions in this repository. The newest tag can remain a working release until marked ready. Version 0.4.4, code 13, is being prepared from published `v0.4.3`, code 12. GitHub confirmed v0.4.3 as the latest stable release on 2026-10-23. Select the latest earlier published tag, excluding any working tag. If an earlier working tag remains unready, pass the published baseline explicitly with `-FromTag`.
 
 Install the new release over the old release, without uninstalling, to retain settings. Debug and release are separate installations. Recheck accessibility after updating. Reverting a bug fix means a new commit and a **higher** version code; do not move release tags or expect Android to accept a downgrade.
 
@@ -170,19 +170,22 @@ The profile is saved under `.local/device-checks`; manually complete the checkli
 
 Official references: [accessibility overlays](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#TYPE_ACCESSIBILITY_OVERLAY), [AudioManager](https://developer.android.com/reference/android/media/AudioManager), [restricted settings](https://support.google.com/android/answer/12623953), [Xiaomi autostart](https://www.mi.com/global/support/faq/details/KA-507611/), [Xiaomi background app locking (menus vary)](https://www.mi.com/global/support/faq/details/KA-535435/), [Android process-exit reasons](https://developer.android.com/reference/android/app/ApplicationExitInfo), [Android app signing](https://developer.android.com/studio/publish/app-signing).
 
-## 0.4.3 preparation and publication
+## 0.4.4 preparation and publication
 
-Version 0.4.3, code 12, is the next release. Its notes use published `v0.4.2` as the baseline. Keep the existing release tags and signing key.
+Version 0.4.4, code 13, is the next release. Its notes use published `v0.4.3` as the baseline. Keep the existing release tags and signing key.
 
-The feature branch contains the version, reviewed notes, and post-merge finalizer. See [the 0.4.3 release checklist](docs/release-checklist-0.4.3.md). Push this branch, open a pull request into main, and select **Create a merge commit**. This preserves the separate commits and lets the finalizer confirm that main contains the prepared source.
+The `feat/brightness-gesture-settings` branch contains the version and reviewed notes. See [the 0.4.4 release checklist](docs/release-checklist-0.4.4.md). Push this branch, open a pull request into main, and select **Create a merge commit** to preserve the separate commits.
 
-After GitHub merges the pull request, run this command from the clean feature checkout:
+After GitHub merges the pull request, run each command in order from a clean workspace. Stop if a command fails:
 
 ```powershell
+git switch main
+git pull --ff-only origin main
+Get-Content version.properties
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Finalize-Release.ps1
 ```
 
-The finalizer fetches main, verifies that the prepared commits are merged, and fast-forwards local main. It does not create a local merge commit. It then runs the release checks, builds the signed APK, verifies its signer and version, exports the four release files, and creates local tag `v0.4.3`. It does not push or publish. It refuses an unmerged or dirty checkout. `-CheckOnly` checks local preparation without fetching, switching branches, building, or tagging.
+Confirm `versionName=0.4.4` and `versionCode=13` before running the finalizer. It fetches main and tags, checks that the current commit is on remote main, and fast-forwards local main. It then runs the release checks, builds the signed APK, verifies its signer and version, exports the four release files, and creates local tag `v0.4.4`. It does not push or publish. It refuses an unmerged or dirty checkout. `-CheckOnly` checks local preparation without fetching, switching branches, building, or tagging.
 
 The final signed APK and tag must be created after the merge so both identify the merged main commit. Do not tag the feature branch or regenerate the reviewed notes after merging. If a command fails, resolve the failure before continuing.
 
@@ -191,14 +194,14 @@ Install the signed APK over the current release without uninstalling. Check reta
 After the finalizer succeeds and the files are ready, push its existing tag:
 
 ```powershell
-git push origin v0.4.3
+git push origin v0.4.4
 ```
 
-Create a GitHub release for that tag. Use **Nudge 0.4.3** as the title and paste `releases/0.4.3/Nudge-0.4.3-notes.md` into the description. Attach these files from `releases/0.4.3/`:
+Create a GitHub release for that tag. Use **Nudge 0.4.4** as the title and paste `releases/0.4.4/Nudge-0.4.4-notes.md` into the description. Attach these files from `releases/0.4.4/`:
 
-- `Nudge-0.4.3.apk`
-- `Nudge-0.4.3.apk.sha256`
-- `Nudge-0.4.3.json`
-- `Nudge-0.4.3-notes.md`
+- `Nudge-0.4.4.apk`
+- `Nudge-0.4.4.apk.sha256`
+- `Nudge-0.4.4.json`
+- `Nudge-0.4.4-notes.md`
 
-Publish only after all four files are attached. For a stable release, leave the pre-release option off and set the release as latest. Confirm publication before using `v0.4.3` as a future changelog baseline.
+Publish only after all four files are attached. For a stable release, leave the pre-release option off and set the release as latest. Confirm publication before using `v0.4.4` as a future changelog baseline.
