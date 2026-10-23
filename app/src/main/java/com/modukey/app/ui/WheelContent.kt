@@ -8,7 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
@@ -42,7 +45,13 @@ import kotlin.math.roundToInt
             }
             close()
         }
-        drawPath(path, Color(panel.background).copy(alpha = panel.opacity))
+        drawIntoCanvas { canvas ->
+            val paint = Paint().apply {
+                color = Color(panel.background).copy(alpha = panel.opacity)
+                if (panel.cornerDp > 0f) pathEffect = PathEffect.cornerPathEffect(panel.cornerDp.dp.toPx())
+            }
+            canvas.drawPath(path, paint)
+        }
     }) { children, constraints ->
         val measured = children.mapIndexed { index, child ->
             val size = slices[index].size.roundToInt().coerceAtLeast(1)
