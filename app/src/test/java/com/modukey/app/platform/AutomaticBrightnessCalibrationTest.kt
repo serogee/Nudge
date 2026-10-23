@@ -9,6 +9,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Duration
+import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36])
@@ -33,15 +34,19 @@ class AutomaticBrightnessCalibrationTest {
     private class Port(private val brightness: Brightness) : CalibrationServicePort {
         var fraction = .5f; var reads = 0; var opens = 0; var closes = 0
         var exposed = true; var accepted = true; var key = "brightness"; var duplicateSamples = false
+        var quantized = false; var writeDelay = 0L
         val moves = mutableListOf<Float>()
         override fun open(): Boolean { opens++; return true }
         override fun control(): NativeBrightnessControl? {
-            reads++; return if (exposed) NativeBrightnessControl(key, 0f, 100f, fraction * 100, true) else null
+            reads++; return if (exposed) NativeBrightnessControl(key, 0f, 1600f, fraction * 1600, true) else null
         }
         override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean {
             if (!accepted) return false
             moves += fraction; this.fraction = fraction
-            brightness.level = if (duplicateSamples) 25 else listOf(0, 16, 64, 144, 255)[(fraction * 4).toInt()]
+            val point = (fraction * 16).roundToInt()
+            val level = if (duplicateSamples) 25 else if (quantized) point / 2 else (point * point).coerceAtMost(255)
+            if (writeDelay == 0L) brightness.level = level
+            else android.os.Handler(Looper.getMainLooper()).postDelayed({ brightness.level = level }, writeDelay)
             return true
         }
         override fun progress(percent: Int) = Unit
@@ -60,12 +65,12 @@ class AutomaticBrightnessCalibrationTest {
         val (next, brightness, port) = run()
         val previous = brightness.saved
         idle(1_000); assertEquals(0, port.reads); assertEquals(0, port.opens)
-        next.start(); idle(3_000)
+        next.start(); idle(14_000)
         assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
-        assertEquals(listOf(0f, .25f, .5f, .75f, 1f), port.moves)
+        assertEquals((0..16).map { it / 16f }, port.moves)
         assertEquals(87, brightness.level); assertTrue(brightness.automatic); assertEquals(1, brightness.restores)
         assertEquals(previous, brightness.saved); assertEquals(1, port.closes)
-        next.save(); assertEquals(listOf(0, 16, 64, 144, 255), brightness.saved)
+        next.save(); assertEquals((0..16).map { (it * it).coerceAtMost(255) }, brightness.saved)
         assertEquals(AutomaticCalibrationPhase.SAVED, next.state.value.phase)
         val reads = port.reads; idle(30_000); assertEquals(reads, port.reads)
     }
@@ -82,20 +87,36 @@ class AutomaticBrightnessCalibrationTest {
         assertEquals(2, brightness.restores); assertEquals(1, replacement.closes)
         next.disconnected(port); assertEquals(AutomaticCalibrationError.DISCONNECTED, next.state.value.error)
     }
-    @Test fun refusedActionsUnstableReadingsAndDuplicateSamplesNeverReplaceTheProfile() {
+    @Test fun refusedActionsUnstableReadingsAndFlatSamplesNeverReplaceTheProfile() {
         val (next, brightness, port) = run()
         val previous = brightness.saved
         port.accepted = false; next.start(); idle(100)
         assertEquals(AutomaticCalibrationError.UNSUPPORTED, next.state.value.error)
         assertEquals(previous, brightness.saved)
         assertTrue(next.prepare()); val duplicate = Port(brightness).apply { duplicateSamples = true }; assertTrue(next.connect(duplicate))
-        next.start(); idle(2_000)
+        next.start(); idle(14_000)
         assertEquals(AutomaticCalibrationError.INVALID_SAMPLES, next.state.value.error)
         assertEquals(previous, brightness.saved)
         assertTrue(next.prepare()); val unstable = Port(brightness); assertTrue(next.connect(unstable))
         brightness.unstable = true; next.start(); idle(4_000)
         assertEquals(AutomaticCalibrationError.UNSTABLE, next.state.value.error)
         assertEquals(previous, brightness.saved); assertEquals(87, brightness.level)
+    }
+    @Test fun denseHardwarePlateausAreAcceptedButOldManualProfilesAreNotChangedUntilSave() {
+        val (next, brightness, port) = run()
+        val previous = brightness.saved
+        port.quantized = true; next.start(); idle(14_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+        assertEquals((0..16).map { it / 2 }, next.state.value.samples)
+        assertEquals(previous, brightness.saved)
+        next.save(); assertEquals(17, brightness.saved!!.size)
+    }
+    @Test fun nativeSettingWritesMustSettleBeforeTheDenseSamplesAreAccepted() {
+        val (next, brightness, port) = run()
+        port.writeDelay = 450; next.start(); idle(22_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+        assertEquals((0..16).map { (it * it).coerceAtMost(255) }, next.state.value.samples)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
     }
     @Test fun setupTimesOutAndLockOrChangedControlStopsActiveMeasurement() {
         var awake = true
@@ -112,7 +133,7 @@ class AutomaticBrightnessCalibrationTest {
     @Test fun failedRestorationRequiresRecoveryAndRestartDoesNotResumeARequest() {
         val brightness = Brightness().apply { restoreAllowed = false }
         val (next, _, _) = run(brightness)
-        next.start(); idle(3_000)
+        next.start(); idle(14_000)
         assertEquals(AutomaticCalibrationPhase.RECOVERY, next.state.value.phase)
         assertFalse(next.prepare()); next.save(); assertTrue(brightness.pendingRestore)
         next.close()
@@ -126,7 +147,7 @@ class AutomaticBrightnessCalibrationTest {
     @Test fun discardAndSaveFailureRetainTheOldCalibration() {
         val (next, brightness, _) = run()
         val previous = brightness.saved
-        next.start(); idle(3_000); brightness.saveAllowed = false; next.save()
+        next.start(); idle(14_000); brightness.saveAllowed = false; next.save()
         assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
         assertEquals(AutomaticCalibrationError.SAVE, next.state.value.error); assertEquals(previous, brightness.saved)
         next.discard(); assertEquals(AutomaticCalibrationPhase.IDLE, next.state.value.phase)
@@ -158,9 +179,9 @@ class AutomaticBrightnessCalibrationTest {
         assertFalse(brightness.pendingRestore); assertEquals(0, brightness.restores)
         assertTrue(port.moves.isEmpty())
         brightness.level = 101
-        port.exposed = true; idle(3_000)
+        port.exposed = true; idle(14_000)
         assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
-        assertEquals(listOf(0, 16, 64, 144, 255), next.state.value.samples)
+        assertEquals((0..16).map { (it * it).coerceAtMost(255) }, next.state.value.samples)
         assertEquals(101, brightness.level); assertTrue(brightness.automatic)
         assertEquals(1, brightness.restores)
     }

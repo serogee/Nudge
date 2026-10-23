@@ -98,16 +98,20 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
                 if (token !== owner) throw CancellationException()
                 if (!brightness.begin()) throw Failure(if (!brightness.canWrite) AutomaticCalibrationError.ACCESS else AutomaticCalibrationError.RESTORE)
                 val expected = requireNotNull(control)
-                result = withTimeout(20_000) {
+                result = withTimeout(60_000) {
                     val samples = mutableListOf<Int>()
-                    for (point in 0..4) {
-                        eligible(); mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, point * 25)
-                        service.progress(point * 25)
-                        if (!service.move(expected, point / 4f)) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
-                        val value = settled(service, expected, point / 4f)
-                        if (value !in 0..65535 || samples.lastOrNull()?.let { value <= it } == true) throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                    val steps = BrightnessScale.AUTOMATIC_SAMPLE_COUNT - 1
+                    for (point in 0..steps) {
+                        val fraction = point.toFloat() / steps
+                        val percent = (fraction * 100).roundToInt()
+                        eligible(); mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, percent)
+                        service.progress(percent)
+                        if (!service.move(expected, fraction)) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
+                        val value = settled(service, expected, fraction)
+                        if (value !in 0..65535 || samples.lastOrNull()?.let { value < it } == true) throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
                         samples += value
                     }
+                    if (!BrightnessScale.validSamples(samples)) throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
                     samples.toList()
                 }
             } catch (error: TimeoutCancellationException) { failure = AutomaticCalibrationError.UNSTABLE }
@@ -124,7 +128,7 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
     }
     private suspend fun settled(service: CalibrationServicePort, expected: NativeBrightnessControl, fraction: Float): Int {
         var last: Int? = null; var stableSince = clock(); var result: Int? = null
-        withTimeout(2_500) {
+        withTimeout(3_000) {
             while (result == null) {
                 eligible()
                 val current = service.control()
@@ -132,7 +136,7 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
                 if (current?.matches(fraction) != true) { last = null; stableSince = clock() }
                 else {
                     val value = brightness.sample() ?: throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
-                    if (value == last) { if (clock() - stableSince >= 300) result = value }
+                    if (value == last) { if (clock() - stableSince >= 500) result = value }
                     else { last = value; stableSince = clock() }
                 }
                 if (result == null) delay(100)

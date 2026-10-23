@@ -2,8 +2,8 @@
     <string name="automatic_brightness_calibration">Automatic calibration</string>
     <string name="manual_brightness_calibration">Manual calibration</string>
     <string name="calibration_service_name">Nudge brightness calibration</string>
-    <string name="calibration_service_description">Temporarily read the System UI brightness control and set its progress to measure five brightness positions. Enable this service from Automatic calibration in Nudge. It turns off when calibration ends. It does not take screenshots or record the screen.</string>
-    <string name="auto_calibration_consent">Nudge measures five positions on the native brightness slider. You may need to open Control center yourself. Your screen will become dim and bright.</string>
+    <string name="calibration_service_description">Temporarily identify the native System UI brightness control. Measure 17 slider positions. Enable this service from Automatic calibration in Nudge. It turns off when calibration ends. It does not take screenshots or record the screen.</string>
+    <string name="auto_calibration_consent">Nudge measures 17 positions on the native brightness slider. You may need to open Control center yourself. Your screen will become dim and bright.</string>
     <string name="auto_calibration_access_disclosure">Android grants this separate service access to window content. Nudge uses it only for System UI brightness controls during calibration.</string>
     <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Nudge checks native brightness labels. It does not read notification text. Measurements stay on this device. The service turns off when calibration ends.</string>
     <string name="auto_calibration_restore_disclosure">Nudge restores your brightness and automatic mode before showing results. You choose whether to save the measurements.</string>
@@ -16,7 +16,7 @@
     <string name="auto_calibration_opening">Opening Control center…</string>
     <string name="auto_calibration_progress">Calibrating brightness: %1$d%%</string>
     <string name="cancel_auto_calibration">Cancel automatic calibration</string>
-    <string name="auto_calibration_review">Five positions were measured. Your original brightness and mode were restored. Save this calibration for this device?</string>
+    <string name="auto_calibration_review">17 positions were measured. Your original brightness and mode were restored. Save this calibration for this device?</string>
     <string name="auto_calibration_saved">Automatic calibration saved. The temporary accessibility service is off.</string>
     <string name="auto_calibration_cancelled">Calibration cancelled. Your saved calibration was kept.</string>
     <string name="auto_calibration_recovery">Calibration was interrupted or brightness could not be restored. Restore the saved brightness and mode, or keep your current brightness.</string>

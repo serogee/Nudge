@@ -30,11 +30,13 @@ import org.robolectric.annotation.Implementation
 import org.robolectric.shadows.ShadowAccessibilityService
 import org.robolectric.util.ReflectionHelpers
 import java.time.Duration
+import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36], shadows = [BrightnessControllerTest.Writes::class, BrightnessCalibrationServiceTest.ServiceInfo::class])
 @Suppress("DEPRECATION")
 class BrightnessCalibrationServiceTest {
+    private val positions = (0..16).map { (it * 100f / 16).roundToInt() }
     /** Model the system-held configuration; the default unbound shadow always returns null. */
     @Implements(AccessibilityService::class)
     class ServiceInfo : ShadowAccessibilityService() {
@@ -66,15 +68,16 @@ class BrightnessCalibrationServiceTest {
         val node = AccessibilityNodeInfo.obtain().apply {
             packageName = NativeBrightnessNode.SYSTEM_UI; viewIdResourceName = "com.android.systemui:id/brightness_slider"
             isEnabled = true; isVisibleToUser = true
-            rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 100f, initial)
+            rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 1600f, initial * 16)
             addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS)
         }
         shadowOf(node).setOnPerformActionListener { code, args ->
             if (code != AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.id) false else {
                 val position = args.getFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE)
-                writes += position.toInt()
-                node.rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 100f, position)
-                Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, listOf(0, 16, 64, 144, 255)[position.toInt() / 25])
+                writes += (position / 16).roundToInt()
+                node.rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 1600f, position)
+                val point = (position / 100).roundToInt()
+                Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, (point * point).coerceAtMost(255))
                 true
             }
         }
@@ -123,9 +126,9 @@ class BrightnessCalibrationServiceTest {
         val slider = provideBrightnessWindow(service, writes, windowType = AccessibilityWindowInfo.TYPE_APPLICATION)
         slider.packageName = NativeBrightnessNode.MIUI_PLUGIN
         slider.viewIdResourceName = "${NativeBrightnessNode.MIUI_PLUGIN}:id/brightness_slider"
-        app.automaticCalibration.start(); idle(3_000)
+        app.automaticCalibration.start(); idle(14_000)
         assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
-        assertEquals(listOf(0, 25, 50, 75, 100), writes)
+        assertEquals(positions, writes)
         assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
     }
     @Test fun userInstalledPluginNamesakeCannotSupplyAControl() {
@@ -158,9 +161,9 @@ class BrightnessCalibrationServiceTest {
         provideBrightnessWindow(service, writes)
         assertEquals(AutomaticCalibrationPhase.READY, app.automaticCalibration.state.value.phase)
         assertTrue(shadowOf(service).globalActionsPerformed.isEmpty())
-        app.automaticCalibration.start(); idle(3_000)
+        app.automaticCalibration.start(); idle(14_000)
         assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
-        assertEquals(listOf(0, 25, 50, 75, 100), writes)
+        assertEquals(positions, writes)
         assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
         assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
         assertNull(ReflectionHelpers.getField(service, "overlay")); assertEquals(0, service.serviceInfo.flags)
@@ -195,10 +198,10 @@ class BrightnessCalibrationServiceTest {
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 0)
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0)
         provideBrightnessWindow(service, writes, initial = 0f)
-        app.automaticCalibration.start(); idle(3_000)
+        app.automaticCalibration.start(); idle(14_000)
         assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
-        assertEquals(listOf(0, 16, 64, 144, 255), app.automaticCalibration.state.value.samples)
-        assertEquals(listOf(25, 50, 75, 100), writes)
+        assertEquals((0..16).map { (it * it).coerceAtMost(255) }, app.automaticCalibration.state.value.samples)
+        assertEquals(positions.drop(1), writes)
         assertEquals(0, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
         assertEquals(0, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
     }
@@ -223,9 +226,9 @@ class BrightnessCalibrationServiceTest {
             val overlay = ReflectionHelpers.getField<android.widget.LinearLayout>(service, "overlay")
             assertEquals(app.getString(R.string.auto_calibration_waiting_panel), (overlay.getChildAt(0) as android.widget.TextView).text)
             provideBrightnessWindow(service, writes, windowType = AccessibilityWindowInfo.TYPE_APPLICATION)
-            idle(3_000)
+            idle(14_000)
             assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
-            assertEquals(listOf(0, 25, 50, 75, 100), writes)
+            assertEquals(positions, writes)
             assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
             assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
             assertEquals(listOf(AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE), shadowOf(service).globalActionsPerformed)
