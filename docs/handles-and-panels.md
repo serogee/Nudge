@@ -226,7 +226,7 @@ Jump to touch remains the default for new and existing configurations. Previews 
 
 ## Settings with additional options
 
-Settings that offer more options show a chevron. Additional controls appear directly below their parent setting where possible. A subtle left line groups each set of dependent controls. In gesture bindings, Slide to adjust appears below its selected volume or brightness option. Action-specific controls appear below the action choice. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
+Settings that offer more options show a chevron. Additional controls appear directly below their parent setting where possible. A subtle left line groups each set of dependent controls. In gesture bindings, Slide to adjust appears below its selected volume or brightness option. Action-specific controls appear below the action choice. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge uses the picker background color at 75% opacity. Its gear icon stays fully opaque. The badge does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
 
 ## Brightness percentages and calibration
 

@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+- Use a partially transparent background for action-picker gear badges. Keep the gear icon fully opaque.
 - Wait for the native brightness control before recording or changing brightness. Allow 30 seconds to open the correct panel.
 - On Xiaomi, open Control center manually during automatic calibration. Search System UI application windows and the active System UI root.
 - Show Xiaomi panel-opening guidance for the Control panel action. Keep gesture injection and screenshot capabilities disabled.
+
 ## 0.4.5 - 2026-10-23
 
 ### Added
