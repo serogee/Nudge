@@ -98,7 +98,12 @@ class BrightnessGestureRuntimeTest {
                 override fun close() = Unit
             }))
             app.automaticCalibration.start()
-            await { app.automaticCalibration.state.value.phase == AutomaticCalibrationPhase.REVIEW && host(service).visible }
+            // Seventeen points each need 500 ms of stable simulated time.
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(14))
+            val result = app.automaticCalibration.state.value
+            assertEquals(result.toString(), AutomaticCalibrationPhase.REVIEW, result.phase)
+            assertEquals(BrightnessScale.AUTOMATIC_SAMPLE_COUNT, result.samples.size)
+            await { host(service).visible }
             fun displayed(): Float {
                 val view = ReflectionHelpers.getField<android.view.ViewGroup>(host(service), "view")
                 return ReflectionHelpers.getField(view.getChildAt(0), "level")
