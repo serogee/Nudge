@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Added
+
+- Use a hollow semicircle with separated wedge buttons for Wheels. Expand the highlighted wedge, icon, and hit region while other wedges shrink. Keep boundary hysteresis, neutral-center cancellation, and existing drag and swipe-sequence rules.
+- Set Wheel radius as low as 40 dp. Reduce capacity when needed to retain 48 dp normal touch targets. Keep overflow buttons saved and editable, with a hard maximum of six selectable slots.
+- Toggle smooth Wheel focus animations. Turning animations off also suppresses Wheel window motion. Keep logical selection independent of animation and respect Android's animation setting.
+- Enable optional Slider touch completion for supported Xiaomi native controls. The separate calibration service briefly presses and releases the identified relative slider to commit each measured value. Require explicit consent and keep the option device-local and off by default. Keep gesture injection and window-content access disabled in the normal handle service; keep screenshots disabled in both services.
+
+### Fixed
+
+- Keep native slider identity stable while its panel bounds move. Validate the current control, touch bounds, and covering windows before native release completion. Wait for an active native touch to end before cancellation restores brightness. Refresh an unchanged saved value to clear leftover temporary previews during restoration and recovery.
+- Diagnose unreadable, decreasing, and flat calibration readings without storing measurement values or screen text. Retain existing profiles when a run fails.
+
+### Compatibility
+
+- New configuration backups use schema 22 for compact Wheel sizes and animation choices. Import older schemas and retain schema-21 Wheel radii. Nudge 0.5.0 and earlier cannot import schema-22 backups.
+- Physical Redmi verification found that the new Control center changed temporary brightness while its saved value stayed fixed. Native plugin inspection confirmed that a release callback is required. The new touch-completion implementation still needs an on-device recheck; do not treat automated coverage as that result.
+- App version values, versioned release notes, published entries, existing release artifacts, and tags are unchanged.
+
 ## 0.5.0 - 2026-10-23
 
 ### Added
