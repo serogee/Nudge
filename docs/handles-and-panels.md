@@ -40,7 +40,7 @@ Chevrons mark additional options. Dependent controls appear below their parent, 
 
 ## Gestures
 
-Each assignment can run a direct action, open a panel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
+Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
 
 | Gesture | Behavior |
 | --- | --- |
@@ -97,6 +97,36 @@ Opening and closing animations are independent. Disabled Android animations skip
 Nudge does not replay or inject touches. Back closes the panel. The optional **Close automatically** timeout accepts 1–60 seconds and defaults off. Held input pauses the timer; interaction restarts it.
 
 A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is temporarily paused.
+
+## Wheels
+
+Create wheels in **Wheels**, then assign them to handle gestures. Wheels share panel actions, icons, colors, placement, and editing controls.
+
+A Wheel layout shows a semicircular fan facing inward from its handle. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
+
+Each wheel shows **up to six buttons**. Radius, button size, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable. Changing an existing panel to Wheel does not delete its extra buttons.
+
+**Wheel radius** sets the center-to-button distance from 96–240 dp and defaults to 128 dp. **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The selected button and its selection area expand while adjacent buttons shrink. Toggle action colors keep their usual meaning.
+
+### Drag to pick
+
+Without **Drag to pick**, the wheel stays open for normal button taps. Enable this option below a Wheel gesture assignment to select without lifting. Tap does not offer it. Drag to pick and Slide to adjust cannot use the same assignment.
+
+Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
+
+Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Inside the minimum, outside the fan, or beyond the maximum, nothing is highlighted. Move back into range to select again.
+
+For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
+
+**Allow later swipes** defaults off. The first drag wheel with this option off disables later swipe stages. Their assignments remain saved. The next touch starts the sequence again.
+
+When Allow later swipes is on, **Quick-release window** accepts 100–1,000 ms and defaults to 200 ms. Time starts when the wheel opens. Release before the deadline to close without running an action and preserve the next configured stage. The existing Swipe sequence timeout starts from that release. At or after the deadline, fresh movement is required before highlighting. A confirmed pick or later cancellation resets the sequence.
+
+Landscape overrides retain their own layout and Wheel settings. If an orientation uses a grid layout, its assignment opens as a normal panel. Its saved drag settings remain available for Wheel layouts. A saved item with a Wheel layout in either active orientation appears in Wheels.
+
+Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
+
+Backups use schema 21 and retain Wheel layouts, drag settings, shared links, and overflow buttons. Older backups migrate with drag picking off.
 
 ## Actions and appearance
 

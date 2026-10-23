@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Add a Wheels tab with reusable semicircular layouts and up to six visible buttons. Keep overflow buttons editable.
+- Add optional Drag to pick for non-tap gestures. Configure selection distances, expanding selection, and a quick-release window for later swipes.
+- Store Wheel layouts and assignments in backup schema 21. Retain existing panel behavior and older backup compatibility.
+
 ## 0.4.6 - 2026-10-23
 
 ### Added

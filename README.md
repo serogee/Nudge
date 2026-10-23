@@ -70,6 +70,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 ### Custom panels and actions
 
 - Create reusable panels and open the same panel from several handles.
+- Create semicircular wheels in the Wheels tab, with up to six buttons. Tap buttons or use optional Drag to pick.
 - Choose fixed or scrollable layouts, vertical or horizontal direction, placement, animations, and outside-touch behavior.
 - Add app shortcuts, volume and sound controls, brightness controls, Lock screen, Input Method, Screenshot, and native panel actions.
 - Customize colors, opacity, button containers, built-in icons, and supported installed icon packs.
