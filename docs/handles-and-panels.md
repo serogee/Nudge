@@ -26,6 +26,8 @@ Each handle owns its touch area, visible handle, gestures, exclusions, and lock-
 
 In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length uses a percentage of touch length. Handle thickness uses dp and defaults to 4 dp. Changing touch depth keeps that thickness. A smaller touch area limits drawing without changing the saved value. Turning off Make handle visible keeps saved appearance values and disables those controls.
 
+Select a slider's displayed value to enter a number. Save or the keyboard Done key applies it. Values outside the slider's range use the nearest limit. Cancel keeps the current value. Enter 50 for 50%. Other values use their displayed units. Disabled sliders also disable value editing.
+
 The sticky Visual Preview (Non-interactive) switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability.
 
 Both previews use the selected Portrait or Landscape tab. On an upright phone, a landscape bottom guide appears on the left. Landscape left appears at the top, and landscape right appears at the bottom. Cutout and navigation insets rotate with the guide. During normal use, Bottom stays at the logical bottom in both landscape rotations. Test panel uses the phone's current orientation.
