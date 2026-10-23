@@ -55,16 +55,15 @@ class PanelActions(private val service: AccessibilityService,
             ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
                 val config = app.configuration.state.value
                 val combined = button.action == ButtonAction.TOGGLE_AND_HIDE_HANDLES
-                val change = config?.let { handleControlChange(it, handleId.takeIf(String::isNotBlank), app.handlePauses.state.value,
+                val change = config?.let { handleControlChange(it, handleId.takeIf(String::isNotBlank), it.pausedHandleIds,
                     if (combined) button.toggleScope else HandleGroupScope.NONE,
                     if (combined) button.visibilityScope else HandleGroupScope.valueOf(button.handleScope.name)) }
                 if (change == null) ActionResult(succeeded = false, message = R.string.handle_toggle_unavailable)
                 else {
-                    if (change.visibilityTargets.isNotEmpty()) {
-                        app.configuration.update { it.hideIndicators(change.visibilityTargets, change.hidden) }
-                        app.configuration.flush()
+                    app.configuration.update {
+                        it.hideIndicators(change.visibilityTargets, change.hidden).pauseHandles(change.pauseTargets, change.paused)
                     }
-                    app.handlePauses.setTargets(change.pauseTargets, change.paused)
+                    app.configuration.flush()
                     ActionResult()
                 }
             }

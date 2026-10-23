@@ -96,7 +96,7 @@ Opening and closing animations are independent. Disabled Android animations skip
 
 Nudge does not replay or inject touches. Back closes the panel. The optional **Close automatically** timeout accepts 1–60 seconds and defaults off. Held input pauses the timer; interaction restarts it.
 
-A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is temporarily paused.
+A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is paused.
 
 ## Wheels
 
@@ -140,13 +140,15 @@ Choose built-in icons, installed app icons, or supported icon packs. Missing app
 
 ## Pause and visibility controls
 
-**Pause handles** temporarily stops gesture input without changing saved Enable switches. Turning the master switch off or restarting clears pauses.
+**Pause handles** stops gesture input without changing saved Enable switches. Pauses survive app and phone restarts, master-switch changes, and handle disable/re-enable. A disabled handle keeps its saved pause until you resume it. Turn Pause handles off to clear all pauses, including those on disabled handles. Deleting a handle removes its saved pause.
 
 **Hide visible handles** hides the bars while gestures remain available. Hiding survives restarts and retains appearance values. Editing guides remain available.
 
 **Toggle handles** and **Toggle handle visibility** offer **All handles**, **This handle**, and **Other handles**. They target enabled handles. This handle means the one that invoked the action.
 
-**Toggle and hide handles** has separate pause/resume and hide/show groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. Partly paused groups resume; partly hidden groups show.
+**Toggle and hide handles** has separate pause/resume and hide/show target groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. If any handle in the pause group is paused, the button resumes that group and shows the visibility group. Otherwise, it pauses and hides the selected groups. This corrects differences caused by separate controls. With no pause group, show the visibility group if any target is hidden. Otherwise, hide it.
+
+Combined pause and visibility changes save together. Backups retain saved pauses, including pauses on disabled handles. Older backups without pause selections start resumed. Adding copies creates new handles that start disabled and unpaused. Replacing the configuration retains its saved pauses while the master switch stays off for review.
 
 Home shortcuts using This handle or Other handles require a selected handle. The Handles tab's visibility switch applies to every saved handle.
 

@@ -28,6 +28,43 @@ class ConfigurationRepositoryTest {
         val store=PreferenceDataStoreFactory.create(storage=storage,scope=CoroutineScope(Dispatchers.IO+job))
         try { block(store) } finally { job.cancelAndJoin() }
     }
+    @Test fun pausesAndVisibilitySurviveReopeningWithMasterAndHandlesOff()=runTest {
+        val file=folder.newFile("saved-pauses.preferences_pb")
+        val original=AppConfiguration(enabled=false,handles=listOf(
+            HandleConfig(id="owner",enabled=true),HandleConfig(id="other",enabled=false)),
+            pausedHandleIds=setOf("other")).hideIndicators(true)
+        session(file) { DataStoreConfigurationRepository(it).write(original) }
+        session(file) { store ->
+            val repo=DataStoreConfigurationRepository(store)
+            val restored=repo.configuration.first()
+            assertEquals(original.normalized(),restored)
+            repo.write(restored.copy(enabled=true).editHandle("other") { it.copy(enabled=true) })
+        }
+        session(file) { store ->
+            val repo=DataStoreConfigurationRepository(store)
+            val restored=repo.configuration.first()
+            assertEquals(setOf("other"),restored.pausedHandleIds); assertTrue(restored.hideHandleIndicators)
+            val change=checkNotNull(handleControlChange(restored,"owner",restored.pausedHandleIds,HandleGroupScope.OTHERS,HandleGroupScope.ALL))
+            assertFalse(change.paused); assertFalse(change.hidden)
+            repo.write(restored.hideIndicators(change.visibilityTargets,change.hidden).pauseHandles(change.pauseTargets,change.paused))
+        }
+        session(file) { store ->
+            val restored=DataStoreConfigurationRepository(store).configuration.first()
+            assertTrue(restored.pausedHandleIds.isEmpty()); assertTrue(restored.hiddenIndicatorIds.isEmpty())
+            assertTrue(restored.enabled); assertTrue(restored.handles.all { it.enabled })
+        }
+    }
+    @Test fun oldDocumentsDefaultToResumedAndBackupsRetainDisabledPauseSelections() {
+        val config=AppConfiguration(enabled=false,handles=listOf(HandleConfig(id="a",enabled=false)),pausedHandleIds=setOf("a","deleted")).normalized()
+        assertEquals(config,ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        assertEquals(setOf("a"),config.pausedHandleIds)
+        val old=JSONObject(ConfigurationCodec.encode(config)).put("schema",20)
+        assertTrue(ConfigurationCodec.decode(old.toString()).pausedHandleIds.isEmpty())
+        old.put("schema",21).remove("pausedHandleIds")
+        assertTrue(ConfigurationCodec.decode(old.toString()).pausedHandleIds.isEmpty())
+        assertEquals(setOf("a"),config.addCopies(config).pausedHandleIds)
+        assertTrue(config.copy(handles=emptyList()).normalized().pausedHandleIds.isEmpty())
+    }
     @Test fun globalVisibilityOverrideSurvivesReopeningWithoutChangingHandlePreferences()=runTest {
         val file=folder.newFile("visibility.preferences_pb")
         val configuration=AppConfiguration(handles=listOf(

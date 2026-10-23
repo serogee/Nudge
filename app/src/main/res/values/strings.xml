@@ -391,7 +391,7 @@
     <string name="toggle_handles">Toggle handles</string>
     <string name="toggle_handle_visibility">Toggle handle visibility</string>
     <string name="pause_handles">Pause handles</string>
-    <string name="pause_handles_help">Stop gestures. Keep saved Enable switches.</string>
+    <string name="pause_handles_help">Stop gestures. Keep pauses after restarts and switch changes. Turn this off to resume all handles.</string>
     <string name="hide_visible_handles">Hide visible handles</string>
     <string name="hide_visible_handles_help">Keep gestures and saved visibility settings.</string>
     <string name="handle_toggle_scope">Handles to toggle</string>
@@ -520,7 +520,7 @@
     <string name="handles_to_hide">Handles to hide/show</string>
     <string name="no_handles_target">None</string>
     <string name="handle_visibility_scope_help">Hide or show the selected enabled handles. Keep their gestures and saved appearance. Visibility changes stay saved.</string>
-    <string name="toggle_and_hide_help">Toggle each group independently. Paused handles resume. Hidden handles show. Visibility stays saved. Pauses reset when the service restarts.</string>
+    <string name="toggle_and_hide_help">If any targeted handle is paused, resume that group and show the visibility group. Otherwise, pause and hide. Both states stay saved. With no pause group, only visibility changes.</string>
     <string name="handle_group_required">Select at least one group.</string>
     <string name="combined_handle_state">%1$s. Gestures: %2$s. Visibility: %3$s.</string>
     <string name="handle_group_running">Running</string>

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Keep handle pauses after app and phone restarts, master-switch changes, and handle disable/re-enable. Restore them before attaching handles. Clear pauses through explicit resume actions or handle deletion.
+- Save combined pause and visibility changes together. Use the pause group to choose pause-and-hide or resume-and-show. Correct mismatches caused by separate controls. Retain independent visibility-only actions and include pause selections in backups.
+
 ## 0.5.0 - 2026-10-23
 
 ### Added

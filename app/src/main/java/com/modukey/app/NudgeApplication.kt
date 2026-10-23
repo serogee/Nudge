@@ -31,14 +31,18 @@ private val Application.preferences by preferencesDataStore("trigger_settings", 
 
 class NudgeApplication : Application() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    val configuration by lazy { ConfigurationController(DataStoreConfigurationRepository(preferences, ::migratedPanelName), scope) }
+    val configuration: ConfigurationController by lazy { ConfigurationController(DataStoreConfigurationRepository(preferences, ::migratedPanelName), scope,
+        onStateChanged = { handlePauses.restore(it) }) }
     fun migratedPanelName(name: String, handle: Int, panel: Int): String = getString(R.string.migrated_panel_name,
         name.ifBlank { getString(R.string.handle_name, handle + 1) }, panel + 1)
     val editor = EditorSession()
     val brightnessPreview = BrightnessPreview()
     val sliderGuidePreview = SliderGuidePreview()
     val shortcuts = ShortcutRuntime()
-    val handlePauses = HandlePauses()
+    val handlePauses: HandlePauses = HandlePauses { paused ->
+        configuration.update { it.copy(pausedHandleIds = paused) }
+        configuration.flush()
+    }
     val brightness by lazy { BrightnessController(this) }
     val calibrationOptions by lazy { BrightnessCalibrationOptions(this) }
     val automaticCalibration by lazy { AutomaticBrightnessCalibration(ControllerCalibrationAccess(brightness), {

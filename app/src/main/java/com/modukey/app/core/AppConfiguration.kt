@@ -130,14 +130,17 @@ data class AppConfiguration(
     val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
     val shortcuts: List<HomeShortcut> = emptyList(),
     val handleAnimationsEnabled: Boolean = true,
+    val pausedHandleIds: Set<String> = emptySet(),
 ) {
     val hideHandleIndicators get() = handles.isNotEmpty() && handles.all { it.indicatorHidden }
     val hiddenIndicatorIds get() = handles.filter { it.indicatorHidden }.mapTo(mutableSetOf()) { it.id }
     fun hideIndicators(hidden: Boolean) = copy(handles = handles.map { it.copy(indicatorHidden = hidden) })
     fun hideIndicators(targets: Set<String>, hidden: Boolean) = copy(handles = handles.map { if (it.id in targets) it.copy(indicatorHidden = hidden) else it })
+    fun pauseHandles(targets: Set<String>, paused: Boolean) = copy(pausedHandleIds = if (paused) pausedHandleIds + targets else pausedHandleIds - targets)
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
-        return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+        return copy(pausedHandleIds = pausedHandleIds.intersect(handles.map { it.id }.toSet()),
+            brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
             h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
                 if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
             }) }

@@ -31,6 +31,32 @@ class ConfigurationControllerTest {
         c.update { it.copy(includePrereleases = true) }; store.fail = false; c.retry(); runCurrent()
         assertTrue(store.disk.value.enabled); assertTrue(store.disk.value.includePrereleases); assertNull(c.error.value)
     }
+    @Test fun savedPausesRestoreSynchronouslyAndSurviveSwitchAndDraftChanges() = runTest {
+        val store = Store().apply { disk.value = AppConfiguration(enabled = true, pausedHandleIds = setOf("first-handle")) }
+        lateinit var controller: ConfigurationController
+        val pauses = HandlePauses { selected -> controller.update { it.copy(pausedHandleIds = selected) }; controller.flush() }
+        controller = ConfigurationController(store, backgroundScope, pauses::restore); runCurrent()
+        assertEquals(setOf("first-handle"), pauses.state.value)
+        controller.openHandle("first-handle")
+        controller.editHandle("first-handle") { it.copy(name = "Edited", enabled = false) }
+        controller.saveDraft(); runCurrent()
+        assertEquals(setOf("first-handle"), pauses.state.value)
+        controller.update { it.copy(enabled = false) }
+        assertEquals(setOf("first-handle"), pauses.state.value)
+        pauses.clear()
+        assertTrue(controller.state.value!!.pausedHandleIds.isEmpty())
+        runCurrent(); assertTrue(store.disk.value.pausedHandleIds.isEmpty())
+    }
+    @Test fun combinedStateStaysTogetherAcrossSaveFailureAndRetry() = runTest {
+        val store = Store().apply { fail = true }
+        val controller = ConfigurationController(store, backgroundScope); runCurrent()
+        controller.update { it.hideIndicators(true).pauseHandles(setOf("first-handle"), true) }
+        assertFalse(controller.flushNow())
+        assertTrue(store.disk.value.pausedHandleIds.isEmpty()); assertFalse(store.disk.value.hideHandleIndicators)
+        store.fail = false; assertTrue(controller.flushNow())
+        assertEquals(setOf("first-handle"), store.disk.value.pausedHandleIds)
+        assertTrue(store.disk.value.hideHandleIndicators)
+    }
     @Test fun `continuous edits debounce and completion flushes final value`() = runTest {
         val store = Store(); val c = ConfigurationController(store, backgroundScope); runCurrent()
         repeat(10) { index -> c.update { v -> v.editHandle("first-handle") { h -> h.copy(name = "Handle $index") } }; advanceTimeBy(100) }

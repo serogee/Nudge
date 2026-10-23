@@ -36,16 +36,31 @@ class HandlePausesTest {
         assertFalse(pauses.toggle(HandleToggleScope.CURRENT, null, config))
         assertFalse(pauses.toggle(HandleToggleScope.ALL, "owner", config.copy(enabled = false)))
     }
-    @Test fun `saved disabling deletion master off and explicit resume clear obsolete pauses`() {
+    @Test fun disablingAndMasterChangesRetainPausesUntilDeletionOrExplicitResume() {
         val pauses = HandlePauses()
         pauses.toggle(HandleToggleScope.ALL, null, config)
         pauses.reconcile(config.editHandle("owner") { it.copy(enabled = false) })
-        assertEquals(setOf("other"), pauses.state.value)
+        assertEquals(setOf("owner", "other"), pauses.state.value)
         pauses.reconcile(config.copy(handles = config.handles.filterNot { it.id == "other" }))
+        assertEquals(setOf("owner"), pauses.state.value)
+        pauses.reconcile(config.copy(enabled = false))
+        assertEquals(setOf("owner"), pauses.state.value)
+        pauses.clear()
         assertTrue(pauses.state.value.isEmpty())
-        pauses.toggle(HandleToggleScope.ALL, null, config); pauses.reconcile(config.copy(enabled = false))
+    }
+    @Test fun pausingEnabledHandlesRetainsDormantPausesAndResumeAllClearsThem() {
+        val pauses = HandlePauses()
+        pauses.restore(config.copy(pausedHandleIds = setOf("disabled")))
+        pauses.setAll(true, config)
+        assertEquals(setOf("owner", "other", "disabled"), pauses.state.value)
+        pauses.setAll(false, config.copy(enabled = false))
         assertTrue(pauses.state.value.isEmpty())
-        pauses.toggle(HandleToggleScope.ALL, null, config); pauses.clear()
-        assertTrue(pauses.state.value.isEmpty())
+    }
+    @Test fun savedSelectionsRestoreWithoutEnablingHandlesAndDropDeletedIds() {
+        val stored = config.copy(enabled = false, pausedHandleIds = setOf("owner", "disabled", "deleted")).normalized()
+        assertEquals(setOf("owner", "disabled"), stored.pausedHandleIds)
+        val pauses = HandlePauses(); pauses.restore(stored)
+        assertEquals(stored.pausedHandleIds, pauses.state.value)
+        assertEquals(config.handles.map { it.enabled }, stored.handles.map { it.enabled })
     }
 }

@@ -60,6 +60,17 @@ class HandleGlobalControlsInterfaceTest {
         rule.onNodeWithContentDescription("Hide visible handles").assertIsEnabled().performClick()
         rule.runOnIdle { assertTrue(app.configuration.state.value!!.hideHandleIndicators) }
     }
+    @Test fun savedPausesStayVisibleAndCanBeClearedWithMasterAndHandlesOff() {
+        ready()
+        val pause=rule.onNodeWithContentDescription("Pause handles")
+        pause.performClick()
+        rule.runOnIdle { app.configuration.update { it.copy(enabled=false,handles=it.handles.map { h -> h.copy(enabled=false) }) } }
+        pause.assertIsOn().assertIsEnabled()
+        rule.runOnIdle { assertEquals(setOf("a","b"),app.configuration.state.value!!.pausedHandleIds) }
+        pause.performClick()
+        rule.runOnIdle { assertTrue(app.configuration.state.value!!.pausedHandleIds.isEmpty()) }
+        pause.assertIsOff().assertIsNotEnabled()
+    }
     @Test fun controlsScrollAwayAndHandleEditingRemainsReachableOnASmallDisplay() {
         ready()
         rule.onNodeWithContentDescription("Hide visible handles").performClick()

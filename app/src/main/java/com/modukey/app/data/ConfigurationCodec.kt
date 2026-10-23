@@ -8,13 +8,14 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 21 adds Wheel layouts and continuous selection settings. */
+/** Schema 21 adds Wheel layouts, continuous selection settings, and saved pause selections. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
     const val SCHEMA = 21
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
+        .put("pausedHandleIds", array(config.pausedHandleIds.sorted()))
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
         .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
         .put("brightnessPopup", brightness(config.brightnessPopup))
@@ -74,7 +75,10 @@ object ConfigurationCodec {
             val panelIds = panels.map { it.id }.toSet()
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
             AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts,
-                handleAnimationsEnabled = root.optBoolean("handleAnimationsEnabled", true)).normalized()
+                handleAnimationsEnabled = root.optBoolean("handleAnimationsEnabled", true),
+                pausedHandleIds = if (schema >= 21) root.optJSONArray("pausedHandleIds")?.let { values ->
+                    (0 until values.length()).map { values.getString(it) }.toSet()
+                }.orEmpty() else emptySet()).normalized()
         }
     }
     private inline fun <T> guarded(block: () -> T): T = try { block() }
