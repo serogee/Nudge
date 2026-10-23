@@ -80,4 +80,35 @@ class BrightnessGestureRuntimeTest {
         await { !host(service).visible }
         tap(service, handle.id); assertFalse(host(service).visible)
     }
+    @Test fun savedAutomaticCalibrationRefreshesTheOpenHomePreview() {
+        val (service, _) = fixture()
+        val preview = Any(); app.brightnessPreview.begin(preview); await { host(service).visible }
+        try {
+            var nativeFraction = .5f
+            assertTrue(app.automaticCalibration.prepare())
+            assertTrue(app.automaticCalibration.connect(object : CalibrationServicePort {
+                override fun open() = true
+                override fun control() = NativeBrightnessControl("brightness", 0f, 100f, nativeFraction * 100, true)
+                override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean {
+                    nativeFraction = fraction
+                    Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, listOf(0, 16, 64, 144, 255)[(fraction * 4).toInt()])
+                    return true
+                }
+                override fun progress(percent: Int) = Unit
+                override fun close() = Unit
+            }))
+            app.automaticCalibration.start()
+            await { app.automaticCalibration.state.value.phase == AutomaticCalibrationPhase.REVIEW && host(service).visible }
+            fun displayed(): Float {
+                val view = ReflectionHelpers.getField<android.view.ViewGroup>(host(service), "view")
+                return ReflectionHelpers.getField(view.getChildAt(0), "level")
+            }
+            val before = displayed()
+            app.automaticCalibration.save()
+            val expected = app.brightness.fraction()
+            assertNotEquals(before, expected, .01f)
+            await { kotlin.math.abs(displayed() - expected) < .001f }
+            assertEquals(100, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+        } finally { app.brightnessPreview.end(preview); app.brightness.calibration.reset() }
+    }
 }

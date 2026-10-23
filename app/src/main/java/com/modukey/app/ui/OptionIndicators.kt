@@ -9,7 +9,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.modukey.app.R
 import com.modukey.app.core.ButtonAction
@@ -41,11 +45,12 @@ internal fun ButtonAction.hasAdditionalOptions(volumePopupOptions: Boolean = tru
 @Composable internal fun DependentSettings(@StringRes parent: Int, content: @Composable ColumnScope.() -> Unit) =
     DependentSettings(t(parent), content)
 
-/** A bent arrow connects a group to its parent without adding a second control. */
+/** A leading line groups controls below their parent without adding a second control. */
 @Composable internal fun DependentSettings(parent: String, content: @Composable ColumnScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(AppIcons.Dependent, t(R.string.options_for_setting, parent), Modifier.padding(top = 12.dp).size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .55f))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
-    }
+    val line = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .7f)
+    Column(Modifier.fillMaxWidth().semanticsDescription(t(R.string.options_for_setting, parent)).drawBehind {
+        val inset = 1.dp.toPx()
+        val x = if (layoutDirection == LayoutDirection.Ltr) inset else size.width - inset
+        drawLine(line, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx(), cap = StrokeCap.Round)
+    }.padding(start = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
 }

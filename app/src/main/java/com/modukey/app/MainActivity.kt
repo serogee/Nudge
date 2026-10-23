@@ -31,5 +31,11 @@ class MainActivity : ComponentActivity() {
     }
     private fun removeLaunch() { val view = launchView; launchView = null; view?.removeCallbacks(finishLaunch); view?.remove() }
     override fun onStop() { removeLaunch(); super.onStop() }
-    override fun onDestroy() { removeLaunch(); super.onDestroy() }
+    override fun onDestroy() {
+        if (isFinishing && !isChangingConfigurations) {
+            val calibration = (application as NudgeApplication).automaticCalibration
+            if (calibration.state.value.busy) calibration.cancel() else calibration.discard()
+        }
+        removeLaunch(); super.onDestroy()
+    }
 }

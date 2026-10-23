@@ -13,7 +13,8 @@ class BrightnessCalibrationTest {
         val app = ApplicationProvider.getApplicationContext<NudgeApplication>()
         val calibration = BrightnessCalibration(app)
         try {
-            assertTrue(calibration.save(listOf(1, 15, 60, 140, 255)))
+            assertTrue(calibration.save(listOf(0, 15, 60, 140, 255)))
+            assertEquals(0, BrightnessCalibration(app).scale.level(0f))
             assertEquals(60, BrightnessCalibration(app).scale.level(.5f))
             assertFalse(calibration.save(listOf(1, 15, 15, 140, 255)))
             assertEquals(60, calibration.scale.level(.5f))

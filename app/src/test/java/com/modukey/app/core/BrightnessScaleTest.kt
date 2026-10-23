@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class BrightnessScaleTest {
+    @Test fun nativeZeroMinimumIsValidButNegativeAndRepeatedSamplesAreRejected() {
+        val scale = BrightnessScale(listOf(0, 16, 64, 144, 255))
+        assertEquals(0, scale.level(0f)); assertEquals(0f, scale.fraction(0), .0001f)
+        for (level in 0..255) assertEquals(level, scale.level(scale.fraction(level)))
+        assertFalse(BrightnessScale.validSamples(listOf(-1, 16, 64, 144, 255)))
+        assertFalse(BrightnessScale.validSamples(listOf(0, 0, 64, 144, 255)))
+    }
     @Test fun perceptualMidpointDoesNotWriteHalfTheRawRange() {
         val scale = BrightnessScale()
         assertEquals(1, scale.level(0f)); assertEquals(255, scale.level(1f))

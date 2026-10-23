@@ -1,0 +1,34 @@
+<resources>
+    <string name="automatic_brightness_calibration">Automatic calibration</string>
+    <string name="manual_brightness_calibration">Manual calibration</string>
+    <string name="calibration_service_name">Nudge brightness calibration</string>
+    <string name="calibration_service_description">Temporarily read the System UI brightness control and set its progress to measure five brightness positions. Enable this service from Automatic calibration in Nudge. It turns off when calibration ends. It does not take screenshots or record the screen.</string>
+    <string name="auto_calibration_consent">Nudge opens Control center and moves its brightness slider through five positions. Your screen will become dim and bright.</string>
+    <string name="auto_calibration_access_disclosure">Android grants this separate service access to window content. Nudge uses it only for System UI brightness controls during calibration.</string>
+    <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Measurements stay on this device. The service turns off when calibration ends.</string>
+    <string name="auto_calibration_restore_disclosure">Nudge restores your brightness and automatic mode before showing results. You choose whether to save the measurements.</string>
+    <string name="auto_calibration_enable_help">Enable Nudge brightness calibration in Accessibility. Return to Home and select Start calibration.</string>
+    <string name="enable_calibration_service">Enable calibration service</string>
+    <string name="allow_brightness_access">Allow brightness access</string>
+    <string name="start_brightness_calibration">Start calibration</string>
+    <string name="auto_calibration_ready">The calibration service is ready. Select Start calibration to move the native brightness slider.</string>
+    <string name="auto_calibration_opening">Opening Control center…</string>
+    <string name="auto_calibration_progress">Calibrating brightness: %1$d%%</string>
+    <string name="cancel_auto_calibration">Cancel automatic calibration</string>
+    <string name="auto_calibration_review">Five positions were measured. Your original brightness and mode were restored. Save this calibration for this device?</string>
+    <string name="auto_calibration_saved">Automatic calibration saved. The temporary accessibility service is off.</string>
+    <string name="auto_calibration_cancelled">Calibration cancelled. Your saved calibration was kept.</string>
+    <string name="auto_calibration_recovery">Calibration was interrupted or brightness could not be restored. Restore the saved brightness and mode, or keep your current brightness.</string>
+    <string name="restore_calibration_brightness">Restore previous brightness</string>
+    <string name="keep_calibration_brightness">Keep current brightness</string>
+    <string name="auto_calibration_locked">Unlock your phone and keep the screen on during calibration.</string>
+    <string name="auto_calibration_setup_timeout">Calibration setup timed out. Start Automatic calibration again when you are ready.</string>
+    <string name="auto_calibration_unsupported">This phone did not expose a supported brightness control. Use Manual calibration.</string>
+    <string name="auto_calibration_control_changed">The brightness control changed or the screen rotated. Start again with Control center available.</string>
+    <string name="auto_calibration_unstable">The brightness readings did not settle. Use Manual calibration or try again.</string>
+    <string name="auto_calibration_invalid">The measurements were not valid. Use Manual calibration.</string>
+    <string name="auto_calibration_restore_failed">Cannot restore brightness. Allow brightness access, then select Restore previous brightness.</string>
+    <string name="auto_calibration_save_failed">Cannot save calibration. Try Save again.</string>
+    <string name="auto_calibration_disconnected">The calibration service stopped. Start Automatic calibration again, or use Manual calibration.</string>
+    <string name="auto_calibration_settings_failed">Cannot open Accessibility settings. Open Android Settings and enable Nudge brightness calibration.</string>
+</resources>

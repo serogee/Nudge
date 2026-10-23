@@ -65,27 +65,6 @@ import com.modukey.app.core.*
             item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = draft.copy(panelId = null, action = null) } }
             item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
-            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false,
-                optionsExpanded = if (slot != GestureSlot.TAP && !draft.brightness) draft.volume else null) { draft = draft.copy(volume = it).normalized() } }
-            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false,
-                optionsExpanded = if (slot != GestureSlot.TAP && !draft.volume) draft.brightness else null) { draft = draft.copy(brightness = it).normalized() } }
-            if (slot != GestureSlot.TAP && (draft.volume xor draft.brightness)) item {
-                DependentSettings(if (draft.volume) R.string.show_volume_popup else R.string.show_brightness_slider) {
-                    val ordinarySwipe = slot in listOf(GestureSlot.SWIPE_1, GestureSlot.SWIPE_2, GestureSlot.SWIPE_3)
-                    Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, draft.slideToAdjust, default = false,
-                        optionsExpanded = if (ordinarySwipe) draft.slideToAdjust else null) { draft = draft.copy(slideToAdjust = it) }
-                    if (ordinarySwipe && draft.slideToAdjust) DependentSettings(R.string.slide_to_adjust) {
-                        OptionRow(t(R.string.slider_activation), SliderActivation.entries, draft.sliderActivation, SliderActivation.AFTER_HOLD) { draft = draft.copy(sliderActivation = it) }
-                        if (draft.sliderActivation == SliderActivation.AFTER_HOLD) {
-                            DependentSettings(R.string.slider_after_hold) {
-                                DurationInput(R.string.slider_hold_time, draft.sliderHoldMs, 100L..1_000L, 200) { draft = draft.copy(sliderHoldMs = it) }
-                            }
-                            Help(R.string.slider_hold_help)
-                        } else Help(R.string.slider_immediate_help)
-                        if (draft.action != null) Help(R.string.slider_action_timing_help)
-                    }
-                }
-            }
             if (draft.action?.action in listOf(ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)) item {
                 HandleActionControls(requireNotNull(draft.action)) { draft = draft.copy(action = it) }
             }
@@ -107,11 +86,37 @@ import com.modukey.app.core.*
                     }
                 }
             }
+            item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false,
+                optionsExpanded = if (slot != GestureSlot.TAP && !draft.brightness) draft.volume else null) { draft = draft.copy(volume = it).normalized() } }
+            if (slot != GestureSlot.TAP && draft.volume && !draft.brightness) item {
+                SliderAdjustmentOptions(slot, draft) { draft = it }
+            }
+            item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false,
+                optionsExpanded = if (slot != GestureSlot.TAP && !draft.volume) draft.brightness else null) { draft = draft.copy(brightness = it).normalized() } }
+            if (slot != GestureSlot.TAP && draft.brightness && !draft.volume) item {
+                SliderAdjustmentOptions(slot, draft) { draft = it }
+            }
         }
     }, confirmButton = { Button(onClick = { choose(draft.normalized()) }, enabled = (draft.panelId == null || config.panel(draft.panelId) != null) &&
         (draft.action?.action != ButtonAction.TOGGLE_AND_HIDE_HANDLES || draft.action?.hasHandleGroups == true) &&
         (draft.action?.action != ButtonAction.OPEN_APP || draft.action?.appPackage?.isNotBlank() == true)) { Text(t(R.string.save)) } },
         dismissButton = { TextButton(onClick = dismiss) { Text(t(R.string.cancel)) } })
+}
+
+@Composable private fun SliderAdjustmentOptions(slot: GestureSlot, target: GestureTarget, change: (GestureTarget) -> Unit) {
+    DependentSettings(if (target.volume) R.string.show_volume_popup else R.string.show_brightness_slider) {
+        val ordinarySwipe = slot in listOf(GestureSlot.SWIPE_1, GestureSlot.SWIPE_2, GestureSlot.SWIPE_3)
+        Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, target.slideToAdjust, default = false,
+            optionsExpanded = if (ordinarySwipe) target.slideToAdjust else null) { change(target.copy(slideToAdjust = it)) }
+        if (ordinarySwipe && target.slideToAdjust) DependentSettings(R.string.slide_to_adjust) {
+            OptionRow(t(R.string.slider_activation), SliderActivation.entries, target.sliderActivation, SliderActivation.AFTER_HOLD) { change(target.copy(sliderActivation = it)) }
+            if (target.sliderActivation == SliderActivation.AFTER_HOLD) DependentSettings(R.string.slider_after_hold) {
+                DurationInput(R.string.slider_hold_time, target.sliderHoldMs, 100L..1_000L, 200) { change(target.copy(sliderHoldMs = it)) }
+                Help(R.string.slider_hold_help)
+            } else Help(R.string.slider_immediate_help)
+            if (target.action != null) Help(R.string.slider_action_timing_help)
+        }
+    }
 }
 
 @Composable private fun PanelTargetPicker(config: AppConfiguration, dismiss: () -> Unit, choose: (String) -> Unit) {

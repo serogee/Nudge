@@ -226,11 +226,25 @@ Jump to touch remains the default for new and existing configurations. Previews 
 
 ## Settings with additional options
 
-Settings that offer more options show a chevron. A small bent arrow identifies controls that depend on a parent setting. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
+Settings that offer more options show a chevron. Additional controls appear directly below their parent setting where possible. A subtle left line groups each set of dependent controls. In gesture bindings, Slide to adjust appears below its selected volume or brightness option. Action-specific controls appear below the action choice. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
 
 ## Brightness percentages and calibration
 
 Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Home provides optional calibration below the brightness slider controls at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Home, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
+
+**Manual calibration** keeps that capture flow. A native minimum of zero is accepted. Negative, repeated, and decreasing samples are rejected.
+
+**Automatic calibration** first explains its separate accessibility permission. Allow Modify system settings access, then enable **Nudge brightness calibration** in Android Accessibility. Return to Home and select **Start calibration**. Enabling the service alone does not start measurement. It waits up to two minutes for setup, then turns itself off if setup is not completed.
+
+The automatic run opens Control center and uses the native brightness control's accessibility progress action at five positions. It identifies known brightness resource IDs and confirms System UI ownership, including controls whose resources come from a plugin. Unrelated color and dimming controls are rejected. It confirms progress and stable manual brightness readings. It does not inspect text, take screenshots, record the screen, or inject coordinate taps. No hierarchy or measurement data is sent or logged. The normal handle service retains its existing capabilities and cannot retrieve window content.
+
+Your screen becomes dim and bright during measurement. A temporary overlay shows progress and **Cancel**. Nudge brightness actions and handles are suspended during the run. Cancellation, screen-off, lock, rotation, interruption, refused actions, invalid measurements, and service loss stop the run. Measurement is bounded to 20 seconds, with shorter control-discovery and settling limits. There is no idle sampling or automatic retry.
+
+The original system brightness and automatic mode are recorded before any change. Normal completion and cancellation restore both before results are shown. **Save** applies a complete five-point profile. Cancelling review, a failed run, or a failed save keeps the existing calibration. The temporary service is disabled and its overlay removed when the run ends. Phones without a unique supported brightness control use Manual calibration.
+
+If a process ends unexpectedly, measurement does not resume. Home offers **Restore previous brightness** or **Keep current brightness** using the device-local restoration record. Failed restoration keeps that record and blocks other Nudge brightness writes until it is resolved. Allow brightness access again if needed. Calibration samples and restoration records stay outside Android backup and exported configurations.
+
+Automated checks exercise the supported native-action flow and recovery. Actual HyperOS control exposure, screen brightness, overlay placement, and update behavior still require a device check.
 
 Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
 

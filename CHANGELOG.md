@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.4.5 - 2026-10-23
+
+### Added
+
+- Add optional automatic brightness calibration in Home through a separate temporary accessibility service. Measure five native slider positions, restore brightness and automatic mode before Save, and retain recovery controls after interruption. Keep manual calibration for unsupported phones. (68a1a8e)
+
+### Fixed
+
+- Accept zero as a native brightness calibration minimum in manual capture and saved profiles. Reject invalid or repeated samples. (bf3a55d)
+- Keep completed measurements available after late service interruptions. Refresh an open brightness preview and active states after Save. (94b6c93)
+- Accept known brightness control IDs from System UI plugin resources. Reject unrelated color and dimming sliders. Accept positions that are already selected without requiring another native slider action. (87edbe3)
+- Place Slide to adjust below its volume or brightness option. Keep action and layout options below their parent controls. Replace nesting arrows with subtle left lines. (f93a1e8)
+
 ## 0.4.4 - 2026-10-23
 
 ### Added
