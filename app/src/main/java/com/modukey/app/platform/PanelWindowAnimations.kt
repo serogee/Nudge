@@ -17,10 +17,11 @@ object PanelWindowAnimations {
         else -> PanelTransform(alpha = 0f, x = when (edge) { Edge.LEFT -> -.08f; Edge.RIGHT -> .08f; else -> 0f },
             y = if (edge == Edge.BOTTOM) .08f else 0f, scale = if (animation == PanelAnimation.SCALE) .88f else 1f)
     }
-    fun enabled(spec: PanelSpec, closing: Boolean = false) = enabled(if (closing) spec.panel.closeAnimation else spec.panel.animation, spec.editing || spec.wheelDragging)
+    private fun suppressed(spec: PanelSpec) = spec.editing || spec.wheelDragging || (spec.geometry.wheel != null && !spec.layout.wheel.animationsEnabled)
+    fun enabled(spec: PanelSpec, closing: Boolean = false) = enabled(if (closing) spec.panel.closeAnimation else spec.panel.animation, suppressed(spec))
     internal fun enabled(animation: PanelAnimation, editing: Boolean = false) = !editing && animation != PanelAnimation.NONE && ValueAnimator.areAnimatorsEnabled()
     fun cancel(view: View) { view.animate().withEndAction(null).cancel() }
-    fun enter(view: View, spec: PanelSpec) = enter(view, spec.panel.animation, spec.edge, spec.geometry.bounds, spec.editing || spec.wheelDragging)
+    fun enter(view: View, spec: PanelSpec) = enter(view, spec.panel.animation, spec.edge, spec.geometry.bounds, suppressed(spec))
     internal fun enter(view: View, animation: PanelAnimation, edge: Edge, bounds: Bounds, editing: Boolean = false) {
         cancel(view)
         val animate = enabled(animation, editing)
@@ -31,7 +32,7 @@ object PanelWindowAnimations {
         if (animate) view.animate().alpha(1f).translationX(0f).translationY(0f).scaleX(1f).scaleY(1f)
             .setDuration(180).setInterpolator(PathInterpolator(.4f, 0f, .2f, 1f)).start()
     }
-    fun exit(view: View, spec: PanelSpec, finished: () -> Unit) = exit(view, spec.panel.closeAnimation, spec.edge, spec.geometry.bounds, spec.editing || spec.wheelDragging, finished)
+    fun exit(view: View, spec: PanelSpec, finished: () -> Unit) = exit(view, spec.panel.closeAnimation, spec.edge, spec.geometry.bounds, suppressed(spec), finished)
     internal fun exit(view: View, animation: PanelAnimation, edge: Edge, bounds: Bounds, editing: Boolean = false, finished: () -> Unit) {
         cancel(view)
         if (!enabled(animation, editing)) { finished(); return }

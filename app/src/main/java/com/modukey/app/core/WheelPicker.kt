@@ -2,8 +2,9 @@ package com.modukey.app.core
 
 import kotlin.math.*
 
-data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f) {
-    fun normalized() = copy(radiusDp = radiusDp.finite(128f).coerceIn(96f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f))
+data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
+    val animationsEnabled: Boolean = true) {
+    fun normalized() = copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f))
 }
 
 data class WheelPickSettings(val enabled: Boolean = false, val minimumDistanceDp: Float = 32f, val maximumDistanceDp: Float = 240f,
@@ -16,11 +17,14 @@ data class WheelPickSettings(val enabled: Boolean = false, val minimumDistanceDp
 }
 
 data class WheelPoint(val x: Float, val y: Float)
-data class WheelSlice(val start: Float, val end: Float, val point: WheelPoint, val size: Float)
+data class WheelSlice(val start: Float, val end: Float, val point: WheelPoint, val size: Float,
+    val innerRadius: Float, val outerRadius: Float, val iconSize: Float)
 
 /** Angles increase from top to bottom on side handles and left to right on bottom handles. */
 data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val edge: Edge, val radius: Float,
-    val cell: Float, val capacity: Int, val count: Int, val expansion: Float, val minimumCell: Float) {
+    val cell: Float, val capacity: Int, val count: Int, val expansion: Float, val minimumCell: Float,
+    val innerRadius: Float = (radius - cell / 2f).coerceAtLeast(0f), val gap: Float = 4f) {
+    val outerRadius get() = innerRadius + cell * expansion
     fun point(angle: Float, distance: Float = radius): WheelPoint = when (edge) {
         Edge.LEFT -> WheelPoint(center.x + cos(angle) * distance, center.y + sin(angle) * distance)
         Edge.RIGHT -> WheelPoint(center.x - cos(angle) * distance, center.y + sin(angle) * distance)
@@ -31,27 +35,48 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
         Edge.RIGHT -> atan2(y - center.y, center.x - x)
         Edge.BOTTOM -> atan2(x - center.x, center.y - y)
     }
-    fun slices(selected: Int? = null): List<WheelSlice> {
+    fun slices(selected: Int? = null): List<WheelSlice> = slices(List(count) { if (it == selected) 1f else 0f })
+
+    /** Animation uses the same geometry, but selection always uses the completed target regions. */
+    fun slices(focus: List<Float>): List<WheelSlice> {
         if (count == 0) return emptyList()
         val step = PI.toFloat() / count
         val widths = FloatArray(count) { step }
-        if (selected != null && selected in widths.indices && count > 1) {
-            val neighbors = listOf(selected - 1, selected + 1).filter { it in widths.indices }
-            val extra = step * (expansion - 1f)
-            widths[selected] += extra
+        val weights = List(count) { focus.getOrElse(it) { 0f }.finite(0f).coerceIn(0f, 1f) }
+        val totalFocus = weights.sum().coerceAtMost(1f)
+        if (count > 1) for (index in widths.indices) {
+            val neighbors = listOf(index - 1, index + 1).filter { it in widths.indices }
+            val extra = step * (expansion - 1f) * weights[index]
+            widths[index] += extra
             neighbors.forEach { widths[it] -= extra / neighbors.size }
         }
         var start = -PI.toFloat() / 2f
         return widths.mapIndexed { index, width ->
             val end = start + width
-            WheelSlice(start, end, point((start + end) / 2f),
-                if (index == selected) cell * expansion else (cell * (width / step)).coerceAtLeast(minimumCell)).also { start = end }
+            val scale = 1f + (expansion - 1f) * weights[index] - minOf(.2f, expansion - 1f) * (totalFocus - weights[index])
+            val depth = (cell * scale).coerceAtLeast(minimumCell)
+            WheelSlice(start, end, point((start + end) / 2f, innerRadius + depth / 2f), depth,
+                innerRadius, innerRadius + depth, cell * .55f * scale).also { start = end }
         }
+    }
+    fun angularGap(slice: WheelSlice) = (gap / (slice.innerRadius + slice.size / 2f).coerceAtLeast(1f)).coerceAtMost((slice.end - slice.start) / 4f)
+    fun segmentPoints(slice: WheelSlice): List<WheelPoint> {
+        val inset = angularGap(slice) / 2f
+        val start = slice.start + inset; val end = slice.end - inset
+        return (0..48).map { point(start + (end - start) * it / 48f, slice.outerRadius) } +
+            (48 downTo 0).map { point(start + (end - start) * it / 48f, slice.innerRadius) }
+    }
+    fun tapHit(x: Float, y: Float, selected: Int? = null): Int? {
+        val index = hit(x, y, innerRadius, outerRadius, selected) ?: return null
+        val slice = slices(selected)[index]; val inset = angularGap(slice) / 2f
+        val angle = angle(x, y)
+        return index.takeIf { hypot(x - center.x, y - center.y) <= slice.outerRadius &&
+            angle >= slice.start + inset && angle <= slice.end - inset }
     }
     fun hit(x: Float, y: Float, minimum: Float, maximum: Float, selected: Int? = null): Int? {
         if (!x.isFinite() || !y.isFinite()) return null
         val distance = hypot(x - center.x, y - center.y)
-        if (distance < minimum || distance > maximum) return null
+        if (distance < maxOf(minimum, innerRadius) || distance > maximum) return null
         val angle = angle(x, y)
         if (angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
         val regions = slices(selected)
@@ -66,26 +91,28 @@ object WheelGeometry {
         val d = density.coerceAtLeast(.01f)
         val cell = layout.normalized().buttonSizeDp * d
         val expansion = if (s.expandSelection) s.selectedScale else 1f
-        val margin = cell * expansion / 2f + 8f * d
+        val margin = 8f * d
         val side = edge != Edge.BOTTOM
-        val radius = minOf(s.radiusDp * d, (if (side) screen.height / 2f else screen.width / 2f) - margin,
+        val maximumOuter = minOf((if (side) screen.height / 2f else screen.width / 2f) - margin,
             (if (side) screen.width else screen.height) - margin * 2f).coerceAtLeast(0f)
-        // Check actual square targets, including each expanded layout. Arc length alone can allow corner overlap.
+        val radius = minOf(maxOf(s.radiusDp * d, 12f * d + cell / 2f), maximumOuter - cell * (expansion - .5f)).coerceAtLeast(0f)
+        val inner = maxOf(12f * d, radius - cell / 2f)
+        val outer = (inner + cell * expansion).coerceAtMost(maximumOuter)
+        // Every normal and expanded wedge must contain a 48 dp circular touch target and its icon.
         val capacity = (6 downTo 1).firstOrNull { n ->
-            val candidate = WheelGeometryResult(screen, WheelPoint(0f, 0f), edge, radius, cell, n, n, expansion, 48f * d)
-            radius > 0f && screen.width >= margin * 2f && screen.height >= margin * 2f &&
+            val candidate = WheelGeometryResult(screen, WheelPoint(0f, 0f), edge, radius, cell, n, n, expansion, 48f * d, inner, 4f * d)
+            outer >= inner + cell * expansion && screen.width >= margin * 2f && screen.height >= margin * 2f &&
                 (listOf<Int?>(null) + (0 until n).toList()).all { selected ->
-                    val slices = candidate.slices(selected)
-                    slices.indices.all { a -> (a + 1 until n).all { b ->
-                        val separation = (slices[a].size + slices[b].size) / 2f + 8f * d
-                        abs(slices[a].point.x - slices[b].point.x) >= separation || abs(slices[a].point.y - slices[b].point.y) >= separation
-                    } }
+                    candidate.slices(selected).all { slice ->
+                        val target = maxOf(48f * d, slice.iconSize)
+                        slice.size >= target && (inner + slice.size / 2f) * sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
+                    }
                 }
         } ?: 0
-        val width = if (side) radius + margin * 2f else (radius + margin) * 2f
-        val height = if (side) (radius + margin) * 2f else radius + margin * 2f
-        val localX = when (edge) { Edge.LEFT -> margin; Edge.RIGHT -> radius + margin; Edge.BOTTOM -> radius + margin }
-        val localY = radius + margin
+        val width = if (side) outer + margin * 2f else (outer + margin) * 2f
+        val height = if (side) (outer + margin) * 2f else outer + margin * 2f
+        val localX = when (edge) { Edge.LEFT -> margin; Edge.RIGHT -> outer + margin; Edge.BOTTOM -> outer + margin }
+        val localY = outer + margin
         var cx = screen.x + layout.x * screen.width
         var cy = screen.y + layout.y * screen.height
         if (layout.followHandle) {
@@ -95,8 +122,10 @@ object WheelGeometry {
         val x = (cx - localX).coerceIn(screen.x, screen.x + (screen.width - width).coerceAtLeast(0f))
         val y = (cy - localY).coerceIn(screen.y, screen.y + (screen.height - height).coerceAtLeast(0f))
         val bounds = Bounds(x, y, width.coerceAtMost(screen.width), height.coerceAtMost(screen.height))
+        val renderedInner = inner.coerceAtMost(outer)
+        val renderedCell = if (capacity == 0) ((outer - renderedInner) / expansion).coerceAtLeast(0f) else cell
         return WheelGeometryResult(bounds, WheelPoint(x + localX.coerceAtMost(bounds.width), y + localY.coerceAtMost(bounds.height)),
-            edge, radius, cell, capacity, count.coerceIn(0, capacity), expansion, 48f * d)
+            edge, radius, renderedCell, capacity, count.coerceIn(0, capacity), expansion, 48f * d, renderedInner, 4f * d)
     }
 }
 

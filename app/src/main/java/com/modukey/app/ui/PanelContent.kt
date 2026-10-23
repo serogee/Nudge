@@ -41,7 +41,7 @@ import com.modukey.app.platform.SoundState
 fun PanelContent(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometryResult, state: SoundState = SoundState(),
     interactive: Boolean = false, wheelSelection: Int? = null, wheelDragging: Boolean = false, onAction: (PanelButton) -> Unit = {}) {
     geometry.wheel?.let {
-        WheelContent(panel, it, state, interactive && !wheelDragging, wheelSelection, onAction)
+        WheelContent(panel, layout, it, state, interactive && !wheelDragging, wheelSelection, onAction)
         return
     }
     val density = LocalDensity.current
@@ -75,11 +75,10 @@ fun PanelContent(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometr
     }
 }
 
-@Composable
-fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.compose.ui.unit.Dp, state: SoundState = SoundState(), interactive: Boolean = false, action: () -> Unit = {}) {
-    if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_BUTTON) {
-        Box(Modifier.size(cell)); return
-    }
+internal data class ButtonPresentation(val title: String, val description: String, val active: Boolean, val toggle: Boolean,
+    val container: Boolean, val palette: ButtonPalette)
+
+@Composable internal fun buttonPresentation(button: PanelButton, panel: PanelConfig, state: SoundState): ButtonPresentation {
     val context = LocalContext.current
     val title = context.buttonLabel(button)
     val selected = when (button.action) {
@@ -121,13 +120,25 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
             group(button.toggleScope, state.pausedHandleIds, R.string.handle_group_running, R.string.handle_group_paused),
             group(button.visibilityScope, state.hiddenIndicatorIds, R.string.handle_group_visible, R.string.handle_group_hidden))
     } else if (isToggle) context.getString(R.string.action_state, title, context.getString(if (selected) R.string.on else R.string.off)) else title
-    val shape = iconShape(panel)
     val container = if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_ICON) true else when (button.iconContainer) {
         IconContainer.DEFAULT -> panel.iconBackground
         IconContainer.CONTAINER -> true
         IconContainer.STANDALONE -> false
     }
     val palette = buttonPalette(panel, selected, container, MaterialTheme.colorScheme.surface)
+    return ButtonPresentation(title, description, selected, isToggle, container, palette)
+}
+
+@Composable
+fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.compose.ui.unit.Dp, state: SoundState = SoundState(), interactive: Boolean = false, action: () -> Unit = {}) {
+    if (button.action == ButtonAction.EMPTY && button.emptyAppearance == EmptyAppearance.NO_BUTTON) {
+        Box(Modifier.size(cell)); return
+    }
+    val presentation = buttonPresentation(button, panel, state)
+    val title = presentation.title; val description = presentation.description
+    val selected = presentation.active; val isToggle = presentation.toggle
+    val container = presentation.container; val palette = presentation.palette
+    val shape = iconShape(panel)
     val tint = palette.icon
     Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(palette.background) else Modifier)
         .then(if (palette.outline != null) Modifier.border(2.dp, palette.outline, shape) else Modifier)

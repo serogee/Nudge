@@ -56,6 +56,18 @@ class WheelInterfaceTest {
         rule.onNodeWithContentDescription("Save").performClick()
         rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp == 180f } }
         rule.runOnIdle { assertEquals(9, app.configuration.state.value!!.panel("wheel")!!.settings.buttons.size) }
+        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(40f) }
+        rule.onNodeWithContentDescription("Wheel animations").performScrollTo().performClick()
+        rule.runOnIdle {
+            assertEquals(40f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertFalse(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
+            assertTrue(app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
+        }
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.runOnIdle {
+            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
+        }
     }
     @Test fun wheelPickerOffersDragForSwipesAndExcludesTap() {
         val app = ready(); tab("Handles")

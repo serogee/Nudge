@@ -42,6 +42,9 @@ import com.modukey.app.updates.*
     HyperOsSetup(vm, openSettings)
     Section(R.string.wheel_help_title) {
         Help(R.string.wheel_help_setup)
+        Help(R.string.wheel_radius_help)
+        Help(R.string.wheel_expand_help)
+        Help(R.string.wheel_animations_help)
         Help(R.string.wheel_drag_help)
         Help(R.string.wheel_distance_help)
         Help(R.string.wheel_release_help)
