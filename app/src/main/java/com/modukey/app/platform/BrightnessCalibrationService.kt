@@ -3,7 +3,10 @@ package com.modukey.app.platform
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.KeyguardManager
+import android.annotation.SuppressLint
 import android.content.*
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
@@ -31,6 +34,20 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     private var rotation = 0
     private var overlay: View? = null
     private var status: TextView? = null
+    private val owners by lazy {
+        buildSet {
+            add(NativeBrightnessNode.SYSTEM_UI)
+            // Plugin contexts can own Xiaomi controls. Do not accept a user-installed namesake.
+            @Suppress("DEPRECATION")
+            val plugin = try { packageManager.getApplicationInfo(NativeBrightnessNode.MIUI_PLUGIN, 0) }
+                catch (_: PackageManager.NameNotFoundException) { null }
+            if (plugin != null && plugin.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0)
+                add(NativeBrightnessNode.MIUI_PLUGIN)
+        }
+    }
+    private var lastDiscovery: String? = null
+    private var discoveryReports = 0
+    private var brightnessLabels: Set<String> = emptySet()
     private val manager get() = getSystemService(WindowManager::class.java)
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) { if (!stopping) coordinator.cancel(AutomaticCalibrationError.LOCKED) }
@@ -42,18 +59,31 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     }
     private fun restrict() {
         serviceInfo = (serviceInfo ?: AccessibilityServiceInfo()).apply {
-            eventTypes = 0; flags = 0; packageNames = arrayOf(NativeBrightnessNode.SYSTEM_UI)
+            eventTypes = 0; flags = 0; packageNames = owners.toTypedArray()
         }
     }
+    @SuppressLint("DiscouragedApi") // The label belongs to the installed System UI package, not Nudge resources.
+    private fun nativeBrightnessLabels(): Set<String> = owners.mapNotNull { owner ->
+        try {
+            val nativeResources = packageManager.getResourcesForApplication(owner)
+            val id = nativeResources.getIdentifier("accessibility_brightness", "string", owner)
+            if (id == 0) null else nativeResources.getString(id).trim().takeIf { it.isNotEmpty() }
+        } catch (_: PackageManager.NameNotFoundException) { null }
+        catch (_: android.content.res.Resources.NotFoundException) { null }
+    }.toSet()
     override fun open(): Boolean {
         if (stopping || running) return false
         running = true
+        brightnessLabels = nativeBrightnessLabels()
         rotation = getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0
         serviceInfo = (serviceInfo ?: AccessibilityServiceInfo()).apply {
-            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOWS_CHANGED
-            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            packageNames = arrayOf(NativeBrightnessNode.SYSTEM_UI)
+            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOWS_CHANGED or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            // Brightness identity can be on a non-interactive container around a generic SeekBar.
+            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            packageNames = owners.toTypedArray()
         }
+        (application as NudgeApplication).diagnostics.record("Brightness calibration owners: ${owners.joinToString()}; nativeLabels=${brightnessLabels.size}")
         ContextCompat.registerReceiver(this, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         registered = true
         showProgress()
@@ -70,7 +100,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
             if (root == null) return
             // Some System UI panels are application windows. Inspect ownership before traversing a root.
             val duplicate = if (root.windowId >= 0) roots.any { it.windowId == root.windowId } else active && roots.isNotEmpty()
-            if (root.packageName?.toString() == NativeBrightnessNode.SYSTEM_UI && !duplicate) roots += root else root.recycle()
+            if (root.packageName?.toString() in owners && !duplicate) roots += root else root.recycle()
         }
         windows.filter { it.type == AccessibilityWindowInfo.TYPE_SYSTEM || it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
             .forEach { accept(it.root) }
@@ -78,8 +108,17 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         accept(rootInActiveWindow, active = true)
         return roots
     }
-    override fun control(): NativeBrightnessControl? = NativeBrightnessNode.read(roots())
-    override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean = NativeBrightnessNode.move(roots(), expected, fraction)
+    override fun control(): NativeBrightnessControl? {
+        if (!running || stopping) return null
+        return NativeBrightnessNode.read(roots(), owners, brightnessLabels) { detail ->
+            if (detail != lastDiscovery) {
+                lastDiscovery = detail
+                // Polling is bounded, and only the final report plus a few changes need storage.
+                if (discoveryReports++ < 4) (application as NudgeApplication).diagnostics.record("Brightness discovery: $detail")
+            }
+        }
+    }
+    override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean = NativeBrightnessNode.move(roots(), expected, fraction, owners, brightnessLabels)
     override fun waitingForPanel() { status?.setText(R.string.auto_calibration_waiting_panel) }
     override fun progress(percent: Int) { status?.text = getString(R.string.auto_calibration_progress, percent) }
     private fun showProgress() {
@@ -105,7 +144,9 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     }
     override fun close() {
         if (stopping) return
+        lastDiscovery?.let { (application as NudgeApplication).diagnostics.record("Brightness discovery final: $it") }
         stopping = true; running = false
+        brightnessLabels = emptySet()
         if (registered) { runCatching { unregisterReceiver(screenOff) }; registered = false }
         overlay?.let { runCatching { manager.removeViewImmediate(it) } }; overlay = null; status = null
         runCatching { restrict() }

@@ -60,6 +60,81 @@ class NativeBrightnessNodeTest {
         shadowOf(color).addChild(slider()); shadowOf(brightness).addChild(color)
         assertNull(NativeBrightnessNode.read(listOf(brightness)))
     }
+    @Test fun brightnessIdentityCrossesKnownSliderWrappersButDoesNotReachASiblingVolumeControl() {
+        val brightness = node("brightness_container")
+        val wrapper = node("toggle_slider"); val inner = node("toggle_slider_inner")
+        shadowOf(inner).addChild(slider()); shadowOf(wrapper).addChild(inner); shadowOf(brightness).addChild(wrapper)
+        val window = node("control_center")
+        shadowOf(window).addChild(brightness); shadowOf(window).addChild(root("volume_slider"))
+        assertNotNull(NativeBrightnessNode.read(listOf(window)))
+        assertNull(NativeBrightnessNode.read(listOf(node("toggle_slider").apply { shadowOf(this).addChild(slider()) })))
+    }
+    @Test fun pluginOwnershipRequiresTheServicesExplicitOwnerSetAtEveryLevel() {
+        val owners = setOf(NativeBrightnessNode.SYSTEM_UI, NativeBrightnessNode.MIUI_PLUGIN)
+        fun plugin() = node("brightness_slider", NativeBrightnessNode.MIUI_PLUGIN).apply {
+            shadowOf(this).addChild(slider().apply { packageName = NativeBrightnessNode.MIUI_PLUGIN })
+        }
+        assertNull(NativeBrightnessNode.read(listOf(plugin())))
+        val expected = NativeBrightnessNode.read(listOf(plugin()), owners)!!
+        assertTrue(NativeBrightnessNode.move(listOf(plugin()), expected, .5f, owners))
+        val untrusted = node("root", "other.app").apply { shadowOf(this).addChild(plugin()) }
+        assertNull(NativeBrightnessNode.read(listOf(untrusted), owners))
+    }
+    @Test fun discoveryReportsDistinguishMissingIdentityAndMissingProgressWithoutReadingText() {
+        val reports = mutableListOf<String>()
+        val generic = slider().apply { text = "private text"; contentDescription = "private description" }
+        assertNull(NativeBrightnessNode.read(listOf(generic), report = reports::add))
+        assertTrue(reports.single().contains("brightness=0; ranges=1; candidates=0"))
+        assertTrue(reports.single().contains("progress=true"))
+        assertFalse(reports.single().contains("private"))
+        assertFalse(reports.single().contains("32768"))
+        reports.clear()
+        val readOnly = slider("brightness_slider").apply { removeAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS) }
+        assertNull(NativeBrightnessNode.read(listOf(readOnly), report = reports::add))
+        assertTrue(reports.single().contains("brightness=1; ranges=1; candidates=0"))
+        assertTrue(reports.single().contains("progress=false"))
+        reports.clear()
+        val wrapper = root("unknown_slider_wrapper")
+        val brightness = node("brightness_container").apply { shadowOf(this).addChild(wrapper) }
+        assertNull(NativeBrightnessNode.read(listOf(brightness), report = reports::add))
+        assertTrue(reports.single().contains("path=/brightness_container/unknown_slider_wrapper/slider"))
+    }
+    @Test fun exactNativeLabelsDistinguishTheTwoHyperOsPluginSliders() {
+        val owners = setOf(NativeBrightnessNode.SYSTEM_UI, NativeBrightnessNode.MIUI_PLUGIN)
+        val labels = setOf("Display brightness")
+        val writes = mutableListOf<String>()
+        fun panel() = node("main_panel", NativeBrightnessNode.MIUI_PLUGIN).apply {
+            for (label in listOf("Display brightness", "Media")) {
+                shadowOf(this).addChild(slider(action = { _, _ -> writes += label; true }).apply {
+                    packageName = NativeBrightnessNode.MIUI_PLUGIN
+                    viewIdResourceName = "${NativeBrightnessNode.MIUI_PLUGIN}:id/slider"; contentDescription = label
+                })
+            }
+        }
+        assertNull(NativeBrightnessNode.read(listOf(panel()), owners))
+        val control = NativeBrightnessNode.read(listOf(panel()), owners, labels)!!
+        assertTrue(NativeBrightnessNode.move(listOf(panel()), control, .25f, owners, labels))
+        assertEquals(listOf("Display brightness"), writes)
+    }
+    @Test fun nativeLabelMatchingIsExactLocalizedAndNeverUsesTextOrAnUntrustedOwner() {
+        val labels = setOf("Bildschirmhelligkeit")
+        assertNotNull(NativeBrightnessNode.read(listOf(slider().apply { contentDescription = "Bildschirmhelligkeit" }), labels = labels))
+        for (label in listOf("Media", "Bildschirmhelligkeit extra", "")) {
+            assertNull(NativeBrightnessNode.read(listOf(slider().apply { contentDescription = label; text = "Bildschirmhelligkeit" }), labels = labels))
+        }
+        assertNull(NativeBrightnessNode.read(listOf(slider().apply { contentDescription = "Bildschirmhelligkeit"; packageName = "other.app" }), labels = labels))
+        assertNull(NativeBrightnessNode.read(listOf(slider("other_slider").apply { contentDescription = "Bildschirmhelligkeit" }), labels = labels))
+        assertNull(NativeBrightnessNode.read(List(2) { slider().apply { contentDescription = "Bildschirmhelligkeit" } }, labels = labels))
+    }
+    @Test fun discoveryReportsAmbiguityAndTraversalLimitsWithoutSelectingAControl() {
+        val reports = mutableListOf<String>()
+        assertNull(NativeBrightnessNode.read(listOf(root(), root()), report = reports::add))
+        assertTrue(reports.single().contains("result=ambiguous"))
+        reports.clear()
+        val huge = node("container").apply { repeat(512) { shadowOf(this).addChild(node("child")) } }
+        assertNull(NativeBrightnessNode.read(listOf(huge), report = reports::add))
+        assertTrue(reports.single().contains("result=node_limit"))
+    }
     @Test fun anAlreadySelectedPositionDoesNotNeedAnotherNativeAction() {
         val control = NativeBrightnessNode.read(listOf(root()))!!
         assertTrue(NativeBrightnessNode.move(listOf(root(action = { _, _ ->

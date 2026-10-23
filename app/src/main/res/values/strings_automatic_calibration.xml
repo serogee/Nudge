@@ -5,7 +5,7 @@
     <string name="calibration_service_description">Temporarily read the System UI brightness control and set its progress to measure five brightness positions. Enable this service from Automatic calibration in Nudge. It turns off when calibration ends. It does not take screenshots or record the screen.</string>
     <string name="auto_calibration_consent">Nudge measures five positions on the native brightness slider. You may need to open Control center yourself. Your screen will become dim and bright.</string>
     <string name="auto_calibration_access_disclosure">Android grants this separate service access to window content. Nudge uses it only for System UI brightness controls during calibration.</string>
-    <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Measurements stay on this device. The service turns off when calibration ends.</string>
+    <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Nudge checks native brightness labels. It does not read notification text. Measurements stay on this device. The service turns off when calibration ends.</string>
     <string name="auto_calibration_restore_disclosure">Nudge restores your brightness and automatic mode before showing results. You choose whether to save the measurements.</string>
     <string name="auto_calibration_enable_help">Enable Nudge brightness calibration in Accessibility. Return to Home and select Start calibration.</string>
     <string name="enable_calibration_service">Enable calibration service</string>
@@ -24,7 +24,7 @@
     <string name="keep_calibration_brightness">Keep current brightness</string>
     <string name="auto_calibration_locked">Unlock your phone and keep the screen on during calibration.</string>
     <string name="auto_calibration_setup_timeout">Calibration setup timed out. Start Automatic calibration again when you are ready.</string>
-    <string name="auto_calibration_unsupported">Cannot find or adjust the native brightness slider. Keep it visible in Control center, or use Manual calibration.</string>
+    <string name="auto_calibration_unsupported">Cannot find or adjust the native brightness slider. Keep it visible in Control center, or use Manual calibration. If this repeats, select Copy compatibility details in Settings.</string>
     <string name="auto_calibration_control_changed">The brightness control changed or the screen rotated. Start again with Control center available.</string>
     <string name="auto_calibration_unstable">The brightness readings did not settle. Use Manual calibration or try again.</string>
     <string name="auto_calibration_invalid">The measurements were not valid. Use Manual calibration.</string>

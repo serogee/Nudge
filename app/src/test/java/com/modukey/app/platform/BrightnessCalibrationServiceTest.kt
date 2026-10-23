@@ -5,11 +5,13 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.KeyguardManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Looper
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.core.app.ApplicationProvider
@@ -100,6 +102,56 @@ class BrightnessCalibrationServiceTest {
         assertEquals(0, service.serviceInfo.eventTypes); assertEquals(0, service.serviceInfo.flags)
         assertTrue(shadowOf(service).globalActionsPerformed.isEmpty())
         assertNull(service.control())
+    }
+    @Test fun discoveryRequestsNonInteractiveContainersOnlyDuringTheExplicitRun() {
+        val service = fixture()
+        assertEquals(0, service.serviceInfo.flags)
+        assertTrue(service.open())
+        val expected = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+            AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+        assertEquals(expected, service.serviceInfo.flags)
+        assertTrue(service.serviceInfo.eventTypes and AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED != 0)
+        service.close()
+        assertEquals(0, service.serviceInfo.flags); assertEquals(0, service.serviceInfo.eventTypes)
+    }
+    @Test fun installedSystemPluginCanOwnTheBrightnessWindowAndCompleteMeasurement() {
+        shadowOf(app.packageManager).installPackage(android.content.pm.PackageInfo().apply {
+            packageName = NativeBrightnessNode.MIUI_PLUGIN
+            applicationInfo = ApplicationInfo().apply { packageName = NativeBrightnessNode.MIUI_PLUGIN; flags = ApplicationInfo.FLAG_SYSTEM }
+        })
+        val service = fixture(); val writes = mutableListOf<Int>()
+        val slider = provideBrightnessWindow(service, writes, windowType = AccessibilityWindowInfo.TYPE_APPLICATION)
+        slider.packageName = NativeBrightnessNode.MIUI_PLUGIN
+        slider.viewIdResourceName = "${NativeBrightnessNode.MIUI_PLUGIN}:id/brightness_slider"
+        app.automaticCalibration.start(); idle(3_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
+        assertEquals(listOf(0, 25, 50, 75, 100), writes)
+        assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+    }
+    @Test fun userInstalledPluginNamesakeCannotSupplyAControl() {
+        shadowOf(app.packageManager).installPackage(android.content.pm.PackageInfo().apply {
+            packageName = NativeBrightnessNode.MIUI_PLUGIN
+            applicationInfo = ApplicationInfo().apply { packageName = NativeBrightnessNode.MIUI_PLUGIN; flags = 0 }
+        })
+        val service = fixture(); assertTrue(service.open())
+        val writes = mutableListOf<Int>(); val slider = provideBrightnessWindow(service, writes)
+        slider.packageName = NativeBrightnessNode.MIUI_PLUGIN
+        assertNull(service.control()); assertTrue(writes.isEmpty())
+        assertArrayEquals(arrayOf(NativeBrightnessNode.SYSTEM_UI), service.serviceInfo.packageNames)
+    }
+    @Test fun missingControlLeavesBrightnessUnchangedAndRecordsItsMetadataForCompatibilityDetails() {
+        val service = fixture(); val writes = mutableListOf<Int>(); val slider = provideBrightnessWindow(service, writes)
+        slider.viewIdResourceName = "${NativeBrightnessNode.SYSTEM_UI}:id/slider"
+        slider.text = "private text"; slider.contentDescription = "private description"
+        app.automaticCalibration.start(); idle(31_000)
+        assertEquals(AutomaticCalibrationError.UNSUPPORTED, app.automaticCalibration.state.value.error)
+        assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+        assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
+        assertTrue(writes.isEmpty()); assertFalse(app.brightness.calibrationNeedsRecovery)
+        val details = app.diagnostics.details.value
+        assertTrue(details.contains("Brightness discovery final: result=none"))
+        assertTrue(details.contains("brightness=0; ranges=1; candidates=0"))
+        assertFalse(details.contains("private text")); assertFalse(details.contains("private description"))
     }
     @Test fun realServiceMeasuresThroughProgressActionsAndCleansUpBeforeReview() {
         val service = fixture(); val writes = mutableListOf<Int>()
