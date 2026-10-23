@@ -50,7 +50,8 @@ import kotlin.math.roundToInt
             }
         }
         if (p.buttons.size > g.visibleCount) Notice(t(R.string.panel_overflow, p.buttons.size - g.visibleCount))
-        FilledTonalButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth()) {
+        if (g.wheel != null) Text(t(R.string.wheel_capacity, g.wheel.capacity), style = MaterialTheme.typography.bodySmall)
+        FilledTonalButton(onClick = { adding = true }, enabled = g.wheel == null || p.buttons.size < g.wheel.capacity, modifier = Modifier.fillMaxWidth()) {
             Icon(AppIcons.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(R.string.add_button))
         }
     }
@@ -71,18 +72,27 @@ import kotlin.math.roundToInt
             if (l.mode == PanelMode.FIXED) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
                 Help(R.string.fixed_help)
-            } else {
+            } else if (l.mode == PanelMode.SCROLLABLE) {
                 SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
                     t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f, valueScale = 100f) { value -> layout { it.copy(extentFraction = value) } }
                 Help(R.string.scrollable_help)
             }
         }
-        OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
-        DependentSettings(R.string.direction) {
-            CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
+        if (l.mode == PanelMode.WHEEL) {
+            SettingSlider(R.string.wheel_radius, l.wheel.radiusDp, 96f..240f, t(R.string.dp_value, l.wheel.radiusDp.roundToInt()), default = 128f) { value -> layout { it.copy(wheel = it.wheel.copy(radiusDp = value)) } }
+            Help(R.string.wheel_radius_help)
+            Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
+            if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
+                SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = 1.25f, valueScale = 100f) { value -> layout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
+            }
+        } else {
+            OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
+            DependentSettings(R.string.direction) {
+                CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
+            }
         }
         SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
-        if (g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))
+        if (l.mode != PanelMode.WHEEL && g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))
     }
     Section(R.string.position) {
         Toggle(R.string.follow_handle, R.string.follow_handle_help, l.followHandle, default = true, optionsExpanded = true) { value -> layout { it.copy(followHandle = value) } }
@@ -171,9 +181,9 @@ import kotlin.math.roundToInt
     var name by rememberSaveable(panel.id) { mutableStateOf("") }
     Surface(Modifier.fillMaxSize().padding(bottom = 12.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column {
-            EditorHeader(context.panelLabel(panel), draft?.changed == true, R.string.rename_panel,
+            EditorHeader(context.panelLabel(panel), draft?.changed == true, if (panel.isWheel) R.string.rename_wheel else R.string.rename_panel,
                 rename = { name = panel.name; renaming = true }, save = vm::saveEditing, cancel = vm::cancelEditing, saving = saving) {
-                Icon(AppIcons.Apps, null, Modifier.size(28.dp))
+                Icon(if (panel.isWheel) AppIcons.Wheel else AppIcons.Apps, null, Modifier.size(28.dp))
             }
             OverlayPreviewToggle(previewEnabled, service.connected, setPreview)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -181,7 +191,7 @@ import kotlin.math.roundToInt
             }
         }
     }
-    if (renaming) AlertDialog(onDismissRequest = { renaming = false }, title = { Text(t(R.string.rename_panel)) },
+    if (renaming) AlertDialog(onDismissRequest = { renaming = false }, title = { Text(t(if (panel.isWheel) R.string.rename_wheel else R.string.rename_panel)) },
         text = { OutlinedTextField(name, { name = it.take(80) }, label = { Text(t(R.string.name)) }, singleLine = true) },
         confirmButton = { TextButton(onClick = { vm.editSavedPanel(panel.id) { it.copy(name = name.trim()) }; vm.flush(); renaming = false }) { Text(t(R.string.save)) } },
         dismissButton = { TextButton(onClick = { renaming = false }) { Text(t(R.string.cancel)) } })

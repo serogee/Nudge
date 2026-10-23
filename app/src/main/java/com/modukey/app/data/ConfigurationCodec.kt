@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 20 adds the activation guard for continuous swipe adjustment. */
+/** Schema 21 adds Wheel layouts and continuous selection settings. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 20
+    const val SCHEMA = 21
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -52,7 +52,8 @@ object ConfigurationCodec {
                     } else if (!bindings.has(slot.name)) GestureTarget.NONE else bindings.getJSONObject(slot.name).let {
                         GestureTarget(it.optString("panelId").ifBlank { null }, it.optBoolean("volume"),
                             if (it.has("action") && !it.isNull("action")) button(it.getJSONObject("action")) else null, it.optBoolean("brightness"), it.optBoolean("slideToAdjust"),
-                            enumValueOf(it.optString("sliderActivation", "AFTER_HOLD")), it.optLong("sliderHoldMs", 200)).also { target ->
+                            enumValueOf(it.optString("sliderActivation", "AFTER_HOLD")), it.optLong("sliderHoldMs", 200),
+                            wheelPick(it.optJSONObject("wheelPick") ?: JSONObject())).also { target ->
                             require(target.action == null || (target.panelId == null && (schema >= 4 || !target.volume)))
                             require(target.action?.action != ButtonAction.EMPTY)
                         }
@@ -86,11 +87,17 @@ object ConfigurationCodec {
     private fun placement(p: Placement) = JSONObject().put("edge", p.edge.name).put("position", p.position)
     private fun layout(p: JSONObject, schema: Int) = PanelLayout(enumValueOf(p.optString("mode", "FIXED")), enumValueOf(p.optString("direction", "VERTICAL")),
         p.optInt("crossCount", 1), p.optInt("maximumLines", 5), p.float("extent", .6f), p.float("buttonSize", 56f),
-        p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it })
+        p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it },
+        p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f)) } ?: WheelLayoutSettings())
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
         .put("offsetX", p.offsetXDp).put("offsetY", p.offsetYDp)
+        .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale))
+    private fun wheelPick(p: JSONObject) = WheelPickSettings(p.optBoolean("enabled"), p.float("minimumDistanceDp", 32f),
+        p.float("maximumDistanceDp", 240f), p.optBoolean("allowLaterSwipes"), p.optLong("releaseWindowMs", 200))
+    private fun wheelPick(p: WheelPickSettings) = JSONObject().put("enabled", p.enabled).put("minimumDistanceDp", p.minimumDistanceDp)
+        .put("maximumDistanceDp", p.maximumDistanceDp).put("allowLaterSwipes", p.allowLaterSwipes).put("releaseWindowMs", p.releaseWindowMs)
     private fun trigger(t: JSONObject, schema: Int) = TriggerSettings(
         portrait = placement(t.getJSONObject("portrait")), landscape = placement(t.getJSONObject("landscape")),
         landscapeEnabled = t.optBoolean("landscapeEnabled"), landscapeOverrideEnabled = t.optBoolean("landscapeOverride"),
@@ -138,6 +145,7 @@ object ConfigurationCodec {
             val target = h.target(it)
             put(it.name, JSONObject().put("panelId", target.panelId.orEmpty()).put("volume", target.volume).put("brightness", target.brightness).put("slideToAdjust", target.slideToAdjust)
                 .put("sliderActivation", target.sliderActivation.name).put("sliderHoldMs", target.sliderHoldMs)
+                .put("wheelPick", wheelPick(target.wheelPick))
                 .apply { target.action?.let { put("action", button(it)) } })
         } }
         return JSONObject().put("id", h.id).put("name", h.name).put("enabled", h.enabled).put("trigger", trigger)

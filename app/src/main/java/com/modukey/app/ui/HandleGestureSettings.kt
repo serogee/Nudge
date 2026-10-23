@@ -6,14 +6,18 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable fun HandleGestureSettings(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel) {
+@Composable fun HandleGestureSettings(config: AppConfiguration, h: HandleConfig, vm: NudgeViewModel, landscape: Boolean = false) {
     val s = h.trigger
-    @Composable fun binding(slot: GestureSlot) = GestureBindingRow(config, slot, h.target(slot), vm, enabled = slot != GestureSlot.SWIPE_HOLD || !h.hasContinuousSwipe) { value ->
+    val terminal = h.terminalWheelStage(config, landscape)
+    val continuous = h.hasContinuousSwipe || (0..2).any { h.target(GestureSlot.entries[it]).dragsWheel(config, landscape) }
+    @Composable fun binding(slot: GestureSlot) = GestureBindingRow(config, slot, h.target(slot), vm,
+        enabled = !(slot == GestureSlot.SWIPE_HOLD && continuous) && !(slot.ordinal < 3 && terminal != null && slot.ordinal > terminal)) { value ->
         vm.editHandle(h.id) { it.copy(bindings = it.bindings + (slot to value)) }
     }
     Section(R.string.gestures) {
         GestureSlot.entries.forEach { binding(it) }
-        if (h.hasContinuousSwipe) Help(R.string.slide_swipe_hold_conflict)
+        if (continuous) Help(R.string.continuous_swipe_hold_conflict)
+        if (terminal != null) Help(R.string.wheel_later_disabled)
     }
     SliderTravelControls(h, vm)
     CollapsibleSection(R.string.swipe_settings) {

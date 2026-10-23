@@ -70,12 +70,18 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun editLayout(id: String, landscape: Boolean, change: (PanelLayout) -> PanelLayout) = editPanel(id) { p ->
         if (landscape && p.landscapeOverride) p.copy(landscape = change(p.landscape)) else p.copy(portrait = change(p.portrait))
     }
-    fun addPanel(): String {
-        val p = SavedPanel(); edit { it.copy(panels = it.panels + p) }; flush(); return p.id
+    fun addPanel(wheel: Boolean = false): String {
+        val layout = PanelLayout(mode = if (wheel) PanelMode.WHEEL else PanelMode.FIXED)
+        val p = SavedPanel(settings = PanelConfig(portrait = layout, landscape = layout)); edit { it.copy(panels = it.panels + p) }; flush(); return p.id
     }
     fun removePanel(id: String) { edit { it.removePanel(id) }; flush() }
     fun duplicatePanel(id: String) { edit { c -> c.panel(id)?.let { c.copy(panels = c.panels + it.duplicate()) } ?: c }; flush() }
-    fun reorderPanel(id: String, target: Int) = edit { c -> c.copy(panels = moved(c.panels, c.panels.indexOfFirst { it.id == id }, target)) }
+    fun reorderPanel(id: String, target: Int) = edit { c ->
+        val wheel = c.panel(id)?.isWheel ?: return@edit c
+        val group = c.panels.filter { it.isWheel == wheel }
+        val reordered = moved(group, group.indexOfFirst { it.id == id }, target).iterator()
+        c.copy(panels = c.panels.map { if (it.isWheel == wheel) reordered.next() else it })
+    }
     fun addHandle(): String {
         val h = HandleConfig(); edit { it.copy(handles = it.handles + h) }; flush(); return h.id
     }

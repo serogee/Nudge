@@ -38,7 +38,7 @@ import kotlin.math.roundToInt
                 drawRoundRect(Color(trigger.indicatorColor).copy(alpha=trigger.indicatorOpacity),o+Offset((handle.x+indicator.x)*factor,(handle.y+indicator.y)*factor),Size(indicator.width*factor,indicator.height*factor),CornerRadius(radius))
             }
         }
-    Layout(content = { PanelContent(panel, layout, geometry) }, modifier = modifier) { children, constraints ->
+    Layout(content = { PanelContent(panel, layout, geometry, wheelSelection = if (geometry.wheel != null && layout.wheel.expandSelection && geometry.visibleCount > 0) geometry.visibleCount / 2 else null) }, modifier = modifier) { children, constraints ->
         val child = children.single().measure(Constraints.fixed(geometry.bounds.width.roundToInt().coerceAtLeast(1),geometry.bounds.height.roundToInt().coerceAtLeast(1)))
         val size = Size(constraints.maxWidth.toFloat(),constraints.maxHeight.toFloat()); val factor = scale(size); val o = origin(size,factor)
         layout(constraints.maxWidth,constraints.maxHeight) {
