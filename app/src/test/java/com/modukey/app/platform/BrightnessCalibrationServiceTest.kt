@@ -33,7 +33,7 @@ import java.time.Duration
 import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [31, 36], shadows = [BrightnessControllerTest.Writes::class, BrightnessCalibrationServiceTest.ServiceInfo::class])
+@Config(sdk = [31, 36], shadows = [BrightnessControllerTest.Writes::class, BrightnessCalibrationServiceTest.ServiceInfo::class, AtomicFilePlatformShadow::class])
 @Suppress("DEPRECATION")
 class BrightnessCalibrationServiceTest {
     private val positions = (0..16).map { (it * 100f / 16).roundToInt() }
@@ -48,6 +48,7 @@ class BrightnessCalibrationServiceTest {
     private var destroy: () -> Unit = {}
     @After fun cleanup() {
         destroy(); BrightnessCalibrationRestore(app).discard(); app.onTerminate()
+        app.calibrationOptions.setKeepServiceEnabled(false)
         BrightnessControllerTest.Writes.allowed = false
     }
     private fun idle(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
@@ -105,6 +106,29 @@ class BrightnessCalibrationServiceTest {
         assertEquals(0, service.serviceInfo.eventTypes); assertEquals(0, service.serviceInfo.flags)
         assertTrue(shadowOf(service).globalActionsPerformed.isEmpty())
         assertNull(service.control())
+    }
+    @Test fun optedInServiceStaysRestrictedBetweenRunsAndCanBeDisabledWithoutLosingResults() {
+        assertTrue(app.calibrationOptions.setKeepServiceEnabled(true))
+        val service = fixture(consent = false); val writes = mutableListOf<Int>()
+        provideBrightnessWindow(service, writes)
+        assertTrue(app.automaticCalibration.connected.value)
+        assertEquals(AutomaticCalibrationPhase.IDLE, app.automaticCalibration.state.value.phase)
+        assertNull(service.control()); idle(240_000); assertTrue(writes.isEmpty())
+        repeat(2) {
+            assertTrue(app.automaticCalibration.prepare())
+            assertEquals(AutomaticCalibrationPhase.READY, app.automaticCalibration.state.value.phase)
+            app.automaticCalibration.start(); idle(14_000)
+            assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
+            assertEquals(0, service.serviceInfo.flags); assertEquals(0, service.serviceInfo.eventTypes)
+            assertNull(service.control()); assertNull(ReflectionHelpers.getField(service, "overlay"))
+            assertFalse(ReflectionHelpers.getField(service, "stopping")); assertTrue(app.automaticCalibration.connected.value)
+            service.onInterrupt(); assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
+            app.automaticCalibration.save()
+        }
+        assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+        app.automaticCalibration.disableService()
+        assertTrue(ReflectionHelpers.getField(service, "stopping")); assertFalse(app.automaticCalibration.connected.value)
+        assertEquals(AutomaticCalibrationPhase.SAVED, app.automaticCalibration.state.value.phase)
     }
     @Test fun discoveryRequestsNonInteractiveContainersOnlyDuringTheExplicitRun() {
         val service = fixture()

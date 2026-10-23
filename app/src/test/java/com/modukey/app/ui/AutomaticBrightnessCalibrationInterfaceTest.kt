@@ -24,11 +24,11 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36], shadows = [BrightnessControllerTest.Writes::class])
+@Config(sdk = [36], shadows = [BrightnessControllerTest.Writes::class, AtomicFilePlatformShadow::class])
 class AutomaticBrightnessCalibrationInterfaceTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     private val app get() = rule.activity.application as NudgeApplication
-    @After fun cleanup() { app.automaticCalibration.recover(false); app.onTerminate(); BrightnessControllerTest.Writes.allowed = false }
+    @After fun cleanup() { app.automaticCalibration.recover(false); app.onTerminate(); app.calibrationOptions.setKeepServiceEnabled(false); BrightnessControllerTest.Writes.allowed = false }
     private fun content() {
         BrightnessControllerTest.Writes.allowed = true
         shadowOf(app.getSystemService(PowerManager::class.java)).setIsInteractive(true)
@@ -64,6 +64,28 @@ class AutomaticBrightnessCalibrationInterfaceTest {
         rule.onNodeWithText("Cancel").performClick()
         rule.runOnIdle { assertEquals(1, closed) }
         rule.onNodeWithText("Manual calibration").assertIsEnabled()
+    }
+    @Test fun enabledStandbySkipsAndroidSetupAndManualDisableKeepsTheSelectedPolicy() {
+        content(); var disabled = 0
+        rule.onNodeWithContentDescription("Keep calibration service enabled").performScrollTo().performClick()
+        rule.runOnIdle {
+            assertTrue(app.calibrationOptions.keepServiceEnabled.value)
+            assertTrue(app.automaticCalibration.connect(object : CalibrationServicePort {
+                override fun open(): Boolean { fail("Standby must wait for Start"); return false }
+                override fun control(): NativeBrightnessControl? { fail("Standby must not inspect windows"); return null }
+                override fun move(expected: NativeBrightnessControl, fraction: Float) = false
+                override fun progress(percent: Int) = Unit
+                override fun close() = Unit
+                override fun disable() { disabled++ }
+            }))
+        }
+        rule.onNodeWithText("Automatic calibration").performScrollTo().performClick()
+        rule.onNodeWithText("Start calibration").assertIsEnabled()
+        rule.onNodeWithText(app.getString(R.string.auto_calibration_access_disclosure)).assertDoesNotExist()
+        rule.onNodeWithContentDescription("Keep calibration service enabled").assertIsNotEnabled()
+        rule.onNodeWithText("Cancel").performScrollTo().performClick()
+        rule.onNodeWithText("Disable calibration service").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals(1, disabled); assertFalse(app.automaticCalibration.connected.value); assertTrue(app.calibrationOptions.keepServiceEnabled.value) }
     }
     @Test fun interruptedCalibrationOffersRecoveryWithoutChangingTheSavedProfile() {
         content()

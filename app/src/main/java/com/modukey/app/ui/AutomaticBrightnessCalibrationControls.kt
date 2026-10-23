@@ -26,6 +26,9 @@ import com.modukey.app.platform.*
     val app = context.applicationContext as NudgeApplication
     val coordinator = app.automaticCalibration
     val state by coordinator.state.collectAsState()
+    val connected by coordinator.connected.collectAsState()
+    val keepServiceEnabled by app.calibrationOptions.keepServiceEnabled.collectAsState()
+    var optionError by rememberSaveable { mutableStateOf(false) }
     var consent by rememberSaveable { mutableStateOf(false) }
     var canWrite by remember { mutableStateOf(app.brightness.canWrite) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -42,7 +45,17 @@ import com.modukey.app.platform.*
         catch (_: SecurityException) { coordinator.settingsUnavailable() }
     }
     if (!state.busy && state.phase !in listOf(AutomaticCalibrationPhase.REVIEW, AutomaticCalibrationPhase.RECOVERY)) {
-        OutlinedButton(onClick = { consent = true }) { Text(t(R.string.automatic_brightness_calibration)) }
+        OutlinedButton(onClick = { if (connected && canWrite) coordinator.prepare() else consent = true }) { Text(t(R.string.automatic_brightness_calibration)) }
+    }
+    Toggle(R.string.keep_calibration_service_enabled, R.string.keep_calibration_service_enabled_help, keepServiceEnabled,
+        default = false, enabled = !state.busy) { enabled ->
+        optionError = !app.calibrationOptions.setKeepServiceEnabled(enabled)
+        if (!optionError && !enabled) coordinator.disableService()
+    }
+    if (optionError) Help(R.string.auto_calibration_options_failed)
+    if (connected && !state.busy) {
+        Help(R.string.auto_calibration_standby)
+        TextButton(onClick = coordinator::disableService) { Text(t(R.string.disable_calibration_service)) }
     }
     when (state.phase) {
         AutomaticCalibrationPhase.WAITING_SERVICE -> {
@@ -70,7 +83,7 @@ import com.modukey.app.platform.*
             Button(onClick = coordinator::save) { Text(t(R.string.save)) }
             TextButton(onClick = coordinator::discard) { Text(t(R.string.cancel)) }
         }
-        AutomaticCalibrationPhase.SAVED -> Help(R.string.auto_calibration_saved)
+        AutomaticCalibrationPhase.SAVED -> Help(if (connected) R.string.auto_calibration_saved_standby else R.string.auto_calibration_saved)
         AutomaticCalibrationPhase.CANCELLED -> Help(R.string.auto_calibration_cancelled)
         AutomaticCalibrationPhase.RECOVERY -> {
             Help(R.string.auto_calibration_recovery)
@@ -92,7 +105,10 @@ import com.modukey.app.platform.*
     }, confirmButton = {
         TextButton(onClick = {
             if (!app.brightness.canWrite) openSettings(true)
-            else if (coordinator.prepare()) { consent = false; openSettings() }
+            else if (coordinator.prepare()) {
+                consent = false
+                if (!coordinator.connected.value) openSettings()
+            }
         }) { Text(t(if (canWrite) R.string.enable_calibration_service else R.string.allow_brightness_access)) }
     }, dismissButton = { TextButton(onClick = { consent = false }) { Text(t(R.string.cancel)) } })
 }

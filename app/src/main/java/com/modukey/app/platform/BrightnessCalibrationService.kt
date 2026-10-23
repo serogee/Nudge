@@ -24,7 +24,7 @@ import androidx.core.content.ContextCompat
 import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 
-/** Separately enabled for an explicit run. Normal handles never receive window-content access. */
+/** Reads controls only during an explicit run, including when the user keeps the service enabled. */
 class BrightnessCalibrationService : AccessibilityService(), CalibrationServicePort {
     private val coordinator get() = (application as NudgeApplication).automaticCalibration
     private var running = false
@@ -55,7 +55,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     override fun onServiceConnected() {
         super.onServiceConnected()
         restrict()
-        if (!coordinator.connect(this)) close()
+        if (!coordinator.connect(this)) disable()
     }
     private fun restrict() {
         serviceInfo = (serviceInfo ?: AccessibilityServiceInfo()).apply {
@@ -74,6 +74,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     override fun open(): Boolean {
         if (stopping || running) return false
         running = true
+        lastDiscovery = null; discoveryReports = 0
         brightnessLabels = nativeBrightnessLabels()
         rotation = getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0
         serviceInfo = (serviceInfo ?: AccessibilityServiceInfo()).apply {
@@ -142,30 +143,43 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         }
         overlay = layout; manager.addView(layout, params)
     }
-    override fun close() {
-        if (stopping) return
-        lastDiscovery?.let { (application as NudgeApplication).diagnostics.record("Brightness discovery final: $it") }
-        stopping = true; running = false
+    private fun endSession(): Boolean {
+        if (running) lastDiscovery?.let { (application as NudgeApplication).diagnostics.record("Brightness discovery final: $it") }
+        running = false
         brightnessLabels = emptySet()
         if (registered) { runCatching { unregisterReceiver(screenOff) }; registered = false }
         overlay?.let { runCatching { manager.removeViewImmediate(it) } }; overlay = null; status = null
-        runCatching { restrict() }
+        val restricted = runCatching { restrict() }.isSuccess
         if (panelSession && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked)
             runCatching { performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE) }
         panelSession = false
+        return restricted
+    }
+    override fun close() {
+        if (stopping) return
+        val restricted = endSession()
+        if (!(application as NudgeApplication).calibrationOptions.keepServiceEnabled.value || !restricted) {
+            stopping = true
+            disableSelf()
+        }
+    }
+    override fun disable() {
+        if (stopping) return
+        endSession()
+        stopping = true
         disableSelf()
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
-    override fun onInterrupt() { coordinator.disconnected(this); close() }
+    override fun onInterrupt() { coordinator.interrupted(this); close() }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val current = getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0
         if (running && current != rotation) coordinator.cancel(AutomaticCalibrationError.CONTROL_CHANGED)
     }
-    override fun onUnbind(intent: Intent?): Boolean { coordinator.disconnected(this); close(); return super.onUnbind(intent) }
+    override fun onUnbind(intent: Intent?): Boolean { coordinator.disconnected(this); disable(); return super.onUnbind(intent) }
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (!stopping) { coordinator.cancel(); close() }
+        if (!stopping) { if (coordinator.state.value.busy) coordinator.cancel(); close() }
         super.onTaskRemoved(rootIntent)
     }
-    override fun onDestroy() { coordinator.disconnected(this); close(); super.onDestroy() }
+    override fun onDestroy() { coordinator.disconnected(this); disable(); super.onDestroy() }
 }

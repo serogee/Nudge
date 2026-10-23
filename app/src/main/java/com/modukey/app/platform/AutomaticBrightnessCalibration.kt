@@ -27,6 +27,7 @@ interface CalibrationServicePort {
     fun waitingForPanel() = Unit
     fun progress(percent: Int)
     fun close()
+    fun disable() = close()
 }
 internal interface CalibrationBrightnessAccess {
     val canWrite: Boolean
@@ -50,9 +51,12 @@ internal class ControllerCalibrationAccess(private val controller: BrightnessCon
 /** Consent and setup are memory-only. A killed process can recover brightness but cannot resume a run. */
 class AutomaticBrightnessCalibration internal constructor(private val brightness: CalibrationBrightnessAccess,
     private val awake: () -> Boolean, private val clock: () -> Long = SystemClock::uptimeMillis,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)) {
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    private val keepServiceEnabled: () -> Boolean = { false }) {
     private val mutable = MutableStateFlow(AutomaticCalibrationState(if (brightness.pendingRestore) AutomaticCalibrationPhase.RECOVERY else AutomaticCalibrationPhase.IDLE))
     val state = mutable.asStateFlow()
+    private val mutableConnected = MutableStateFlow(false)
+    val connected = mutableConnected.asStateFlow()
     private var port: CalibrationServicePort? = null
     private var setup: Job? = null
     private var job: Job? = null
@@ -63,13 +67,16 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         if (mutable.value.busy || brightness.pendingRestore) return false
         val error = if (!brightness.canWrite) AutomaticCalibrationError.ACCESS else if (!awake()) AutomaticCalibrationError.LOCKED else null
         if (error != null) { mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.FAILED, error = error); return false }
-        mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.WAITING_SERVICE)
+        mutable.value = AutomaticCalibrationState(if (port == null) AutomaticCalibrationPhase.WAITING_SERVICE else AutomaticCalibrationPhase.READY)
         setupTimeout()
         return true
     }
     internal fun connect(next: CalibrationServicePort): Boolean {
-        if (mutable.value.phase != AutomaticCalibrationPhase.WAITING_SERVICE || port != null) return false
-        port = next; mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.READY); setupTimeout()
+        if (port != null) return false
+        val waiting = mutable.value.phase == AutomaticCalibrationPhase.WAITING_SERVICE
+        if (!waiting && (!keepServiceEnabled() || mutable.value.busy)) return false
+        port = next; mutableConnected.value = true
+        if (waiting) { mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.READY); setupTimeout() }
         return true
     }
     private fun setupTimeout() {
@@ -150,7 +157,7 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         if (owner != null) finish(owner, null, error)
         else {
             setup?.cancel(); setup = null
-            val service = port; port = null; runCatching { service?.close() }
+            releasePort()
             mutable.value = AutomaticCalibrationState(if (brightness.pendingRestore) AutomaticCalibrationPhase.RECOVERY
                 else if (error == null) AutomaticCalibrationPhase.CANCELLED else AutomaticCalibrationPhase.FAILED, error = error)
         }
@@ -160,8 +167,7 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         if (token !== owner) return
         token = null; job = null
         val restored = runCatching { !brightness.pendingRestore || brightness.restore() }.getOrDefault(false)
-        val service = port; port = null
-        runCatching { service?.close() }
+        releasePort()
         mutable.value = when {
             !restored -> AutomaticCalibrationState(AutomaticCalibrationPhase.RECOVERY, error = AutomaticCalibrationError.RESTORE)
             result != null && error == null -> AutomaticCalibrationState(AutomaticCalibrationPhase.REVIEW, samples = result)
@@ -169,7 +175,28 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
             else -> AutomaticCalibrationState(AutomaticCalibrationPhase.CANCELLED)
         }
     }
-    internal fun disconnected(service: CalibrationServicePort) { if (port === service) cancel(AutomaticCalibrationError.DISCONNECTED) }
+    private fun releasePort() {
+        val service = port ?: return
+        if (!keepServiceEnabled()) { port = null; mutableConnected.value = false }
+        if (runCatching { service.close() }.isFailure) {
+            port = null; mutableConnected.value = false
+            runCatching { service.disable() }
+        }
+    }
+    internal fun disconnected(service: CalibrationServicePort) {
+        if (port !== service) return
+        port = null; mutableConnected.value = false
+        if (mutable.value.busy) cancel(AutomaticCalibrationError.DISCONNECTED)
+        runCatching { service.close() }
+    }
+    internal fun interrupted(service: CalibrationServicePort) {
+        if (port === service && mutable.value.busy) cancel(AutomaticCalibrationError.DISCONNECTED)
+    }
+    fun disableService() {
+        if (mutable.value.busy) cancel()
+        val service = port; port = null; mutableConnected.value = false
+        runCatching { service?.disable() }
+    }
     fun save() {
         val current = mutable.value
         if (current.phase != AutomaticCalibrationPhase.REVIEW || !BrightnessScale.validSamples(current.samples)) return
@@ -183,5 +210,5 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         mutable.value = AutomaticCalibrationState(if (success) AutomaticCalibrationPhase.IDLE else AutomaticCalibrationPhase.RECOVERY,
             error = if (success) null else AutomaticCalibrationError.RESTORE)
     }
-    fun close() { if (mutable.value.busy) cancel(); scope.cancel() }
+    fun close() { disableService(); scope.cancel() }
 }

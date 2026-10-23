@@ -32,7 +32,7 @@ class AutomaticBrightnessCalibrationTest {
         override fun save(samples: List<Int>): Boolean { if (!saveAllowed) return false; saved = samples; return true }
     }
     private class Port(private val brightness: Brightness) : CalibrationServicePort {
-        var fraction = .5f; var reads = 0; var opens = 0; var closes = 0
+        var fraction = .5f; var reads = 0; var opens = 0; var closes = 0; var disables = 0
         var exposed = true; var accepted = true; var key = "brightness"; var duplicateSamples = false
         var quantized = false; var writeDelay = 0L
         val moves = mutableListOf<Float>()
@@ -51,12 +51,14 @@ class AutomaticBrightnessCalibrationTest {
         }
         override fun progress(percent: Int) = Unit
         override fun close() { closes++ }
+        override fun disable() { disables++; close() }
     }
     private var coordinator: AutomaticBrightnessCalibration? = null
     @After fun cleanup() { coordinator?.close() }
     private fun idle(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
-    private fun run(brightness: Brightness = Brightness(), awake: () -> Boolean = { true }): Triple<AutomaticBrightnessCalibration, Brightness, Port> {
-        val next = AutomaticBrightnessCalibration(brightness, awake); coordinator = next
+    private fun run(brightness: Brightness = Brightness(), awake: () -> Boolean = { true },
+        keepEnabled: () -> Boolean = { false }): Triple<AutomaticBrightnessCalibration, Brightness, Port> {
+        val next = AutomaticBrightnessCalibration(brightness, awake, keepServiceEnabled = keepEnabled); coordinator = next
         val port = Port(brightness)
         assertTrue(next.prepare()); assertTrue(next.connect(port))
         return Triple(next, brightness, port)
@@ -73,6 +75,58 @@ class AutomaticBrightnessCalibrationTest {
         next.save(); assertEquals((0..16).map { (it * it).coerceAtMost(255) }, brightness.saved)
         assertEquals(AutomaticCalibrationPhase.SAVED, next.state.value.phase)
         val reads = port.reads; idle(30_000); assertEquals(reads, port.reads)
+    }
+    @Test fun enabledStandbyHasNoReadsOrDeadlineAndRepeatedRunsDoNotNeedReconnection() {
+        val brightness = Brightness(); val port = Port(brightness)
+        val next = AutomaticBrightnessCalibration(brightness, awake = { true }, keepServiceEnabled = { true }); coordinator = next
+        assertTrue(next.connect(port)); assertTrue(next.connected.value)
+        idle(240_000)
+        assertEquals(AutomaticCalibrationPhase.IDLE, next.state.value.phase)
+        assertEquals(0, port.reads); assertEquals(0, port.opens)
+        repeat(2) {
+            assertTrue(next.prepare()); assertEquals(AutomaticCalibrationPhase.READY, next.state.value.phase)
+            next.start(); idle(14_000)
+            assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+            assertTrue(next.connected.value)
+            val reads = port.reads; idle(120_000); assertEquals(reads, port.reads)
+            next.save()
+        }
+        assertEquals(2, port.opens); assertEquals(2, brightness.restores)
+        next.close(); assertFalse(next.connected.value); assertEquals(1, port.disables)
+    }
+    @Test fun manualDisableAndLateDisconnectKeepCompletedMeasurementsAvailable() {
+        val (next, brightness, port) = run(keepEnabled = { true })
+        next.start(); idle(14_000)
+        val samples = next.state.value.samples
+        next.interrupted(port); assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+        next.disableService(); next.disconnected(port)
+        assertFalse(next.connected.value); assertEquals(1, port.disables)
+        assertEquals(samples, next.state.value.samples)
+        next.save(); assertEquals(samples, brightness.saved)
+    }
+    @Test fun cancellationAndSetupTimeoutRetainStandbyButARealDisconnectDetachesIt() {
+        val (next, brightness, port) = run(keepEnabled = { true })
+        idle(120_001)
+        assertEquals(AutomaticCalibrationError.SETUP_TIMEOUT, next.state.value.error); assertTrue(next.connected.value)
+        assertTrue(next.prepare()); next.start(); idle(100); next.cancel()
+        assertTrue(next.connected.value); assertEquals(87, brightness.level)
+        assertTrue(next.prepare()); next.start(); idle(100); next.disconnected(port)
+        assertFalse(next.connected.value); assertEquals(AutomaticCalibrationError.DISCONNECTED, next.state.value.error)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        val reads = port.reads; idle(5_000); assertEquals(reads, port.reads)
+        val replacement = Port(brightness); assertTrue(next.connect(replacement))
+        next.disconnected(port); assertTrue(next.connected.value)
+        assertEquals(0, replacement.opens)
+    }
+    @Test fun aReconnectedServiceCannotResumeAnInterruptedMeasurementBeforeRecovery() {
+        val brightness = Brightness().apply { pendingRestore = true; level = 12; automatic = false }
+        val port = Port(brightness)
+        val next = AutomaticBrightnessCalibration(brightness, awake = { true }, keepServiceEnabled = { true }); coordinator = next
+        assertTrue(next.connect(port)); next.start(); idle(5_000)
+        assertEquals(AutomaticCalibrationPhase.RECOVERY, next.state.value.phase)
+        assertFalse(next.prepare()); assertEquals(0, port.reads); assertEquals(0, port.opens)
+        next.recover(true); assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        assertTrue(next.prepare()); assertEquals(AutomaticCalibrationPhase.READY, next.state.value.phase)
     }
     @Test fun cancellationAndServiceLossRestoreOnceAndKeepThePreviousProfile() {
         val (next, brightness, port) = run()

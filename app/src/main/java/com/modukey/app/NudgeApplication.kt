@@ -13,6 +13,7 @@ import com.modukey.app.core.SliderGuidePreview
 import com.modukey.app.core.EditorSession
 import com.modukey.app.core.HandlePauses
 import com.modukey.app.platform.BrightnessController
+import com.modukey.app.platform.BrightnessCalibrationOptions
 import com.modukey.app.data.ConfigurationController
 import com.modukey.app.data.DataStoreConfigurationRepository
 import com.modukey.app.platform.IconRepository
@@ -39,9 +40,10 @@ class NudgeApplication : Application() {
     val shortcuts = ShortcutRuntime()
     val handlePauses = HandlePauses()
     val brightness by lazy { BrightnessController(this) }
+    val calibrationOptions by lazy { BrightnessCalibrationOptions(this) }
     val automaticCalibration by lazy { AutomaticBrightnessCalibration(ControllerCalibrationAccess(brightness), {
         getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
-    }) }
+    }, keepServiceEnabled = { calibrationOptions.keepServiceEnabled.value }) }
     val icons by lazy { IconRepository(this) }
     val unlocks = UnlockRequests()
     val diagnostics by lazy { LocalDiagnostics(this, scope) }
