@@ -102,11 +102,15 @@ A confirmed change to another app closes the panel. Native volume popups and unr
 
 Create wheels in **Wheels**, then assign them to handle gestures. Wheels share panel actions, icons, colors, placement, and editing controls.
 
-A Wheel layout shows a semicircular fan facing inward from its handle. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
+A Wheel layout shows a hollow semicircle facing inward from its handle. Each button uses a separated wedge container. App icons keep their normal loading and icon-pack support. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
 
 Each wheel shows **up to six buttons**. Radius, button size, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable. Changing an existing panel to Wheel does not delete its extra buttons.
 
-**Wheel radius** sets the center-to-button distance from 96–240 dp and defaults to 128 dp. **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The selected button and its selection area expand while adjacent buttons shrink. Toggle action colors keep their usual meaning.
+**Wheel radius** accepts 40–240 dp and defaults to 128 dp. Small wheels show fewer buttons so each normal touch target stays at least 48 dp. Large button sizes and screen limits can constrain the available radius.
+
+**Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
+
+The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on and smoothly moves the visible wedges and icons to their new shapes. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
 
 ### Drag to pick
 
@@ -114,7 +118,7 @@ Without **Drag to pick**, the wheel stays open for normal button taps. Enable th
 
 Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
 
-Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Inside the minimum, outside the fan, or beyond the maximum, nothing is highlighted. Move back into range to select again.
+Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. The hollow center, the minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
 
 For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
 
@@ -126,7 +130,7 @@ Landscape overrides retain their own layout and Wheel settings. If an orientatio
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-Backups use schema 21 and retain Wheel layouts, drag settings, shared links, and overflow buttons. Older backups migrate with drag picking off.
+New backups use schema 22 and retain compact Wheel sizes, animation choices, drag settings, shared links, and overflow buttons. Schema-21 wheels keep their saved radius and enable focus animation by default. Nudge 0.5.0 and earlier cannot import schema-22 backups. Older backups remain importable.
 
 ## Actions and appearance
 
@@ -178,7 +182,11 @@ Brightness percentages represent slider positions. Manufacturers can use differe
 
 Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 60-second deadline. The screen becomes dim and bright during measurement. Adjacent automatic samples can share a hardware level. Decreasing or completely flat curves are rejected. Manual capture still rejects repeated levels.
 
-The calibration service uses native brightness controls that expose a valid range and accept accessibility progress actions. It includes non-interactive layout containers so a generic slider can retain its brightness identity. It can also compare a generic slider's accessibility label with the exact translated brightness label from System UI. On Xiaomi, the installed system UI plugin can own the control. A user-installed package with the same plugin name is not accepted. Unrelated controls and ambiguous matches are rejected. It does not read notification text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
+The calibration service uses native brightness controls that expose a valid range and accept accessibility progress actions. It includes non-interactive layout containers so a generic slider can retain its brightness identity. It can also compare a generic slider's accessibility label with the exact translated brightness label from System UI. On Xiaomi, the installed system UI plugin can own the control. A user-installed package with the same plugin name is not accepted. Unrelated controls and ambiguous matches are rejected. The normal handle service still cannot retrieve window content or inject touch gestures. Neither service can take screenshots or record the screen.
+
+**Slider touch completion** is a separate device-local option, off by default. Some Xiaomi Control center sliders treat accessibility progress changes as an unfinished drag. They change temporary display brightness but do not save the measured value. These controls require this option before measurement can start. Read and accept its disclosure. If requested, disable and re-enable the separate calibration service in Accessibility to grant its updated capability.
+
+With this option on, Nudge briefly presses and releases only the identified native relative brightness slider after each progress change. A stationary touch keeps that slider's current value and delivers the release callback that saves it. Keep your hands off the screen during measurement. A covering window or invalid target blocks the touch. The normal handle service gains no touch or content access. The calibration service cannot use this option while idle. Cancellation waits for the finite native touch to release before restoring brightness. Restoration can briefly refresh an unchanged saved value to clear a leftover native preview.
 
 If detection fails again, open **Info → Copy compatibility details** after the run. These details include a bounded discovery report: inspected node counts, resource IDs, class names, ownership, supported ranges, and progress-action availability. They exclude screen text, accessibility descriptions, and the current brightness value. This report can distinguish a missing brightness identifier from a slider that exposes no writable range.
 
@@ -188,9 +196,9 @@ Enable **Keep calibration service enabled** to reuse its connection. The service
 
 If restoration is interrupted, Home offers **Restore previous brightness** or **Keep current brightness**. Other Nudge brightness writes remain blocked until recovery is resolved. Measurement never resumes after process death.
 
-Profiles, recovery records, and the keep-enabled preference stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. More samples improve interpolation but do not add hardware brightness levels or prove an exact mapping at every position.
+Profiles, recovery records, and both calibration service preferences stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. More samples improve interpolation but do not add hardware brightness levels or prove an exact mapping at every position.
 
-On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automatic run completed and was saved. Brightness and mode restoration passed an immediate comparison. The filtered accessibility tree had removed the old-style brightness container. The new style exposes brightness and volume with the same slider ID, but different native labels. The native-label fix, 17-point sampling, and enabled standby have local automated coverage; their final on-device checks remain pending. If the native slider is unsupported, use Manual calibration.
+On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automatic run completed and was saved. Brightness and mode restoration passed an immediate comparison. A later new-style run found the slider and reached 100%, but the saved value stayed unchanged while temporary brightness reached maximum. Inspection of the installed system plugin confirmed that its progress callback always reports active dragging. The saving callback runs on touch release. The new touch-completion path has automated coverage and still needs a physical-device recheck. The user's separate above-zero abort was not confirmed; moving panel bounds no longer change a slider's identity. If the native slider is unsupported, use Manual calibration.
 
 ## Home screen shortcuts
 
