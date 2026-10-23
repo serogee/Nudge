@@ -54,7 +54,9 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
         if (distance < minimum || distance > maximum) return null
         val angle = angle(x, y)
         if (angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
-        return slices(selected).indexOfFirst { angle >= it.start && angle <= it.end }.takeIf { it >= 0 }
+        val regions = slices(selected)
+        if (selected != null && selected in regions.indices && angle >= regions[selected].start && angle <= regions[selected].end) return selected
+        return regions.indexOfFirst { angle >= it.start && angle <= it.end }.takeIf { it >= 0 }
     }
 }
 

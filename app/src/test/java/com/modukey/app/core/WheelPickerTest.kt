@@ -123,4 +123,13 @@ class WheelPickerTest {
             assertNull(g.hit(g.center.x, g.center.y, 0f, 240f))
         }
     }
+    @Test fun currentSelectionOwnsASharedBoundaryUntilTheFingerCrossesIt() {
+        val g = geometry(count = 2).copy(expansion = 1f)
+        val boundary = g.point(0f)
+        assertEquals(0, g.hit(boundary.x, boundary.y, 32f, 240f))
+        assertEquals(0, g.hit(boundary.x, boundary.y, 32f, 240f, 0))
+        assertEquals(1, g.hit(boundary.x, boundary.y, 32f, 240f, 1))
+        val crossed = g.point(-.01f)
+        assertEquals(0, g.hit(crossed.x, crossed.y, 32f, 240f, 1))
+    }
 }
