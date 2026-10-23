@@ -83,7 +83,7 @@ object WheelGeometry {
         val width = if (side) radius + margin * 2f else (radius + margin) * 2f
         val height = if (side) (radius + margin) * 2f else radius + margin * 2f
         val localX = when (edge) { Edge.LEFT -> margin; Edge.RIGHT -> radius + margin; Edge.BOTTOM -> radius + margin }
-        val localY = if (side) radius + margin else radius + margin
+        val localY = radius + margin
         var cx = screen.x + layout.x * screen.width
         var cy = screen.y + layout.y * screen.height
         if (layout.followHandle) {
@@ -92,8 +92,9 @@ object WheelGeometry {
         }
         val x = (cx - localX).coerceIn(screen.x, screen.x + (screen.width - width).coerceAtLeast(0f))
         val y = (cy - localY).coerceIn(screen.y, screen.y + (screen.height - height).coerceAtLeast(0f))
-        return WheelGeometryResult(Bounds(x, y, width.coerceAtMost(screen.width), height.coerceAtMost(screen.height)),
-            WheelPoint(x + localX, y + localY), edge, radius, cell, capacity, count.coerceIn(0, capacity), expansion, 48f * d)
+        val bounds = Bounds(x, y, width.coerceAtMost(screen.width), height.coerceAtMost(screen.height))
+        return WheelGeometryResult(bounds, WheelPoint(x + localX.coerceAtMost(bounds.width), y + localY.coerceAtMost(bounds.height)),
+            edge, radius, cell, capacity, count.coerceIn(0, capacity), expansion, 48f * d)
     }
 }
 

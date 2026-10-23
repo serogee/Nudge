@@ -97,4 +97,30 @@ class WheelPickerTest {
             }
         }
     }
+    @Test fun safeBoundsContainEveryExpandedButtonAtExtremePlacements() {
+        for (edge in Edge.entries) for (screen in listOf(Bounds(12f, 28f, 320f, 640f), Bounds(28f, 12f, 640f, 260f))) {
+            for (follow in listOf(true, false)) for (position in listOf(0f, 1f)) {
+                val layout = PanelLayout(followHandle = follow, x = position, y = position, offsetXDp = 240f, offsetYDp = -240f)
+                val g = WheelGeometry.calculate(screen, 1f, layout, WheelLayoutSettings(240f, selectedScale = 1.5f), 9,
+                    Bounds(screen.x, screen.y, 16f, 100f), edge)
+                assertTrue(g.capacity in 1..6)
+                for (selected in listOf<Int?>(null) + (0 until g.count).toList()) g.slices(selected).forEach { slice ->
+                    assertTrue(slice.point.x - slice.size / 2f >= screen.x)
+                    assertTrue(slice.point.y - slice.size / 2f >= screen.y)
+                    assertTrue(slice.point.x + slice.size / 2f <= screen.x + screen.width)
+                    assertTrue(slice.point.y + slice.size / 2f <= screen.y + screen.height)
+                }
+            }
+        }
+    }
+    @Test fun screensTooSmallForTouchTargetsKeepTheCenterVisibleAndHaveNoActions() {
+        for (edge in Edge.entries) {
+            val screen = Bounds(10f, 20f, 40f, 40f)
+            val g = WheelGeometry.calculate(screen, 1f, PanelLayout(), WheelLayoutSettings(), 6, screen, edge)
+            assertEquals(0, g.capacity); assertEquals(0, g.count)
+            assertTrue(g.center.x in screen.x..(screen.x + screen.width))
+            assertTrue(g.center.y in screen.y..(screen.y + screen.height))
+            assertNull(g.hit(g.center.x, g.center.y, 0f, 240f))
+        }
+    }
 }
