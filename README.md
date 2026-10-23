@@ -1,6 +1,5 @@
 <h1 align="center">
-  <img src=".github/assets/nudge-logo.svg" alt="" width="64" height="64" align="middle" />
-  Nudge
+  <img src=".github/assets/nudge-header.svg" alt="Nudge" width="310" height="80" />
 </h1>
 
 <p align="center">
