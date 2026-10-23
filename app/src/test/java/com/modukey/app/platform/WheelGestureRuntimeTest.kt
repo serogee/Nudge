@@ -1,6 +1,7 @@
 package com.modukey.app.platform
 
 import android.app.KeyguardManager
+import android.content.Intent
 import android.os.Looper
 import android.os.PowerManager
 import android.view.MotionEvent
@@ -36,7 +37,8 @@ class WheelGestureRuntimeTest {
         override fun hide(animate: Boolean) { spec = null }
         override fun refreshSound() = Unit
     }
-    private data class Fixture(val service: EdgeAccessibilityService, val view: HandleTriggerView, val host: Host)
+    private data class Fixture(val service: EdgeAccessibilityService, val view: HandleTriggerView, val host: Host,
+        val dismiss: (PanelDismissReason) -> Unit)
     private fun fixture(allowLater: Boolean = false, slot: GestureSlot = GestureSlot.SWIPE_1, drag: Boolean = true): Fixture {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create(); destroy = { controller.destroy() }
         val service = controller.get()
@@ -52,9 +54,11 @@ class WheelGestureRuntimeTest {
         app.configuration.update { AppConfiguration(enabled = true, handles = listOf(handle), panels = listOf(panel)) }
         ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
         await { app.status.state.value.attachedHandleIds.contains(handle.id) }
+        val originalHost = ReflectionHelpers.getField<AccessibilityPanelHost>(service, "panelHost")
+        val dismiss = ReflectionHelpers.getField<(PanelDismissReason) -> Unit>(originalHost, "onDismiss")
         val host = Host(); ReflectionHelpers.setField(service, "panelHost", host)
         val view = ReflectionHelpers.getField<Map<String, HandleTriggerView>>(service, "views").getValue(handle.id)
-        return Fixture(service, view, host)
+        return Fixture(service, view, host, dismiss)
     }
     private fun touch(view: HandleTriggerView, action: Int, x: Float = 1f, y: Float = 200f) {
         val now = android.os.SystemClock.uptimeMillis()
@@ -129,6 +133,26 @@ class WheelGestureRuntimeTest {
         assertTrue(f.host.spec!!.wheelDragging)
         assertEquals(HoldExecution.ON_RELEASE, app.configuration.state.value!!.handle("handle")!!.trigger.holdExecution)
         touch(f.view, MotionEvent.ACTION_CANCEL); idle(); assertNull(f.host.spec)
+    }
+    @Test fun backScreenOffInterruptionAndServiceLossCancelHighlightedPicks() {
+        val f = fixture()
+        for (ending in 0..3) {
+            open(f)
+            val p = f.host.spec!!.geometry.wheel!!.slices().single().point
+            touch(f.view, MotionEvent.ACTION_MOVE, p.x, p.y); idle()
+            assertEquals(0, f.host.spec!!.wheelSelection)
+            when (ending) {
+                0 -> f.dismiss(PanelDismissReason.BACK)
+                1 -> app.sendBroadcast(Intent(Intent.ACTION_SCREEN_OFF))
+                2 -> f.service.onInterrupt()
+                else -> f.service.onUnbind(Intent())
+            }
+            idle()
+            assertNull(f.host.spec)
+            assertNull(ReflectionHelpers.getField<Any?>(f.service, "wheelBinding"))
+            touch(f.view, MotionEvent.ACTION_UP, p.x, p.y); idle()
+            assertFalse(app.configuration.state.value!!.handle("handle")!!.indicatorHidden)
+        }
     }
     @Test fun swipeHoldCapturesAtItsDeadlineAndKeepsReleaseExecutionSaved() {
         val f = fixture(slot = GestureSlot.SWIPE_HOLD)
