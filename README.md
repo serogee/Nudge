@@ -146,7 +146,13 @@ See [development and releases](docs/development.md) for repository conventions, 
 
 ## License
 
-A license has not been selected for this repository yet.
+Copyright (C) 2026 serogee and Nudge contributors.
+
+Nudge is free software. You can redistribute it and modify it under the GNU General Public License, as published by the Free Software Foundation, either version 3 of the License or, at your option, any later version.
+
+See [LICENSE](LICENSE) for the full terms. SPDX identifier: `GPL-3.0-or-later`.
+
+Nudge is distributed without any warranty. Third-party components retain their own licenses and notices.
 
 ## Contact and support
 

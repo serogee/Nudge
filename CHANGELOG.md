@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- License Nudge under GNU GPL version 3 or later. Include the project notice and full license text in APK assets.
 - Reorganize the README and user guide. Replace repeated release checklists with one development and release guide.
 - Edit slider values by selecting their readouts. Keep percentage and dp entries within each slider's minimum and maximum.
 - Use a partially transparent background for action-picker gear badges. Keep the gear icon fully opaque.

@@ -35,6 +35,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Finalize-Releas
 
 These integration checks use isolated fixtures. They do not build or publish a real release.
 
+## Licensing
+
+Nudge uses [GNU GPL version 3 or later](../LICENSE), identified as `GPL-3.0-or-later`. The README states the project's license grant. The APK includes the same grant and full license text in `assets/licenses/nudge.txt`.
+
+When distributing an APK, provide its matching Corresponding Source under the license. Include the source files and build scripts needed to make that version. Preserve third-party licenses and required notices. Keep the bundled license text identical to the root LICENSE file after its project notice.
+
 ## Device verification
 
 With Android platform-tools on PATH, connect and authorize a phone through USB debugging:
