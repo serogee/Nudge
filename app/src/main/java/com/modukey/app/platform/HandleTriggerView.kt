@@ -37,8 +37,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     val isTouching get() = touching
     var touchX = 0f; private set
     var touchY = 0f; private set
-    private var sliderMove: ((Float, Float, Boolean) -> Unit)? = null
-    private var sliderEnd: ((Boolean) -> Unit)? = null
+    private var interactionMove: ((Float, Float, Boolean) -> Unit)? = null
+    private var interactionEnd: ((Boolean) -> Unit)? = null
     private var pull = 0f
     private var pullAnimator: ValueAnimator? = null
     val hasInteraction get() = touching || pullAnimator != null
@@ -99,17 +99,17 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         settings.holdExecution == HoldExecution.AFTER_TIME || policy.holdAtDeadline,
         settings.swipeHoldExecution == HoldExecution.AFTER_TIME || policy.swipeHoldAtDeadline, settings.swipeHoldDistanceMode,
         policy.swipeAtDistance, policy.swipeHoldEnabled, settings.swipeDistanceMode)
-    fun captureSlider(move: (Float, Float, Boolean) -> Unit, ended: (Boolean) -> Unit): Boolean {
-        if (!touching || editing || sliderMove != null) return false
-        sliderMove = move; sliderEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)
+    fun captureInteraction(move: (Float, Float, Boolean) -> Unit, ended: (Boolean) -> Unit): Boolean {
+        if (!touching || editing || interactionMove != null) return false
+        interactionMove = move; interactionEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)
         return true
     }
-    private fun endSlider(cancelled: Boolean) {
-        val end = sliderEnd; sliderMove = null; sliderEnd = null
+    private fun endInteraction(cancelled: Boolean) {
+        val end = interactionEnd; interactionMove = null; interactionEnd = null
         end?.invoke(cancelled)
     }
     fun cancelGesture() {
-        endSlider(true)
+        endInteraction(true)
         gesture.cancel(); gestureHandler.removeCallbacks(deadline); touching = false; resetPull(); onIdle()
         softHide.touch(false, SystemClock.uptimeMillis()); scheduleExpiry()
     }
@@ -255,12 +255,12 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         eventTime = event.eventTime; eventUptime = SystemClock.uptimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                endSlider(true); resetPull(); touching = true; policy = gesturePolicy(); gesture = recognizer()
+                endInteraction(true); resetPull(); touching = true; policy = gesturePolicy(); gesture = recognizer()
                 softHide.touch(true, SystemClock.uptimeMillis()); scheduleExpiry(); gesture.down(event.rawX, event.rawY, event.eventTime); scheduleDeadline(event.eventTime)
             }
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> cancelGesture()
             MotionEvent.ACTION_MOVE -> if (event.pointerCount == 1) {
-                val slide = sliderMove
+                val slide = interactionMove
                 if (slide != null) slide(event.rawX, event.rawY, true) else {
                     gesture.move(event.rawX, event.rawY, event.eventTime)
                     updatePull()
@@ -269,15 +269,15 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             } else cancelGesture()
             MotionEvent.ACTION_UP -> {
                 softHide.touch(false, SystemClock.uptimeMillis()); gestureHandler.removeCallbacks(deadline)
-                val slide = sliderMove
-                val kind = if (slide != null) { slide(event.rawX, event.rawY, false); endSlider(false); null } else gesture.up(event.rawX, event.rawY, event.eventTime)
+                val slide = interactionMove
+                val kind = if (slide != null) { slide(event.rawX, event.rawY, false); endInteraction(false); null } else gesture.up(event.rawX, event.rawY, event.eventTime)
                 touching = false; releasePull(); kind?.let(::completeGesture); scheduleExpiry()
             }
         }
         return true
     }
     override fun performClick(): Boolean {
-        if (editing || retired || sliderMove != null) return false
+        if (editing || retired || interactionMove != null) return false
         super.performClick(); completeGesture(GestureKind.TAP); return true
     }
 }

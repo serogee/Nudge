@@ -280,7 +280,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         }, startX = view.touchX, holdMs = if (guarded) target.sliderHoldMs else 0, slopPx = 8f * resources.displayMetrics.density,
             readOnArm = { if (target.volume) app.volume.read()?.fraction else app.brightness.fraction() },
             onArmed = { if (handle.trigger.feedback(GestureKind.SWIPE).enabled) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) })
-        val captured = view.captureSlider(driver::move) { cancelled ->
+        val captured = view.captureInteraction(driver::move) { cancelled ->
             val completed = driver.finish(cancelled)
             val owns = sliderBinding === binding
             if (owns) sliderBinding = null
