@@ -13,6 +13,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [31, 36])
 @Suppress("DEPRECATION")
 class NativeBrightnessNodeTest {
+    @Test fun changingBoundsDoesNotReplaceTheSameNativeBrightnessControl() {
+        val first = NativeBrightnessNode.read(listOf(root()))!!
+        val moved = node("brightness_slider").apply {
+            shadowOf(this).addChild(slider().apply { setBoundsInScreen(Rect(30, 70, 230, 110)) })
+        }
+        val next = NativeBrightnessNode.read(listOf(moved))!!
+        assertTrue(first.sameRange(next))
+        assertNotEquals(first.touchBounds, next.touchBounds)
+        assertFalse(first.requiresTouch)
+    }
     private fun node(id: String, pkg: String = NativeBrightnessNode.SYSTEM_UI) = AccessibilityNodeInfo.obtain().apply {
         packageName = pkg; viewIdResourceName = "$pkg:id/$id"; isVisibleToUser = true; isEnabled = true
         setBoundsInScreen(Rect(10, 20, 210, 60))

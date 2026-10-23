@@ -9,6 +9,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlinx.coroutines.*
+import android.os.Looper
+import org.robolectric.Shadows.shadowOf
+import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36], shadows = [BrightnessControllerTest.Writes::class])
@@ -16,9 +20,30 @@ class BrightnessCalibrationRestoreTest {
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     private val resolver get() = app.contentResolver
     @After fun cleanup() {
+        BrightnessControllerTest.Writes.onWrite = null
         BrightnessControllerTest.Writes.failedSetting = null; BrightnessControllerTest.Writes.allowed = true
         BrightnessCalibrationRestore(app).discard(); app.onTerminate()
         BrightnessControllerTest.Writes.allowed = false
+    }
+    @Test fun unchangedSavedLevelsStillClearTemporaryNativePreviewsBeforeRestoration() {
+        BrightnessControllerTest.Writes.allowed = true
+        for (level in listOf(0, 1, 41, 255)) {
+            set(level, 1)
+            val journal = BrightnessCalibrationRestore(app)
+            assertTrue(journal.begin())
+            val seen = mutableListOf<Int>()
+            BrightnessControllerTest.Writes.onWrite = { seen += Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS) }
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+            var result: Boolean? = null
+            scope.launch { result = journal.restoreAfterTouch() }
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(201))
+            assertEquals(true, result)
+            assertTrue(seen.any { it != level })
+            assertEquals(level, Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS))
+            assertEquals(1, Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
+            assertFalse(journal.pending)
+            scope.cancel(); BrightnessControllerTest.Writes.onWrite = null
+        }
     }
     private fun set(level: Int, mode: Int) {
         Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, level)

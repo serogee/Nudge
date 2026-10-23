@@ -28,12 +28,22 @@ import org.robolectric.annotation.Config
 class AutomaticBrightnessCalibrationInterfaceTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     private val app get() = rule.activity.application as NudgeApplication
-    @After fun cleanup() { app.automaticCalibration.recover(false); app.onTerminate(); app.calibrationOptions.setKeepServiceEnabled(false); BrightnessControllerTest.Writes.allowed = false }
+    @After fun cleanup() { app.automaticCalibration.recover(false); app.onTerminate(); app.calibrationOptions.setKeepServiceEnabled(false); app.calibrationOptions.setTouchCompletionEnabled(false); BrightnessControllerTest.Writes.allowed = false }
     private fun content() {
         BrightnessControllerTest.Writes.allowed = true
         shadowOf(app.getSystemService(PowerManager::class.java)).setIsInteractive(true)
         shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
         rule.activity.setContent { NudgeTheme { Column(Modifier.verticalScroll(rememberScrollState())) { BrightnessCalibrationSection() } } }
+    }
+    @Test fun sliderTouchesNeedConsentAndCancelKeepsThemDisabled() {
+        content()
+        rule.onNodeWithContentDescription("Slider touch completion").performScrollTo().performClick()
+        rule.onNodeWithText("Allow slider touch").assertExists()
+        rule.onNodeWithText("Cancel").performClick()
+        rule.runOnIdle { assertFalse(app.calibrationOptions.touchCompletionEnabled.value) }
+        rule.onNodeWithContentDescription("Slider touch completion").performClick()
+        rule.onNodeWithText("Allow slider touch").performClick()
+        rule.runOnIdle { assertTrue(app.calibrationOptions.touchCompletionEnabled.value) }
     }
     @Test fun disclosureDoesNotStartCalibrationAndManualCalibrationRemainsAvailable() {
         content()

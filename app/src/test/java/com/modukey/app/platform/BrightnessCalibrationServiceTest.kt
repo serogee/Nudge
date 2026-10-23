@@ -31,6 +31,7 @@ import org.robolectric.shadows.ShadowAccessibilityService
 import org.robolectric.util.ReflectionHelpers
 import java.time.Duration
 import kotlin.math.roundToInt
+import kotlinx.coroutines.*
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36], shadows = [BrightnessControllerTest.Writes::class, BrightnessCalibrationServiceTest.ServiceInfo::class, AtomicFilePlatformShadow::class])
@@ -49,6 +50,7 @@ class BrightnessCalibrationServiceTest {
     @After fun cleanup() {
         destroy(); BrightnessCalibrationRestore(app).discard(); app.onTerminate()
         app.calibrationOptions.setKeepServiceEnabled(false)
+        app.calibrationOptions.setTouchCompletionEnabled(false)
         BrightnessControllerTest.Writes.allowed = false
     }
     private fun idle(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
@@ -88,17 +90,74 @@ class BrightnessCalibrationServiceTest {
         if (activeOnly) shadowOf(service).setRootInActiveWindow(node)
         return node
     }
-    @Test fun calibrationHasSeparateContentCapabilityWithoutGesturesOrScreenshots() {
+    @Test fun onlyCalibrationCanUseOptionalNativeSliderTouchesAndNeitherServiceCanTakeScreenshots() {
         fun attribute(resource: Int, name: String): Boolean = app.resources.getXml(resource).use { xml ->
             while (xml.next() != org.xmlpull.v1.XmlPullParser.START_TAG) Unit
             xml.getAttributeBooleanValue("http://schemas.android.com/apk/res/android", name, false)
         }
         assertFalse(attribute(R.xml.accessibility_service, "canRetrieveWindowContent"))
         assertTrue(attribute(R.xml.brightness_calibration_service, "canRetrieveWindowContent"))
-        for (name in listOf("canPerformGestures", "canTakeScreenshot", "canRequestFilterKeyEvents", "canRequestTouchExplorationMode"))
+        assertFalse(attribute(R.xml.accessibility_service, "canPerformGestures"))
+        assertTrue(attribute(R.xml.brightness_calibration_service, "canPerformGestures"))
+        assertFalse(app.calibrationOptions.touchCompletionEnabled.value)
+        for (name in listOf("canTakeScreenshot", "canRequestFilterKeyEvents", "canRequestTouchExplorationMode"))
             for (resource in listOf(R.xml.brightness_calibration_service, R.xml.accessibility_service)) assertFalse(attribute(resource, name))
         val metadata = app.packageManager.getServiceInfo(ComponentName(app, BrightnessCalibrationService::class.java), PackageManager.GET_META_DATA)
         assertEquals("android.permission.BIND_ACCESSIBILITY_SERVICE", metadata.permission)
+    }
+    @Test fun nativeTouchWaitsForUpdatedProgressAndRejectsCoveringWindowsBeforeWriting() {
+        shadowOf(app.packageManager).installPackage(android.content.pm.PackageInfo().apply {
+            packageName = NativeBrightnessNode.MIUI_PLUGIN
+            applicationInfo = ApplicationInfo().apply { packageName = NativeBrightnessNode.MIUI_PLUGIN; flags = ApplicationInfo.FLAG_SYSTEM }
+        })
+        val service = fixture()
+        app.calibrationOptions.setTouchCompletionEnabled(true)
+        ReflectionHelpers.setField(service.serviceInfo, "mCapabilities", AccessibilityServiceInfo.CAPABILITY_CAN_PERFORM_GESTURES)
+        assertTrue(service.open())
+        ReflectionHelpers.setField(service, "brightnessLabels", setOf("Brightness"))
+        val node = AccessibilityNodeInfo.obtain().apply {
+            packageName = NativeBrightnessNode.MIUI_PLUGIN; viewIdResourceName = "${NativeBrightnessNode.MIUI_PLUGIN}:id/slider"
+            className = "android.widget.SeekBar"; contentDescription = "Brightness"
+            isEnabled = true; isVisibleToUser = true
+            setBoundsInScreen(android.graphics.Rect(20, 100, 80, 300))
+            rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 1600f, 800f)
+            addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS)
+        }
+        val window = AccessibilityWindowInfo.obtain().also {
+            shadowOf(it).setId(1); shadowOf(it).setLayer(1); shadowOf(it).setType(AccessibilityWindowInfo.TYPE_APPLICATION)
+            shadowOf(it).setBoundsInScreen(android.graphics.Rect(0, 0, 320, 470)); shadowOf(it).setRoot(node)
+        }
+        shadowOf(node).setAccessibilityWindowInfo(window)
+        val cover = AccessibilityWindowInfo.obtain().also {
+            shadowOf(it).setId(2); shadowOf(it).setLayer(2)
+            shadowOf(it).setBoundsInScreen(android.graphics.Rect(20, 100, 80, 300))
+        }
+        shadowOf(service).setWindows(listOf(window, cover))
+        var moves = 0; var releases = 0; var result: Boolean? = null
+        shadowOf(node).setOnPerformActionListener { _, args ->
+            moves++
+            val target = args.getFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE)
+            android.os.Handler(Looper.getMainLooper()).postDelayed({
+                node.rangeInfo = AccessibilityNodeInfo.RangeInfo.obtain(0, 0f, 1600f, target)
+            }, 200)
+            true
+        }
+        val completion = NativeBrightnessTouchCompletion(service) { gesture, callback ->
+            releases++; callback.onCompleted(gesture); true
+        }
+        ReflectionHelpers.setField(service, "touchCompletion\$delegate", lazyOf(completion))
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            val expected = requireNotNull(service.control())
+            assertTrue(expected.requiresTouch)
+            scope.launch { result = service.apply(expected, .25f) }; idle(10)
+            assertEquals(false, result); assertEquals(0, moves); assertEquals(0, releases)
+            shadowOf(service).setWindows(listOf(window)); result = null
+            scope.launch { result = service.apply(expected, .25f) }; idle(100)
+            assertNull(result); assertEquals(1, moves); assertEquals(0, releases)
+            idle(200)
+            assertEquals(true, result); assertEquals(1, releases)
+        } finally { scope.cancel() }
     }
     @Test fun unsolicitedConnectionDisablesItselfWithoutOpeningOrReadingControls() {
         val service = fixture(consent = false)

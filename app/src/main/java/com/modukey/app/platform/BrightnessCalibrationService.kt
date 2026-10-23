@@ -23,6 +23,9 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.modukey.app.NudgeApplication
 import com.modukey.app.R
+import com.modukey.app.core.Bounds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Reads controls only during an explicit run, including when the user keeps the service enabled. */
 class BrightnessCalibrationService : AccessibilityService(), CalibrationServicePort {
@@ -48,6 +51,10 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     private var lastDiscovery: String? = null
     private var discoveryReports = 0
     private var brightnessLabels: Set<String> = emptySet()
+    private val touchCompletion by lazy { NativeBrightnessTouchCompletion(this) }
+    override val inputInProgress get() = touchCompletion.active
+    override val canCompleteTouch get() = (application as NudgeApplication).calibrationOptions.touchCompletionEnabled.value &&
+        ((serviceInfo?.capabilities ?: 0) and AccessibilityServiceInfo.CAPABILITY_CAN_PERFORM_GESTURES != 0)
     private val manager get() = getSystemService(WindowManager::class.java)
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) { if (!stopping) coordinator.cancel(AutomaticCalibrationError.LOCKED) }
@@ -120,6 +127,39 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         }
     }
     override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean = NativeBrightnessNode.move(roots(), expected, fraction, owners, brightnessLabels)
+    private fun unobscured(control: NativeBrightnessControl, screen: Bounds): Boolean {
+        val point = NativeBrightnessTouchCompletion.completionPoint(control, screen) ?: return false
+        val regions = windows.map { window ->
+            val bounds = android.graphics.Rect(); window.getBoundsInScreen(bounds)
+            NativeBrightnessTouchCompletion.Companion.WindowRegion(window.id, window.layer,
+                Bounds(bounds.left.toFloat(), bounds.top.toFloat(), bounds.width().toFloat(), bounds.height().toFloat()))
+        }
+        return NativeBrightnessTouchCompletion.unobscured(point, control.windowId, regions)
+    }
+    override suspend fun apply(expected: NativeBrightnessControl, fraction: Float): Boolean {
+        if (!running || stopping) return false
+        if (!expected.requiresTouch) return move(expected, fraction)
+        if (!canCompleteTouch || !getSystemService(PowerManager::class.java).isInteractive ||
+            getSystemService(KeyguardManager::class.java).isKeyguardLocked) return false
+        val metrics = resources.displayMetrics
+        val screen = Bounds(0f, 0f, metrics.widthPixels.toFloat(), metrics.heightPixels.toFloat())
+        val before = control()?.takeIf { expected.sameRange(it) && it.requiresTouch } ?: return false
+        if (!unobscured(before, screen)) return false
+        if (!move(expected, fraction)) return false
+        // Progress actions can complete before the accessibility cache receives the updated range.
+        val fresh = withTimeoutOrNull(1_000) {
+            var current = control()
+            while (current != null && expected.sameRange(current) && current.requiresTouch && !current.matches(fraction)) {
+                delay(50)
+                current = control()
+            }
+            current?.takeIf { expected.sameRange(it) && it.requiresTouch && it.matches(fraction) }
+        } ?: return false
+        if (!running || stopping || !canCompleteTouch || !getSystemService(PowerManager::class.java).isInteractive ||
+            getSystemService(KeyguardManager::class.java).isKeyguardLocked) return false
+        if (!unobscured(fresh, screen)) return false
+        return touchCompletion.release(fresh, screen)
+    }
     override fun waitingForPanel() { status?.setText(R.string.auto_calibration_waiting_panel) }
     override fun progress(percent: Int) { status?.text = getString(R.string.auto_calibration_progress, percent) }
     private fun showProgress() {

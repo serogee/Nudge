@@ -45,9 +45,9 @@ class NudgeApplication : Application() {
     }
     val brightness by lazy { BrightnessController(this) }
     val calibrationOptions by lazy { BrightnessCalibrationOptions(this) }
-    val automaticCalibration by lazy { AutomaticBrightnessCalibration(ControllerCalibrationAccess(brightness), {
+    val automaticCalibration: AutomaticBrightnessCalibration by lazy { AutomaticBrightnessCalibration(ControllerCalibrationAccess(brightness), {
         getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
-    }, keepServiceEnabled = { calibrationOptions.keepServiceEnabled.value }) }
+    }, keepServiceEnabled = { calibrationOptions.keepServiceEnabled.value }, diagnostic = { diagnostics.record(it) }) }
     val icons by lazy { IconRepository(this) }
     val unlocks = UnlockRequests()
     val diagnostics by lazy { LocalDiagnostics(this, scope) }

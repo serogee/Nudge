@@ -10,6 +10,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Duration
 import kotlin.math.roundToInt
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36])
@@ -35,18 +38,33 @@ class AutomaticBrightnessCalibrationTest {
         var fraction = .5f; var reads = 0; var opens = 0; var closes = 0; var disables = 0
         var exposed = true; var accepted = true; var key = "brightness"; var duplicateSamples = false
         var quantized = false; var writeDelay = 0L
+        var touchRequired = false
+        override var canCompleteTouch = false
+        override var inputInProgress = false
+        private var temporary = 0
         val moves = mutableListOf<Float>()
         override fun open(): Boolean { opens++; return true }
         override fun control(): NativeBrightnessControl? {
-            reads++; return if (exposed) NativeBrightnessControl(key, 0f, 1600f, fraction * 1600, true) else null
+            reads++; return if (exposed) NativeBrightnessControl(key, 0f, 1600f, fraction * 1600, true, requiresTouch = touchRequired) else null
         }
         override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean {
             if (!accepted) return false
             moves += fraction; this.fraction = fraction
             val point = (fraction * 16).roundToInt()
             val level = if (duplicateSamples) 25 else if (quantized) point / 2 else (point * point).coerceAtMost(255)
-            if (writeDelay == 0L) brightness.level = level
+            if (touchRequired) temporary = level
+            else if (writeDelay == 0L) brightness.level = level
             else android.os.Handler(Looper.getMainLooper()).postDelayed({ brightness.level = level }, writeDelay)
+            return true
+        }
+        override suspend fun apply(expected: NativeBrightnessControl, fraction: Float): Boolean {
+            if (touchRequired && !canCompleteTouch) return false
+            if (!move(expected, fraction)) return false
+            if (touchRequired) {
+                inputInProgress = true
+                try { withContext(NonCancellable) { delay(50); brightness.level = temporary } }
+                finally { inputInProgress = false }
+            }
             return true
         }
         override fun progress(percent: Int) = Unit
@@ -54,6 +72,44 @@ class AutomaticBrightnessCalibrationTest {
         override fun disable() { disables++; close() }
     }
     private var coordinator: AutomaticBrightnessCalibration? = null
+    @Test fun temporaryOnlySlidersNeedConsentBeforeAnyBrightnessChange() {
+        val (next, brightness, port) = run()
+        port.touchRequired = true
+        next.start(); idle(100)
+        assertEquals(AutomaticCalibrationError.TOUCH_REQUIRED, next.state.value.error)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        assertEquals(0, brightness.restores); assertTrue(port.moves.isEmpty())
+    }
+    @Test fun touchCompletionCommitsSeventeenNativePositionsBeforeReview() {
+        val (next, brightness, port) = run()
+        port.touchRequired = true; port.canCompleteTouch = true
+        next.start(); idle(14_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+        assertEquals((0..16).map { (it * it).coerceAtMost(255) }, next.state.value.samples)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        assertEquals(1, brightness.restores); assertFalse(port.inputInProgress)
+    }
+    @Test fun cancellationWaitsForNativeReleaseBeforeRestoringBrightness() {
+        val (next, brightness, port) = run()
+        port.touchRequired = true; port.canCompleteTouch = true
+        next.start(); idle(10)
+        assertTrue(port.inputInProgress)
+        next.cancel()
+        assertEquals(0, brightness.restores)
+        idle(1_000)
+        assertEquals(AutomaticCalibrationPhase.CANCELLED, next.state.value.phase)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        assertEquals(1, brightness.restores); assertFalse(port.inputInProgress)
+    }
+    @Test fun disconnectDuringNativeTouchStillReleasesBeforeRestoration() {
+        val (next, brightness, port) = run()
+        port.touchRequired = true; port.canCompleteTouch = true
+        next.start(); idle(10); next.disconnected(port)
+        assertEquals(0, brightness.restores)
+        idle(1_000)
+        assertEquals(AutomaticCalibrationError.DISCONNECTED, next.state.value.error)
+        assertEquals(87, brightness.level); assertEquals(1, brightness.restores)
+    }
     @After fun cleanup() { coordinator?.close() }
     private fun idle(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
     private fun run(brightness: Brightness = Brightness(), awake: () -> Boolean = { true },
