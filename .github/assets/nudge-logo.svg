@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" role="img" aria-labelledby="title">
+  <title id="title">Nudge app logo</title>
+  <path fill="#DDF6A5" d="M30,0H78A30,30 0,0 1,108 30V78A30,30 0,0 1,78 108H30A30,30 0,0 1,0 78V30A30,30 0,0 1,30 0Z"/>
+  <g transform="translate(0 4.15)" fill="none" stroke="#20251C" stroke-width="14" stroke-linecap="round">
+    <path d="M34,51.5L34,71M37,27L74,74"/>
+    <path d="M74,25.7L74,45.7"/>
+  </g>
+</svg>

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Reorganize the README and user guide. Replace repeated release checklists with one development and release guide.
 - Edit slider values by selecting their readouts. Keep percentage and dp entries within each slider's minimum and maximum.
 - Use a partially transparent background for action-picker gear badges. Keep the gear icon fully opaque.
 - Wait for the native brightness control before recording or changing brightness. Allow 30 seconds to open the correct panel.
