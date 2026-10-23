@@ -83,4 +83,18 @@ class WheelPickerTest {
         val pick = WheelPickSettings(minimumDistanceDp = 160f, maximumDistanceDp = -1f, releaseWindowMs = 1).normalized()
         assertEquals(168f, pick.maximumDistanceDp); assertEquals(100, pick.releaseWindowMs.toInt())
     }
+    @Test fun capacityPreventsSquareTargetOverlapInEveryExpansionState() {
+        for (edge in Edge.entries) for (cell in listOf(48f, 56f, 96f)) for (radius in listOf(96f, 128f, 200f, 240f)) for (scale in listOf(1f, 1.25f, 1.5f)) {
+            val g = WheelGeometry.calculate(Bounds(0f, 0f, 900f, 900f), 1f, PanelLayout(buttonSizeDp = cell),
+                WheelLayoutSettings(radius, selectedScale = scale), 6, Bounds(0f, 300f, 16f, 120f), edge)
+            for (selected in listOf<Int?>(null) + (0 until g.count).toList()) {
+                val slices = g.slices(selected)
+                slices.forEach { assertTrue(it.size >= 48f) }
+                for (a in slices.indices) for (b in a + 1 until slices.size) {
+                    val spacing = (slices[a].size + slices[b].size) / 2f + 8f
+                    assertTrue(kotlin.math.abs(slices[a].point.x - slices[b].point.x) >= spacing || kotlin.math.abs(slices[a].point.y - slices[b].point.y) >= spacing)
+                }
+            }
+        }
+    }
 }

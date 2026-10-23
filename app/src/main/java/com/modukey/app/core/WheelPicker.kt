@@ -68,13 +68,17 @@ object WheelGeometry {
         val side = edge != Edge.BOTTOM
         val radius = minOf(s.radiusDp * d, (if (side) screen.height / 2f else screen.width / 2f) - margin,
             (if (side) screen.width else screen.height) - margin * 2f).coerceAtLeast(0f)
-        // Use the narrowest neighbor region at maximum expansion, even before a button is selected.
+        // Check actual square targets, including each expanded layout. Arc length alone can allow corner overlap.
         val capacity = (6 downTo 1).firstOrNull { n ->
-            val step = PI.toFloat() / n
-            val narrow = if (n > 1) step * (2f - expansion) else step
-            val normalSpace = 2f * radius * sin(step / 2f)
-            val smallSpace = 2f * radius * sin(narrow / 2f)
-            radius > 0f && (n == 1 || (normalSpace >= cell + 8f * d && smallSpace >= 56f * d))
+            val candidate = WheelGeometryResult(screen, WheelPoint(0f, 0f), edge, radius, cell, n, n, expansion, 48f * d)
+            radius > 0f && screen.width >= margin * 2f && screen.height >= margin * 2f &&
+                (listOf<Int?>(null) + (0 until n).toList()).all { selected ->
+                    val slices = candidate.slices(selected)
+                    slices.indices.all { a -> (a + 1 until n).all { b ->
+                        val separation = (slices[a].size + slices[b].size) / 2f + 8f * d
+                        abs(slices[a].point.x - slices[b].point.x) >= separation || abs(slices[a].point.y - slices[b].point.y) >= separation
+                    } }
+                }
         } ?: 0
         val width = if (side) radius + margin * 2f else (radius + margin) * 2f
         val height = if (side) (radius + margin) * 2f else radius + margin * 2f
