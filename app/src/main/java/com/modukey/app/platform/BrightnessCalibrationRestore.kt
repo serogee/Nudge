@@ -6,6 +6,9 @@ import android.provider.Settings
 import android.util.AtomicFile
 import org.json.JSONObject
 import java.io.File
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /** The journal contains only the original brightness and mode, never window content. */
 internal class BrightnessCalibrationRestore(private val context: Context) {
@@ -43,6 +46,25 @@ internal class BrightnessCalibrationRestore(private val context: Context) {
                 !Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, mode) ||
                 Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE) != mode) return false
             discard()
+        }.getOrDefault(false)
+    }
+    /** A no-change saved value cannot clear a native temporary preview. Force one real setting change first. */
+    suspend fun restoreAfterTouch(): Boolean = withContext(NonCancellable) {
+        if (!pending || !Settings.System.canWrite(context)) return@withContext !pending
+        runCatching {
+            val record = JSONObject(journal.openRead().use { it.readBytes().also { bytes -> require(bytes.size <= 2048) }.toString(Charsets.UTF_8) })
+            require(record.getString("fingerprint") == Build.FINGERPRINT)
+            val level = record.getInt("level")
+            val mode = record.getInt("mode")
+            require(level in 0..65535 && mode in 0..1)
+            if (Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS) == level) {
+                val different = if (level <= 1) 2 else level - 1
+                if (!Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0) ||
+                    !Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, different)) return@runCatching false
+                // Give the display's setting observer time to clear its temporary-brightness override.
+                delay(200)
+            }
+            restore()
         }.getOrDefault(false)
     }
     fun discard(): Boolean = runCatching { journal.delete(); !pending }.getOrDefault(false)

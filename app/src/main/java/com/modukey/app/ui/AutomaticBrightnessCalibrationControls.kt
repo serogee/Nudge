@@ -28,6 +28,8 @@ import com.modukey.app.platform.*
     val state by coordinator.state.collectAsState()
     val connected by coordinator.connected.collectAsState()
     val keepServiceEnabled by app.calibrationOptions.keepServiceEnabled.collectAsState()
+    val touchCompletion by app.calibrationOptions.touchCompletionEnabled.collectAsState()
+    var touchConsent by rememberSaveable { mutableStateOf(false) }
     var optionError by rememberSaveable { mutableStateOf(false) }
     var consent by rememberSaveable { mutableStateOf(false) }
     var canWrite by remember { mutableStateOf(app.brightness.canWrite) }
@@ -51,6 +53,10 @@ import com.modukey.app.platform.*
         default = false, enabled = !state.busy) { enabled ->
         optionError = !app.calibrationOptions.setKeepServiceEnabled(enabled)
         if (!optionError && !enabled) coordinator.disableService()
+    }
+    Toggle(R.string.calibration_touch_completion, R.string.calibration_touch_completion_help, touchCompletion,
+        default = false, enabled = !state.busy) { enabled ->
+        if (enabled) touchConsent = true else optionError = !app.calibrationOptions.setTouchCompletionEnabled(false)
     }
     if (optionError) Help(R.string.auto_calibration_options_failed)
     if (connected && !state.busy) {
@@ -94,6 +100,14 @@ import com.modukey.app.platform.*
         else -> Unit
     }
     state.error?.let { Help(calibrationError(it)) }
+    if (touchConsent) AlertDialog(onDismissRequest = { touchConsent = false },
+        title = { Text(t(R.string.calibration_touch_completion)) },
+        text = { Help(R.string.calibration_touch_consent) },
+        confirmButton = { TextButton(onClick = {
+            optionError = !app.calibrationOptions.setTouchCompletionEnabled(true)
+            touchConsent = false
+        }) { Text(t(R.string.calibration_touch_allow)) } },
+        dismissButton = { TextButton(onClick = { touchConsent = false }) { Text(t(R.string.cancel)) } })
     if (consent) AlertDialog(onDismissRequest = { consent = false }, title = { Text(t(R.string.automatic_brightness_calibration)) }, text = {
         Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Help(R.string.auto_calibration_consent)
@@ -125,4 +139,5 @@ import com.modukey.app.platform.*
     AutomaticCalibrationError.SAVE -> R.string.auto_calibration_save_failed
     AutomaticCalibrationError.DISCONNECTED -> R.string.auto_calibration_disconnected
     AutomaticCalibrationError.SETTINGS -> R.string.auto_calibration_settings_failed
+    AutomaticCalibrationError.TOUCH_REQUIRED -> R.string.auto_calibration_touch_required
 }

@@ -67,7 +67,7 @@ Feature and fix work stays under **Unreleased**. Do not bump versions, create ve
 4. Generate notes from that published baseline:
 
 ```powershell
-$publishedTag = Read-Host 'Previous published tag, for example v0.4.5'
+$publishedTag = Read-Host 'Previous published tag, for example v0.5.0'
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Generate-Changelog.ps1 -FromTag $publishedTag -Write
 ```
 

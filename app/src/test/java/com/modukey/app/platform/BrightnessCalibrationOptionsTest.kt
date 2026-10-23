@@ -16,6 +16,7 @@ class BrightnessCalibrationOptionsTest {
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     @After fun cleanup() {
         android.util.AtomicFile(File(app.noBackupFilesDir, "brightness-calibration-options")).delete()
+        android.util.AtomicFile(File(app.noBackupFilesDir, "brightness-calibration-touch")).delete()
         app.onTerminate()
     }
     @Test fun keepingTheServiceDefaultsOffAndSurvivesReloadOnlyWhenSelected() {
@@ -31,6 +32,19 @@ class BrightnessCalibrationOptionsTest {
         for (value in listOf(byteArrayOf(), byteArrayOf(2), byteArrayOf(1, 1))) {
             file.writeBytes(value)
             assertFalse(BrightnessCalibrationOptions(app).keepServiceEnabled.value)
+        }
+    }
+    @Test fun touchCompletionNeedsAnExplicitDeviceLocalChoice() {
+        val options = BrightnessCalibrationOptions(app)
+        assertFalse(options.touchCompletionEnabled.value)
+        assertTrue(options.setTouchCompletionEnabled(true))
+        assertTrue(BrightnessCalibrationOptions(app).touchCompletionEnabled.value)
+        assertFalse(BrightnessCalibrationOptions(app).keepServiceEnabled.value)
+        assertTrue(options.setTouchCompletionEnabled(false))
+        assertFalse(BrightnessCalibrationOptions(app).touchCompletionEnabled.value)
+        val file = File(app.noBackupFilesDir, "brightness-calibration-touch")
+        for (value in listOf(byteArrayOf(), byteArrayOf(2), byteArrayOf(1, 1))) {
+            file.writeBytes(value); assertFalse(BrightnessCalibrationOptions(app).touchCompletionEnabled.value)
         }
     }
 }

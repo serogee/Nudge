@@ -79,11 +79,14 @@ import kotlin.math.roundToInt
             }
         }
         if (l.mode == PanelMode.WHEEL) {
-            SettingSlider(R.string.wheel_radius, l.wheel.radiusDp, 96f..240f, t(R.string.dp_value, l.wheel.radiusDp.roundToInt()), default = 128f) { value -> layout { it.copy(wheel = it.wheel.copy(radiusDp = value)) } }
+            SettingSlider(R.string.wheel_radius, l.wheel.radiusDp, 40f..240f, t(R.string.dp_value, l.wheel.radiusDp.roundToInt()), default = 128f) { value -> layout { it.copy(wheel = it.wheel.copy(radiusDp = value)) } }
             Help(R.string.wheel_radius_help)
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
                 SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = 1.25f, valueScale = 100f) { value -> layout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
+            }
+            Toggle(R.string.wheel_animations, R.string.wheel_animations_help, l.wheel.animationsEnabled, default = true) { value ->
+                layout { it.copy(wheel = it.wheel.copy(animationsEnabled = value)) }
             }
         } else {
             OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
@@ -119,9 +122,12 @@ import kotlin.math.roundToInt
         }
     }
     Section(R.string.panel_animation) {
-        OptionRow(t(R.string.open_animation), PanelAnimation.entries, p.animation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(animation = value) } }
-        OptionRow(t(R.string.close_animation), PanelAnimation.entries, p.closeAnimation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(closeAnimation = value) } }
-        Help(R.string.animation_help)
+        if (l.mode == PanelMode.WHEEL && !l.wheel.animationsEnabled) Help(R.string.wheel_animations_help)
+        else {
+            OptionRow(t(R.string.open_animation), PanelAnimation.entries, p.animation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(animation = value) } }
+            OptionRow(t(R.string.close_animation), PanelAnimation.entries, p.closeAnimation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(closeAnimation = value) } }
+            Help(R.string.animation_help)
+        }
     }
     Section(R.string.appearance) {
         ColorPicker(p.background, title = R.string.panel_background, default = panelDefaults.background) { value -> vm.editPanel(entry.id) { it.copy(background = value) } }

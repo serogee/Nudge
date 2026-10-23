@@ -5,6 +5,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PanelWindowAnimationsTest {
+    @Test fun wheelAnimationSwitchAlsoDisablesWindowMotion() {
+        val layout = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(animationsEnabled = false))
+        val panel = PanelConfig(portrait = layout, animation = PanelAnimation.SCALE, closeAnimation = PanelAnimation.FADE)
+        val geometry = PanelGeometry.calculate(Bounds(0f, 0f, 600f, 600f), 1f, layout, 3, Bounds(0f, 200f, 12f, 100f), Edge.LEFT)
+        val spec = PanelSpec(panel, layout, geometry, false)
+        assertFalse(PanelWindowAnimations.enabled(spec)); assertFalse(PanelWindowAnimations.enabled(spec, closing = true))
+    }
     @Test fun `none stays still and fade changes only alpha on every edge`() {
         for (edge in Edge.entries) {
             assertEquals(PanelTransform(), PanelWindowAnimations.hidden(PanelAnimation.NONE, edge))

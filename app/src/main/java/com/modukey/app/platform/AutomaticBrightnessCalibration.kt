@@ -9,13 +9,14 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 enum class AutomaticCalibrationPhase { IDLE, WAITING_SERVICE, READY, RUNNING, REVIEW, SAVED, CANCELLED, FAILED, RECOVERY }
-enum class AutomaticCalibrationError { ACCESS, LOCKED, SETUP_TIMEOUT, UNSUPPORTED, CONTROL_CHANGED, UNSTABLE, INVALID_SAMPLES, RESTORE, SAVE, DISCONNECTED, SETTINGS }
+enum class AutomaticCalibrationError { ACCESS, LOCKED, SETUP_TIMEOUT, UNSUPPORTED, CONTROL_CHANGED, UNSTABLE, INVALID_SAMPLES, RESTORE, SAVE, DISCONNECTED, SETTINGS, TOUCH_REQUIRED }
 data class AutomaticCalibrationState(val phase: AutomaticCalibrationPhase = AutomaticCalibrationPhase.IDLE,
     val position: Int = 0, val samples: List<Int> = emptyList(), val error: AutomaticCalibrationError? = null,
     val waitingForPanel: Boolean = false) {
     val busy get() = phase in listOf(AutomaticCalibrationPhase.WAITING_SERVICE, AutomaticCalibrationPhase.READY, AutomaticCalibrationPhase.RUNNING)
 }
-data class NativeBrightnessControl(val key: String, val minimum: Float, val maximum: Float, val current: Float, val integer: Boolean) {
+data class NativeBrightnessControl(val key: String, val minimum: Float, val maximum: Float, val current: Float, val integer: Boolean,
+    val touchBounds: com.modukey.app.core.Bounds? = null, val requiresTouch: Boolean = false, val windowId: Int = -1) {
     fun target(fraction: Float) = (minimum + (maximum - minimum) * fraction).let { if (integer) it.roundToInt().toFloat() else it }
     fun matches(fraction: Float) = abs(current - target(fraction)) <= if (integer) .51f else maxOf(.0001f, (maximum - minimum) * .00001f)
     fun sameRange(other: NativeBrightnessControl) = key == other.key && minimum == other.minimum && maximum == other.maximum && integer == other.integer
@@ -24,6 +25,9 @@ interface CalibrationServicePort {
     fun open(): Boolean
     fun control(): NativeBrightnessControl?
     fun move(expected: NativeBrightnessControl, fraction: Float): Boolean
+    val canCompleteTouch: Boolean get() = false
+    val inputInProgress: Boolean get() = false
+    suspend fun apply(expected: NativeBrightnessControl, fraction: Float): Boolean = move(expected, fraction)
     fun waitingForPanel() = Unit
     fun progress(percent: Int)
     fun close()
@@ -35,6 +39,7 @@ internal interface CalibrationBrightnessAccess {
     fun begin(): Boolean
     fun sample(): Int?
     fun restore(): Boolean
+    suspend fun restoreAfterTouch(): Boolean = restore()
     fun discardRestore(): Boolean
     fun save(samples: List<Int>): Boolean
 }
@@ -44,6 +49,7 @@ internal class ControllerCalibrationAccess(private val controller: BrightnessCon
     override fun begin() = controller.beginCalibration()
     override fun sample() = controller.calibrationSample()
     override fun restore() = controller.restoreAfterCalibration()
+    override suspend fun restoreAfterTouch() = controller.restoreAfterCalibrationTouch()
     override fun discardRestore() = controller.keepBrightnessAfterCalibration()
     override fun save(samples: List<Int>) = controller.calibration.save(samples)
 }
@@ -52,7 +58,7 @@ internal class ControllerCalibrationAccess(private val controller: BrightnessCon
 class AutomaticBrightnessCalibration internal constructor(private val brightness: CalibrationBrightnessAccess,
     private val awake: () -> Boolean, private val clock: () -> Long = SystemClock::uptimeMillis,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-    private val keepServiceEnabled: () -> Boolean = { false }) {
+    private val keepServiceEnabled: () -> Boolean = { false }, private val diagnostic: (String) -> Unit = {}) {
     private val mutable = MutableStateFlow(AutomaticCalibrationState(if (brightness.pendingRestore) AutomaticCalibrationPhase.RECOVERY else AutomaticCalibrationPhase.IDLE))
     val state = mutable.asStateFlow()
     private val mutableConnected = MutableStateFlow(false)
@@ -61,6 +67,9 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
     private var setup: Job? = null
     private var job: Job? = null
     private var token: Any? = null
+    private var requestedError: AutomaticCalibrationError? = null
+    private var usedTouch = false
+    private var finishing = false
     private class Failure(val reason: AutomaticCalibrationError) : RuntimeException()
 
     fun prepare(): Boolean {
@@ -88,7 +97,7 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         val service = port ?: return
         if (mutable.value.phase != AutomaticCalibrationPhase.READY) return
         setup?.cancel(); setup = null
-        val owner = Any(); token = owner
+        val owner = Any(); token = owner; requestedError = null; usedTouch = false
         mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, waitingForPanel = true)
         job = scope.launch(start = CoroutineStart.LAZY) {
             var result: List<Int>? = null
@@ -103,8 +112,10 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
                 if (control == null) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
                 eligible()
                 if (token !== owner) throw CancellationException()
+                if (control!!.requiresTouch && !service.canCompleteTouch) throw Failure(AutomaticCalibrationError.TOUCH_REQUIRED)
                 if (!brightness.begin()) throw Failure(if (!brightness.canWrite) AutomaticCalibrationError.ACCESS else AutomaticCalibrationError.RESTORE)
                 val expected = requireNotNull(control)
+                usedTouch = expected.requiresTouch
                 result = withTimeout(60_000) {
                     val samples = mutableListOf<Int>()
                     val steps = BrightnessScale.AUTOMATIC_SAMPLE_COUNT - 1
@@ -113,12 +124,19 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
                         val percent = (fraction * 100).roundToInt()
                         eligible(); mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, percent)
                         service.progress(percent)
-                        if (!service.move(expected, fraction)) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
+                        if (!service.apply(expected, fraction)) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
+                        currentCoroutineContext().ensureActive()
                         val value = settled(service, expected, fraction)
-                        if (value !in 0..65535 || samples.lastOrNull()?.let { value < it } == true) throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                        if (value !in 0..65535 || samples.lastOrNull()?.let { value < it } == true) {
+                            diagnostic("Brightness calibration rejected: point=$point; reason=${if (value !in 0..65535) "out_of_range" else "decreasing"}")
+                            throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                        }
                         samples += value
                     }
-                    if (!BrightnessScale.validSamples(samples)) throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                    if (!BrightnessScale.validSamples(samples)) {
+                        diagnostic("Brightness calibration rejected: points=${samples.size}; reason=flat_curve")
+                        throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                    }
                     samples.toList()
                 }
             } catch (error: TimeoutCancellationException) { failure = AutomaticCalibrationError.UNSTABLE }
@@ -139,10 +157,16 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
             while (result == null) {
                 eligible()
                 val current = service.control()
-                if (current != null && !expected.sameRange(current)) throw Failure(AutomaticCalibrationError.CONTROL_CHANGED)
+                if (current != null && !expected.sameRange(current)) {
+                    diagnostic("Brightness calibration stopped: reason=control_identity_or_range_changed")
+                    throw Failure(AutomaticCalibrationError.CONTROL_CHANGED)
+                }
                 if (current?.matches(fraction) != true) { last = null; stableSince = clock() }
                 else {
-                    val value = brightness.sample() ?: throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                    val value = brightness.sample() ?: run {
+                        diagnostic("Brightness calibration rejected: reason=unreadable_or_automatic_mode")
+                        throw Failure(AutomaticCalibrationError.INVALID_SAMPLES)
+                    }
                     if (value == last) { if (clock() - stableSince >= 500) result = value }
                     else { last = value; stableSince = clock() }
                 }
@@ -152,8 +176,12 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         return requireNotNull(result)
     }
     fun cancel(error: AutomaticCalibrationError? = null) {
+        if (finishing) return
         val owner = token
         val running = job
+        if (owner != null && port?.inputInProgress == true) {
+            requestedError = error; running?.cancel(); return
+        }
         if (owner != null) finish(owner, null, error)
         else {
             setup?.cancel(); setup = null
@@ -165,15 +193,25 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
     }
     private fun finish(owner: Any, result: List<Int>?, error: AutomaticCalibrationError?) {
         if (token !== owner) return
+        val failure = error ?: requestedError
+        requestedError = null
         token = null; job = null
-        val restored = runCatching { !brightness.pendingRestore || brightness.restore() }.getOrDefault(false)
-        releasePort()
-        mutable.value = when {
-            !restored -> AutomaticCalibrationState(AutomaticCalibrationPhase.RECOVERY, error = AutomaticCalibrationError.RESTORE)
-            result != null && error == null -> AutomaticCalibrationState(AutomaticCalibrationPhase.REVIEW, samples = result)
-            error != null -> AutomaticCalibrationState(AutomaticCalibrationPhase.FAILED, error = error)
-            else -> AutomaticCalibrationState(AutomaticCalibrationPhase.CANCELLED)
+        fun publish(restored: Boolean) {
+            releasePort()
+            mutable.value = when {
+                !restored -> AutomaticCalibrationState(AutomaticCalibrationPhase.RECOVERY, error = AutomaticCalibrationError.RESTORE)
+                result != null && failure == null -> AutomaticCalibrationState(AutomaticCalibrationPhase.REVIEW, samples = result)
+                failure != null -> AutomaticCalibrationState(AutomaticCalibrationPhase.FAILED, error = failure)
+                else -> AutomaticCalibrationState(AutomaticCalibrationPhase.CANCELLED)
+            }
         }
+        if (usedTouch && brightness.pendingRestore) {
+            finishing = true
+            scope.launch(NonCancellable) {
+                try { publish(runCatching { brightness.restoreAfterTouch() }.getOrDefault(false)) }
+                finally { finishing = false }
+            }
+        } else publish(runCatching { !brightness.pendingRestore || brightness.restore() }.getOrDefault(false))
     }
     private fun releasePort() {
         val service = port ?: return
@@ -186,7 +224,10 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
     internal fun disconnected(service: CalibrationServicePort) {
         if (port !== service) return
         port = null; mutableConnected.value = false
-        if (mutable.value.busy) cancel(AutomaticCalibrationError.DISCONNECTED)
+        if (mutable.value.busy) {
+            if (service.inputInProgress && token != null) { requestedError = AutomaticCalibrationError.DISCONNECTED; job?.cancel() }
+            else cancel(AutomaticCalibrationError.DISCONNECTED)
+        }
         runCatching { service.close() }
     }
     internal fun interrupted(service: CalibrationServicePort) {
@@ -205,10 +246,17 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
     }
     fun discard() { if (!mutable.value.busy && !brightness.pendingRestore) mutable.value = AutomaticCalibrationState() }
     fun recover(restore: Boolean) {
-        if (mutable.value.busy) return
-        val success = if (restore) brightness.restore() else brightness.discardRestore()
-        mutable.value = AutomaticCalibrationState(if (success) AutomaticCalibrationPhase.IDLE else AutomaticCalibrationPhase.RECOVERY,
-            error = if (success) null else AutomaticCalibrationError.RESTORE)
+        if (mutable.value.busy || finishing) return
+        fun publish(success: Boolean) {
+            mutable.value = AutomaticCalibrationState(if (success) AutomaticCalibrationPhase.IDLE else AutomaticCalibrationPhase.RECOVERY,
+                error = if (success) null else AutomaticCalibrationError.RESTORE)
+        }
+        if (!restore) { publish(brightness.discardRestore()); return }
+        finishing = true
+        scope.launch(NonCancellable) {
+            try { publish(runCatching { brightness.restoreAfterTouch() }.getOrDefault(false)) }
+            finally { finishing = false }
+        }
     }
     fun close() { disableService(); scope.cancel() }
 }

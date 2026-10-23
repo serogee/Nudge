@@ -20,7 +20,7 @@ class WheelConfigurationTest {
     @Test fun wheelLayoutsBindingsAndOverflowRoundTrip() {
         val original = configuration().normalized()
         val encoded = ConfigurationCodec.encode(original)
-        assertEquals(21, JSONObject(encoded).getInt("schema"))
+        assertEquals(22, JSONObject(encoded).getInt("schema"))
         assertEquals(original, ConfigurationCodec.decode(encoded))
         assertEquals(9, ConfigurationCodec.decode(encoded).panels.single().settings.buttons.size)
     }
@@ -34,7 +34,18 @@ class WheelConfigurationTest {
         assertEquals(PanelMode.FIXED, migrated.panels.single().settings.portrait.mode)
         assertFalse(migrated.panels.single().isWheel)
         assertTrue(migrated.handles.single().bindings.values.none { it.wheelPick.enabled })
-        assertEquals(21, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
+        assertEquals(22, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
+    }
+    @Test fun compactWheelsAndAnimationChoicesRoundTripAndOldWheelsKeepTheirRadius() {
+        val original = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(40f, animationsEnabled = false))))))
+        val encoded = ConfigurationCodec.encode(original)
+        val restored = ConfigurationCodec.decode(encoded).panels.single().settings.portrait.wheel
+        assertEquals(40f, restored.radiusDp); assertFalse(restored.animationsEnabled)
+        val legacy = JSONObject(ConfigurationCodec.encode(configuration())).put("schema", 21)
+        legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel").remove("animationsEnabled")
+        val migrated = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
+        assertEquals(200f, migrated.radiusDp); assertTrue(migrated.animationsEnabled)
     }
     @Test fun importedCopiesRetainSharedLinksAndUseFreshIds() {
         val original = configuration()

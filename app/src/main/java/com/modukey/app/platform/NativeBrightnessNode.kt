@@ -61,8 +61,11 @@ internal object NativeBrightnessNode {
                     range.current in range.min..range.max && range.type in 0..2 &&
                     (range.type != AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_INT || range.max - range.min >= 4f)) {
                     val bounds = Rect(); node.getBoundsInScreen(bounds)
-                    val control = NativeBrightnessControl("${node.windowId}:$id:${bounds.flattenToString()}", range.min, range.max, range.current,
-                        range.type == AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_INT)
+                    // A panel can finish its opening animation after discovery. Moving bounds are not a different control.
+                    val control = NativeBrightnessControl("${node.packageName}:${node.windowId}:$id:${node.className}", range.min, range.max, range.current,
+                        range.type == AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_INT,
+                        com.modukey.app.core.Bounds(bounds.left.toFloat(), bounds.top.toFloat(), bounds.width().toFloat(), bounds.height().toFloat()),
+                        node.packageName?.toString() == MIUI_PLUGIN && nativeLabel && name in sliderIds, node.windowId)
                     candidates++
                     if (selected != null) { outcome = "ambiguous"; return null }
                     selected = node to control

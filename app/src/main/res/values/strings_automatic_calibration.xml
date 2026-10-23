@@ -2,10 +2,15 @@
     <string name="automatic_brightness_calibration">Automatic calibration</string>
     <string name="manual_brightness_calibration">Manual calibration</string>
     <string name="calibration_service_name">Nudge brightness calibration</string>
-    <string name="calibration_service_description">Identify the native System UI brightness control. Measure 17 positions during calibration. Enable this service from Automatic calibration in Nudge. It reads controls only during calibration. You can keep it enabled between runs. It does not take screenshots or record the screen.</string>
+    <string name="calibration_service_description">Identify the native System UI brightness control. Measure 17 positions during calibration. Optional slider touch completion presses and releases supported sliders to save their values. Enable this service from Automatic calibration in Nudge. It reads controls only during calibration. It does not take screenshots or record the screen.</string>
     <string name="auto_calibration_consent">Nudge measures 17 positions on the native brightness slider. You may need to open Control center yourself. Your screen will become dim and bright.</string>
     <string name="auto_calibration_access_disclosure">Android grants this separate service access to window content. Nudge uses it only for System UI brightness controls during calibration.</string>
-    <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Nudge checks native brightness labels. It does not read notification text. Measurements stay on this device. Choose whether to keep the service enabled between runs.</string>
+    <string name="auto_calibration_privacy">Nudge does not take screenshots, record the screen, or read notification text. Measurements stay on this device. Optional slider touch completion briefly touches only the identified native brightness slider during calibration.</string>
+    <string name="calibration_touch_completion">Slider touch completion</string>
+    <string name="calibration_touch_allow">Allow slider touch</string>
+    <string name="calibration_touch_completion_help">Allow brief touches on supported native brightness sliders to save each measured position. Keep your hands off the screen during calibration.</string>
+    <string name="calibration_touch_consent">Some Xiaomi sliders save brightness only after a touch release. Allow Nudge to briefly press and release the identified brightness slider during automatic calibration? This permission applies only to the separate calibration service. It does not enable screenshots or touch actions in the normal handle service.</string>
+    <string name="auto_calibration_touch_required">This native slider needs a touch release to save brightness. Enable Slider touch completion. If it is already on, disable and re-enable the calibration service in Accessibility.</string>
     <string name="auto_calibration_restore_disclosure">Nudge restores your brightness and automatic mode before showing results. You choose whether to save the measurements.</string>
     <string name="auto_calibration_enable_help">Enable Nudge brightness calibration in Accessibility. Return to Home and select Start calibration.</string>
     <string name="enable_calibration_service">Enable calibration service</string>

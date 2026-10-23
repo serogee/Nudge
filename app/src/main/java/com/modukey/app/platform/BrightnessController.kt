@@ -23,6 +23,7 @@ class BrightnessController(context: Context) {
     val calibrationNeedsRecovery get() = calibrationRestore.pending
     internal fun beginCalibration(): Boolean { close(); return calibrationRestore.begin() }
     internal fun restoreAfterCalibration() = calibrationRestore.restore()
+    internal suspend fun restoreAfterCalibrationTouch() = calibrationRestore.restoreAfterTouch()
     internal fun keepBrightnessAfterCalibration() = calibrationRestore.discard()
     private var observer: ContentObserver? = null
     // SCREEN_BRIGHTNESS uses 1..255. Private hardware resources can use a different scale.

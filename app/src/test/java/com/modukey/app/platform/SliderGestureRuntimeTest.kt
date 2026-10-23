@@ -28,8 +28,8 @@ class SliderGestureRuntimeTest {
     private var destroy: () -> Unit = {}
     @After fun cleanup() { destroy(); BrightnessControllerTest.Writes.allowed = false; app.onTerminate() }
     private fun idle(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
-    private fun await(condition: () -> Boolean) {
-        repeat(300) { idle(16); if (condition()) return; Thread.sleep(5) }
+    private fun await(attempts: Int = 300, condition: () -> Boolean) {
+        repeat(attempts) { idle(16); if (condition()) return; Thread.sleep(5) }
         assertTrue(app.diagnostics.details.value, condition())
     }
     private fun fixture(slot: GestureSlot = GestureSlot.SWIPE_1, activation: SliderActivation = SliderActivation.AFTER_HOLD,
@@ -39,7 +39,8 @@ class SliderGestureRuntimeTest {
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
         shadowOf(app.getSystemService(PowerManager::class.java)).setIsInteractive(true)
         shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
-        await { app.configuration.state.value != null }
+        // Disk-backed configuration can load slowly during the full native-rendering suite.
+        await(attempts = 2_000) { app.configuration.state.value != null }
         BrightnessControllerTest.Writes.allowed = true
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, BrightnessScale().level(.5f))
         Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0)

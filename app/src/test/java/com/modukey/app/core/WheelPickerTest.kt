@@ -83,17 +83,86 @@ class WheelPickerTest {
         val pick = WheelPickSettings(minimumDistanceDp = 160f, maximumDistanceDp = -1f, releaseWindowMs = 1).normalized()
         assertEquals(168f, pick.maximumDistanceDp); assertEquals(100, pick.releaseWindowMs.toInt())
     }
-    @Test fun capacityPreventsSquareTargetOverlapInEveryExpansionState() {
-        for (edge in Edge.entries) for (cell in listOf(48f, 56f, 96f)) for (radius in listOf(96f, 128f, 200f, 240f)) for (scale in listOf(1f, 1.25f, 1.5f)) {
+    @Test fun everyWedgeContainsItsTouchTargetAndStaysSeparatedDuringExpansion() {
+        for (edge in Edge.entries) for (cell in listOf(48f, 56f, 96f)) for (radius in listOf(40f, 64f, 96f, 128f, 200f, 240f)) for (scale in listOf(1f, 1.25f, 1.5f)) {
             val g = WheelGeometry.calculate(Bounds(0f, 0f, 900f, 900f), 1f, PanelLayout(buttonSizeDp = cell),
                 WheelLayoutSettings(radius, selectedScale = scale), 6, Bounds(0f, 300f, 16f, 120f), edge)
             for (selected in listOf<Int?>(null) + (0 until g.count).toList()) {
                 val slices = g.slices(selected)
-                slices.forEach { assertTrue(it.size >= 48f) }
-                for (a in slices.indices) for (b in a + 1 until slices.size) {
-                    val spacing = (slices[a].size + slices[b].size) / 2f + 8f
-                    assertTrue(kotlin.math.abs(slices[a].point.x - slices[b].point.x) >= spacing || kotlin.math.abs(slices[a].point.y - slices[b].point.y) >= spacing)
+                slices.forEach { slice ->
+                    val target = maxOf(48f, slice.iconSize)
+                    assertTrue(slice.size >= target)
+                    val distanceToSide = (slice.innerRadius + slice.size / 2f) *
+                        kotlin.math.sin((slice.end - slice.start - g.angularGap(slice)) / 2f)
+                    assertTrue(distanceToSide + .001f >= target / 2f)
+                    assertTrue(slice.innerRadius >= 12f)
+                    assertTrue(slice.outerRadius <= g.outerRadius + .001f)
                 }
+                slices.zipWithNext().forEach { (a, b) -> assertEquals(a.end, b.start, .0001f) }
+            }
+        }
+    }
+    @Test fun compactRadiiKeepTheCenterEmptyAndReduceCapacity() {
+        val compact = geometry(radius = 40f)
+        assertEquals(40f, WheelLayoutSettings(1f).normalized().radiusDp)
+        assertTrue(compact.bounds.width < geometry(radius = 96f).bounds.width)
+        assertTrue(compact.capacity in 1..2)
+        val center = compact.point(0f, compact.innerRadius / 2f)
+        assertNull(compact.hit(center.x, center.y, 0f, 500f))
+        assertNull(compact.tapHit(center.x, center.y))
+        val empty = geometry(count = 0)
+        assertNull(empty.tapHit(empty.center.x, empty.center.y))
+    }
+    @Test fun normalTapsUseTheWedgeAndExcludeItsGapsAndOuterSpace() {
+        val g = geometry(count = 3)
+        g.slices().forEachIndexed { index, slice -> assertEquals(index, g.tapHit(slice.point.x, slice.point.y)) }
+        val gap = g.point(g.slices()[0].end)
+        assertNull(g.tapHit(gap.x, gap.y))
+        val beyond = g.point(0f, g.outerRadius + 1f)
+        assertNull(g.tapHit(beyond.x, beyond.y))
+    }
+    @Test fun theNewWedgeAndIconGrowWhileTheirNeighborsShrink() {
+        val g = geometry(count = 6)
+        val normal = g.slices(); val focused = g.slices(2)
+        assertTrue(focused[2].outerRadius > normal[2].outerRadius)
+        assertTrue(focused[2].iconSize > normal[2].iconSize)
+        assertTrue(focused[1].end - focused[1].start < normal[1].end - normal[1].start)
+        assertTrue(focused[1].iconSize < normal[1].iconSize)
+        assertEquals(normal[2].innerRadius, focused[2].innerRadius)
+        val point = g.point(g.slices(2)[2].end + .01f)
+        assertEquals(3, g.hit(point.x, point.y, 0f, 500f, 2))
+        assertEquals(3, g.hit(point.x, point.y, 0f, 500f, 3))
+    }
+    @Test fun animationCannotChangeLogicalSelectionUnderAStationaryFinger() {
+        val g = geometry(count = 6)
+        val point = g.slices()[2].point
+        val session = WheelPickSession(g, WheelPickSettings(), 1f, g.center.x, g.center.y, 0, false)
+        session.move(point.x, point.y, 1)
+        for (frame in 0..20) {
+            val slices = g.slices(List(g.count) { if (it == 2) frame / 20f else 0f })
+            assertEquals(2, session.selected)
+            assertEquals(2, g.hit(point.x, point.y, 0f, 500f, session.selected))
+            assertTrue(slices.all { it.end > it.start })
+        }
+        assertEquals(WheelFinish(WheelFinishKind.PICK, 2), session.finish(point.x, point.y, 200))
+    }
+    @Test fun crossingEitherExpandedBoundaryTransfersTheHitboxWithoutSwitchingBack() {
+        for (edge in Edge.entries) for (count in 2..6) {
+            val g = geometry(edge, count = count)
+            val normal = g.slices()
+            for (selected in 0 until count) for (direction in listOf(-1, 1)) {
+                val next = selected + direction
+                if (next !in 0 until count) continue
+                val current = g.slices(selected)[selected]
+                val boundary = if (direction < 0) current.start else current.end
+                val inside = g.point(boundary - direction * .001f)
+                assertEquals(selected, g.hit(inside.x, inside.y, 0f, 500f, selected))
+                val outside = g.point(boundary + direction * .001f)
+                assertEquals(next, g.hit(outside.x, outside.y, 0f, 500f, selected))
+                assertEquals(next, g.hit(outside.x, outside.y, 0f, 500f, next))
+                val changed = g.slices(next)
+                assertTrue(changed[next].end - changed[next].start > normal[next].end - normal[next].start)
+                assertTrue(changed[selected].end - changed[selected].start < normal[selected].end - normal[selected].start)
             }
         }
     }
@@ -120,6 +189,8 @@ class WheelPickerTest {
             assertEquals(0, g.capacity); assertEquals(0, g.count)
             assertTrue(g.center.x in screen.x..(screen.x + screen.width))
             assertTrue(g.center.y in screen.y..(screen.y + screen.height))
+            assertTrue(g.outerRadius * 2f <= screen.height)
+            assertTrue(g.outerRadius * 2f <= screen.width)
             assertNull(g.hit(g.center.x, g.center.y, 0f, 240f))
         }
     }

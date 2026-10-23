@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+## 0.5.1 - 2026-10-24
+
+### Added
+
+- Use a hollow semicircle with separated wedge buttons for Wheels. Set the radius from **40–240 dp**. Keep up to six buttons, with smaller capacities when space or touch targets require them. Retain overflow buttons for editing and reordering. (3d3fc35)
+- Expand the highlighted wedge, icon, and angular hit region. Shrink other wedges and icons. Keep the current selection until the finger crosses its expanded boundary, then transfer expansion to the new selection. (3d3fc35)
+- Toggle smooth Wheel focus animations. Turning **Wheel animations** off applies shape changes immediately and suppresses Wheel window motion. Respect Android's disabled-animation setting. Keep logical selection independent of animation. (3d3fc35)
+- Enable optional **Slider touch completion** for supported Xiaomi brightness controls. Require explicit consent before briefly pressing and releasing the identified native relative slider to save each measured position. Keep this device-local option off by default. (bbf3a3d)
+
+### Fixed
+
+- Keep native slider identity stable while its panel bounds move. Wait for delayed progress updates. Recheck the current control, bounds, and covering windows before touch completion. Reject invalid or covered targets. (bbf3a3d)
+- Wait for an active native touch to end before cancellation restores brightness. Refresh an unchanged saved value when needed to clear a temporary native preview during restoration and recovery. (bbf3a3d)
+- Diagnose unreadable, decreasing, and flat calibration samples without recording measurement values or screen text. Keep the saved profile when a run fails. (bbf3a3d)
+
+### Maintenance
+
+- Allow more time for slider test configuration to load from disk. Keep gesture timing assertions unchanged. (d05e0cf)
+- Update Help, the README, and the user guide for compact Wheels, selection boundaries, animation controls, native slider consent, and the observed Redmi failure. (3d3fc35, e883a21, 926daae)
+
+### Compatibility and known limits
+
+- Backups use schema 22. Older backups remain importable. Schema-21 Wheels retain their radius and enable animation by default. Nudge 0.5.0 and earlier cannot import schema-22 backups.
+- Keep the original Wheel drag, hold, quick-release, and swipe-sequence rules. Keep 17 automatic brightness positions and five manual points. Native slider touch consent and calibration data stay on the device.
+- The normal handle service retains its existing permissions. Only the separate calibration service gains optional native slider touches. Screenshots remain disabled in both services.
+- The new-style Redmi run changed temporary brightness while the saved setting stayed fixed. Native plugin inspection confirmed that saving requires release. The new touch-completion and restoration path still needs a physical-device recheck; the separate above-zero abort remains unconfirmed.
+- Signed installation over 0.5.0, physical Wheel touch ownership and smoothness, native popups, final brightness mapping and restoration, and battery comparisons remain pending. Preserve all earlier release notes, artifacts, and tags.
+
 ## 0.5.0 - 2026-10-23
 
 ### Added
