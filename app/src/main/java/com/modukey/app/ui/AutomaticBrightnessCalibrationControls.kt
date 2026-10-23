@@ -56,8 +56,13 @@ import com.modukey.app.platform.*
             TextButton(onClick = { coordinator.cancel() }) { Text(t(R.string.cancel)) }
         }
         AutomaticCalibrationPhase.RUNNING -> {
-            Text(t(R.string.auto_calibration_progress, state.position))
-            LinearProgressIndicator(progress = { state.position / 100f }, modifier = Modifier.fillMaxWidth())
+            if (state.waitingForPanel) {
+                Help(R.string.auto_calibration_waiting_panel)
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                Text(t(R.string.auto_calibration_progress, state.position))
+                LinearProgressIndicator(progress = { state.position / 100f }, modifier = Modifier.fillMaxWidth())
+            }
             TextButton(onClick = { coordinator.cancel() }) { Text(t(R.string.cancel)) }
         }
         AutomaticCalibrationPhase.REVIEW -> {

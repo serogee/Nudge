@@ -34,7 +34,7 @@ internal fun ButtonAction.hasAdditionalOptions(volumePopupOptions: Boolean = tru
 
 @Composable internal fun ActionOptionsBadge(action: ButtonAction, background: Color, modifier: Modifier = Modifier) {
     val shape = remember { SquircleShape(.4f) }
-    Surface(modifier.size(18.dp), shape = shape, color = background) {
+    Surface(modifier.size(18.dp), shape = shape, color = background.copy(alpha = background.alpha * .75f)) {
         Box(contentAlignment = Alignment.Center) {
             Icon(Icons.Outlined.Settings, t(R.string.action_has_options, t(label(action))), Modifier.size(12.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)

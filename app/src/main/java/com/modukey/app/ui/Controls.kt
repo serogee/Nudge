@@ -81,20 +81,30 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
     }
 }
 @Composable fun SettingSlider(@StringRes title: Int, value: Float, range: ClosedFloatingPointRange<Float>, display: String,
-    enabled: Boolean = true, default: Float? = null, change: (Float) -> Unit) {
+    enabled: Boolean = true, default: Float? = null, valueScale: Float = 1f, change: (Float) -> Unit) {
     val finish = LocalFinishAdjustment.current
+    val name = t(title)
+    var editing by rememberSaveable(title, enabled) { mutableStateOf(false) }
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { SettingTitle(t(title), enabled, if (default != null && value != default) ({ change(default) }) else null) }
-            Text(display, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), style = MaterialTheme.typography.labelMedium)
+            Box(Modifier.weight(1f)) { SettingTitle(name, enabled, if (default != null && value != default) ({ change(default) }) else null) }
+            Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .clickable(enabled = enabled, role = Role.Button) { editing = true }
+                .semanticsDescription(t(R.string.edit_setting_value, name)).padding(start = 8.dp), contentAlignment = Alignment.CenterEnd) {
+                Text(display, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), style = MaterialTheme.typography.labelMedium)
+            }
         }
-        val name = t(title)
         Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range,
             enabled = enabled, modifier = Modifier.semantics { contentDescription = name })
     }
+    if (editing && enabled) SliderValueDialog(name, value, range, valueScale, dismiss = { editing = false }) { bounded ->
+        if (bounded != value) change(bounded)
+        finish()
+        editing = false
+    }
 }
 @Composable fun PercentSlider(@StringRes title: Int, value: Float, enabled: Boolean = true, default: Float? = null, change: (Float) -> Unit) =
-    SettingSlider(title, value, 0f..1f, t(R.string.percent, (value*100).roundToInt()), enabled, default, change)
+    SettingSlider(title, value, 0f..1f, t(R.string.percent, (value*100).roundToInt()), enabled, default, valueScale = 100f, change = change)
 @Composable fun <T> Choices(values: List<T>, selected: T, change: (T) -> Unit) {
     val c = LocalContext.current
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { values.forEach { v -> FilterChip(selected = v == selected, onClick = { change(v) }, label = { Text(optionText(c, v as Any)) }) } }

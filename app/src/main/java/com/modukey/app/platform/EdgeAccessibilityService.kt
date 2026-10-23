@@ -93,7 +93,12 @@ class EdgeAccessibilityService : AccessibilityService() {
         systemPanels = NativeSystemPanelRequest(choreographer,
             { scope != null && getSystemService(PowerManager::class.java).isInteractive },
             { hideBrightness(); screenshots?.cancel(); dismissPanel(PanelCloseReason.ACTION_COMPLETED); clearPanelWindows() },
-            { performGlobalAction(it) },
+            { action ->
+                val opened = performGlobalAction(action)
+                if (opened && action == GLOBAL_ACTION_QUICK_SETTINGS && HyperOsSettings.isXiaomiDevice())
+                    Toast.makeText(this, R.string.native_control_center_manual_help, Toast.LENGTH_LONG).show()
+                opened
+            },
             { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
         sliderGuideHost = SliderGuideHost(this, manager)
         brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(animate = true); refresh() }, {

@@ -1,287 +1,185 @@
 # Handles and panels
 
-This guide covers the current development interface. Earlier release artifacts remain unchanged. Physical Redmi Note 12 / HyperOS checks remain pending.
+This guide describes the current source. For features in a published APK, use its [release notes](../CHANGELOG.md).
+
+## Setup and troubleshooting
+
+1. Install Nudge and open Home.
+2. Select **Open Accessibility**. Enable **Nudge handles** under Accessibility → Downloaded apps.
+3. If Android blocks access, open Nudge's App info → ⋮ → **Allow restricted settings**, then try again.
+4. Enable a handle in **Handles** and **Enable Gestures** on Home.
+5. Use **Test volume popup**. Then try the handle from another app.
+
+On MIUI or HyperOS, menu names vary. Enable **Background autostart** if needed. If the service still disconnects, try **Battery saver → No restrictions** or lock Nudge in Recents where supported. Nudge cannot verify these vendor settings. Force-stop and revoked accessibility access require manual recovery. Unlock the phone once after a restart.
+
+Brightness actions need **Modify system settings** access. Some sound actions need **Do Not Disturb** access. Nudge does not require root, device administrator, or the separate **Display over other apps** permission.
+
+**Notifications** and **Control panel** use Android's native system actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. Nudge shows Xiaomi guidance; it cannot reliably force the vendor Control center through that action.
 
 ## Handles
 
-Open **Handles** to add, name, enable, duplicate, move, or delete a handle. New and duplicated handles start disabled. The first handle receives touches where touch areas overlap. The master switch on Home must also be on.
+Create, rename, order, duplicate, or delete handles in **Handles**. New and duplicated handles start disabled. The first handle has priority where touch areas overlap.
 
-In the development interface, drag a card's left grip to change its priority. Select the pencil to edit or rename it. The handle title and tabs stay visible while the options scroll. A reset icon appears beside a changed setting. It restores only that setting.
+Each handle owns its touch area, visible appearance, gestures, exclusions, and lock-screen option. Turning off **Make handle visible** hides the bar while its touch area still receives gestures.
 
-Handle and panel editors keep changes in a temporary draft. The top pencil changes to Save and Cancel after an edit. Save applies all changes in that editor. Cancel restores its saved settings. Long titles use an ellipsis so both controls stay visible.
+In **Appearance**, choose an edge and center position. Adjust touch length and depth separately from visible handle length and thickness. A smaller touch area limits drawing while retaining saved appearance values. Portrait and optional landscape overrides retain separate placement.
 
-Cancel and Save share a pill-shaped control, with Cancel on the left. A gap separates the controls. Their compact height keeps the title container unchanged. Saving shows progress until storage responds. A toast confirms a successful save or cancellation. The editor stays open and the rename icon returns. Use Back to leave. Save errors retain the current settings and offer Retry.
+**Enable longer touch length** extends the size limit to the longer screen edge. Turning it off retains the saved value. **Soft hide in full screen** hides the bar after its configured delay; the first valid gesture reveals it without running an action. Later gestures run normally.
 
-Handle icons keep a bold initial inside a rounded square. A small inset pill marks the saved left, right, or bottom edge.
+App exclusions and lock-screen use are configured per handle. Lock-screen use defaults off. App and settings actions request Android's normal unlock step. Nudge does not wake the screen or operate on always-on display.
 
-Drag a list grip to reorder handles, panels, or buttons. Hold near the top or bottom to scroll. The same item stays selected until release or cancellation. Touch outside the grip to scroll normally. Accessibility move actions remain available.
+### Save, preview, and exact values
 
-The launch icon uses a centered N with padding inside a rounded container. Its side pills reveal from their centers. The middle pill reveals upright, then rotates as the side pills move into position. The native sequence ends after 600 ms. Disabled system animations skip the wait. Backgrounding removes the launch view.
+Handle and panel editors keep a draft. The top **Save** applies it; **Cancel** restores saved settings. Save inside a button or gesture dialog updates the draft. Pending edits survive activity recreation and temporary backgrounding, but not process death.
 
-Mini previews and on-phone guides show pending changes immediately. Normal gestures use saved settings when Nudge is in the background. Pending edits survive activity recreation and temporary backgrounding. They are not included in backups or disk saves until you select Save. Closing the app process discards the draft.
+The **Visual Preview (Non-interactive)** switch shows an editing guide on the phone. Mini previews and phone guides do not run actions or capture touches. Normal handle activation resumes when editing ends.
 
-Before leaving an editor with pending changes, select Save, Discard, or Keep editing. Save inside a name, gesture, or button dialog updates the editor draft. Use the top Save control to apply that draft. List switches and list management actions still apply immediately.
+Tap a slider's percentage or dp readout to enter a number. **Save** or keyboard **Done** applies it within the slider's limits. **Cancel** keeps the value. Enter 50 for 50%. Disabled controls cannot be edited. A reset icon restores that setting's default.
 
-Each handle owns its touch area, visible handle, gestures, exclusions, and lock-screen option. Duplicating a handle creates an independent disabled handle. Panel assignments continue to refer to the same panels. Deleting or resetting a handle does not delete any panel.
-
-In Appearance, use Center along edge to move the touch area. Mini previews are display-only; page scrolling works over them. Position measures the center along the usable edge. Resizing preserves it until a screen limit requires clamping. Handle length uses a percentage of touch length. Handle thickness uses dp and defaults to 4 dp. Changing touch depth keeps that thickness. A smaller touch area limits drawing without changing the saved value. Turning off Make handle visible keeps saved appearance values and disables those controls.
-
-The sticky Visual Preview (Non-interactive) switch controls the real editing guide. Panel editors have the same switch. Mini previews remain visible. While an editor is resumed, its enabled phone guide passes touches through. Normal handle activation is suppressed. Closing the editor restores normal availability.
-
-Both previews use the selected Portrait or Landscape tab. On an upright phone, a landscape bottom guide appears on the left. Landscape left appears at the top, and landscape right appears at the bottom. Cutout and navigation insets rotate with the guide. During normal use, Bottom stays at the logical bottom in both landscape rotations. Test panel uses the phone's current orientation.
+Chevrons mark additional options. Dependent controls appear below their parent, grouped by a left line. Action-picker gear badges mark action-specific options. Their backgrounds use 75% opacity; the gear stays fully opaque.
 
 ## Gestures
 
-All six gesture selectors are in the top section. Distance, timing, and feedback controls stay in their separate settings categories.
+Each assignment can run a direct action, open a panel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
 
-Choose No action, Select panel, or Direct action for each gesture. Select panel opens a searchable dialog. Show Volume Popup is independent: enable it with No action for the popup alone, or combine it with a panel or direct action. All six gesture assignments can coexist. The dialog's Save updates the editor draft. Cancel keeps the existing draft assignment.
+| Gesture | Behavior |
+| --- | --- |
+| Tap | Release without significant movement. |
+| Hold | Stay still for the selected time. Run at the deadline or after release. |
+| Swipe 1, 2, and 3 | Run when the distance is reached. Further swipes advance through assigned stages. |
+| Swipe and hold | Reach its distance within the swipe time, then remain beyond it for the hold time. |
 
-Panel choices show a four-square icon and the prefix Panel:. Direct actions show the same icon and the prefix Action:. Panel options have separate rows with space between them. Action names stay centered when they wrap.
+Ordinary swipes default to **Inward only**. **Any direction** measures straight-line displacement from the first touch. Moving back reduces it; the traveled path is not accumulated.
 
-Select **Direct action** to assign Phone settings, Nudge settings, Volume up, Volume down, Media mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, or Open app. No panel is needed. Choose an app for Open app. Volume up and Volume down request the popup through their existing adjustment, without a second request. Icon appearance controls apply only to panel buttons.
+Swipe and hold has its own direction, distance, swipe time, and hold time. Its default direction is **Any direction**. Movement beyond the threshold does not restart the hold. Returning below it resets the hold, with tolerance for small jitter.
 
-Input Method is also available for every gesture and as a panel button. It opens Android's native keyboard chooser and closes the Nudge panel. It does not change the keyboard until you select one. Nudge uses its internal activity to obtain input focus because Android can ignore requests from an unfocused service. The activity closes when the chooser returns. If no chooser takes focus within two seconds, it closes and reports an error.
+Hold and Swipe and hold have separate execution settings. Each hold time accepts 300–3,000 ms and defaults to 500 ms. Haptic feedback and strength are separate for each gesture type. Cancelled and multitouch gestures do not run actions.
 
-On the lock screen, the picker first requests normal system unlock. Cancelled authentication, changed assignments, disabled handles, and service loss cancel the request. Screen-off cancels it too. The picker adds no idle observer or background service. Its system appearance and keyboard restoration on HyperOS require device testing.
+A panel keeps its invoking handle's swipe sequence active. Closing it resets the sequence. After a direct action or popup alone, another swipe advances only within the configured **Swipe sequence timeout**.
 
-Each assignment owns its action settings. Editing it does not change a panel button or another gesture. Direct actions close the current Nudge panel. App and settings actions use the same normal system unlock step as panel buttons. A removed or changed assignment cannot continue after unlock. Sound-mode actions show required Do Not Disturb access on Home, including when no panel uses them.
+### Continuous volume and brightness adjustment
 
-Close panels and Screenshot are available as panel buttons and direct actions. Close panels dismisses Nudge's open panel and resets its swipe sequence. It does not dismiss Android's volume popup. With no Nudge panel open, it has no effect.
+In a gesture assignment, select exactly one popup and enable **Slide to adjust** below it. Tap does not offer this option.
 
-Notifications opens the native notification shade. Control panel opens native Quick Settings, called Control center on some phones. Some devices use the same panel for both requests. Nudge removes its interactive panel before submitting either request. Failed requests show an error. Android controls availability on the lock screen. No extra permission is needed beyond the connected accessibility service. Verify the exact behavior on your HyperOS build.
+For ordinary swipes, **Start adjustment → After hold** opens the popup first. Keep your finger still, then slide vertically without lifting it. **Adjustment hold time** accepts 100–1,000 ms and defaults to 200 ms. Movement beyond an 8 dp radius restarts the wait. Releasing before activation leaves the slider unchanged.
 
-Screenshot removes the interactive Nudge panel, waits two display frames, and requests Android's native screenshot action. Android controls capture, saving, and restrictions. Nudge does not read or store the image. Screen-off and service shutdown cancel pending requests. Requests add no idle timer or observer. Editing guides still follow their preview switch.
+When ready, the current system value and finger position become the starting point. The first 8 dp of vertical movement is ignored. Further movement adjusts proportionally; reversals respond immediately. **Immediate** starts adjustment when the popup opens.
 
-There is no setting to hide handles during every screenshot method. Android's supported APIs do not provide a reliable pre-capture signal for all device methods. The [screenshot detection API](https://developer.android.com/about/versions/14/features/screenshot-detection) is activity-scoped and reports supported captures after they occur. Visible handles can appear in screenshots, including those requested through Nudge.
+Hold and Swipe and hold use their existing activation deadlines, without the extra adjustment hold. A combined button action still runs when the popup opens; the guard delays only adjustment.
 
-- Tap: release within 250 ms without moving beyond touch slop.
-- Hold: hold still for the selected Hold time. Run at the deadline or after release.
-- Swipe: move inward at least 24 dp and release within 600 ms by default.
-- Swipe and hold: reach its own distance within its own time limit. Stay beyond that distance, then run at the deadline or after release.
+**Slider travel** sets separate full-range distances for volume and brightness, from 48–600 dp; both default to 240 dp. Volume follows the media stream's available steps. Brightness uses the current calibration. Values stop at their limits. Optional editor guides show the configured travel distance.
 
-Swipe, Swipe and hold, Hold, and Tap have separate settings sections. Detailed sections are closed when the Gestures tab opens. Tap an arrow to show its controls. Each hold time accepts 300 to 3000 ms and defaults to 500 ms. Each hold action defaults to After release. Select When hold time ends for immediate execution. Swipe and hold has an independent distance and swipe time limit. Small finger drift and release jitter do not restart a completed dwell. Continued movement beyond the distance does not restart its timer. Returning below the distance, with touch-slop tolerance, resets the timer. Any direction measures displacement from the starting point and is the default for existing and new handles. Inward only measures displacement away from the edge.
-
-Swipes run immediately. Further swipes advance through assigned stages and return to the first stage after the last. Unassigned stages are skipped. Each hold gesture follows its selected execution mode. It runs once, including when the finger is later released. Cancelled and multitouch gestures do not activate a handle. Inward-only swipes reject outward and mainly parallel movement.
-
-Ordinary swipes offer **Distance direction** in **Swipe settings**. **Inward only** remains the default for new and existing handles. **Any direction** measures the straight-line distance from the first touch, including diagonal and parallel movement. Moving back reduces that distance; the path length is not accumulated. This choice is independent of Swipe and hold. Schema 19 retains the choice in backups, copies, and saved handles.
-
-Timing controls use numeric inputs in milliseconds. Each input shows its minimum and maximum. Valid entries update the draft immediately. Finishing an out-of-range entry applies the nearest limit. An empty or oversized entry restores the last valid value. Reset restores that control's default. These inputs also cover handle hiding, panel closing, and brightness popup closing.
-
-Each gesture type has its own haptic switch and strength. Feedback runs once when that gesture activates. Maximum strength uses a 140 ms pulse at full available amplitude. Low strengths remain brief. Phones without amplitude control use pulse duration for strength. Hardware and Android vibration policy can limit feedback.
-
-Swiping bends the visible handle slightly inward. It stays pulled during a hold and returns over 180 ms after release. The touch area stays fixed. Hidden handles and disabled system animations skip this feedback. Panels use their selected opening and closing animations. Opening a panel preserves captured handle input and its return animation before raising handles above the panel. Each old bar stays visible until its replacement draws a frame. Replacement also retains full-screen reveal state and the hide deadline.
-
-A Nudge panel keeps its invoking handle's swipe sequence active. Dismissing it resets that sequence. Another panel replaces it. Volume popup alone closes the Nudge panel. A combined assignment opens its panel and requests the stock popup once without changing volume. Android controls the stock popup's appearance and dismissal.
-
-After Volume popup alone or a direct action, the next swipe advances only within Swipe sequence timeout, which defaults to 3 seconds. The existing saved timeout is retained. A combined assignment keeps the sequence active while its Nudge panel is open. Timing uses an expiry timestamp, not an idle timer or popup observation. Tap, Hold, and Swipe and hold reset ordinary swipe progression. Failed direct actions reset progression.
+A continuous swipe disables Swipe and hold for that handle while retaining its assignment. Releasing ends adjustment. Cancellation, a second finger, rotation, screen-off, or service loss stops it.
 
 ## Independent panels
 
-The button action selector uses three columns. Action names remain centered when they wrap.
+Create panels in **Panels**, then assign them to handles. Several handles can open the same panel. Each panel owns its buttons, appearance, layout, position, animations, and landscape settings.
 
-Open **Panels** to create, name, order, duplicate, edit, or delete panels. A new configuration has no panels. There are no fixed panel slots. Panels have their own editor and can be shared by several handles.
+| Direction | Fixed layout | Scrollable layout |
+| --- | --- | --- |
+| Vertical | Columns and maximum rows | Columns and panel height |
+| Horizontal | Rows and maximum columns | Rows and panel width |
 
-Deleting a panel requires confirmation. Its gesture links change to No action. Combined panel-and-volume assignments keep Volume popup. Duplicating a panel copies all its settings and buttons with fresh IDs; existing gesture links keep the original panel.
+Fixed panels show only buttons that fit their configured capacity and available screen space. Hidden overflow buttons remain editable. Reorder them into the visible range or choose **Scrollable**.
 
-The panel editor retains the same button, appearance, layout, position, animation, outside-touch, and landscape controls. Select a preview handle to check Follow handle placement. This choice affects only the preview. At runtime, the handle that opens the panel sets its anchor and animation direction. Without a handle, previews use the default right-edge placement.
+**Follow handle** places the panel beside its invoking handle. X/Y offsets adjust it. Turn Follow handle off to use absolute center percentages. A selected preview handle affects only the editor preview.
 
-## Panel layouts
+Opening and closing animations are independent. Disabled Android animations skip them. Dragging a button beyond touch slop cancels its click so scrolling does not run an action.
 
-| Direction | Fixed | Scrollable | Fill order |
-| --- | --- | --- | --- |
-| Vertical | Columns and Maximum rows | Columns and Panel height | Left to right, then down |
-| Horizontal | Rows and Maximum columns | Rows and Panel width | Top to bottom, then right |
+### Closing panels
 
-Changing direction transposes the controls and retains their numeric values. Icons stay upright. The row or column count is shared across modes. Fixed limits and Scrollable size are saved separately.
+**Outside touch** offers three choices:
 
-Fixed panels never scroll. For example, two columns and three maximum rows show the first six buttons. Screen limits can reduce this count without changing saved settings. Extra buttons remain in the editor with a grey appearance and a Not shown label. Their edit, remove, and move controls remain available. Reorder a button into the visible range or select Scrollable to show it.
+- **Close and block touch** closes on release and consumes the outside gesture.
+- **Close and pass touch through** closes and lets Android deliver the touch beneath.
+- **Pass touch through and keep open** retains the panel while the touch reaches the window beneath.
 
-Scrollable panels keep all buttons available. Their length uses a percentage of the usable screen. Use Test panel to check scrolling and actions. Preview buttons do not run actions.
+Nudge does not replay or inject touches. Back closes the panel. The optional **Close automatically** timeout accepts 1–60 seconds and defaults off. Held input pauses the timer; interaction restarts it.
 
-Follow handle places the panel inward from the handle that opens it. Turn it off to use center X/Y percentages. Optional landscape overrides retain separate mode, direction, counts, sizing, and placement. Buttons, appearance, and outside-touch behavior remain shared.
+A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is temporarily paused.
 
-The development interface adds X/Y offsets while Follow handle is on. Positive X moves right. Positive Y moves up. Turning Follow handle off shows absolute center percentages. Each mode retains its saved values. Mini previews do not capture gestures. Legacy Y offsets migrate once to retain physical placement.
+## Actions and appearance
 
-Open animation and Close animation are separate settings. Each offers No animation, Fade, Slide and fade, and Scale, slide, and fade. New panels default to No animation for both. Older configurations use their saved opening effect as the initial closing effect. Editing or resetting one setting keeps the other unchanged. Both values are included in backups and panel copies.
+Panel buttons and direct gestures can open apps or settings, control sound and brightness, lock the screen, open the keyboard chooser, close panels, request a native screenshot, or open notifications and quick settings.
 
-The handle's logical edge sets the direction. Exit moves toward that edge; scale also shrinks the panel. The animation does not depend on the distance from the handle.
+The **Input Method** action opens Android's keyboard chooser. You select the keyboard. **Screenshot** asks Android to capture and save the screen; Nudge does not read the image. Visible handles may appear in screenshots.
 
-Native View animations run only during transitions: 180 ms on entry and 120 ms on exit at the normal system speed. A closing panel stops receiving input and sound updates immediately. Its rendered content remains until exit completes, then its window and composition are removed. Rapid replacement retains at most one inert closing panel alongside the active panel. Completing an old exit cannot close a newer panel.
+Choose built-in icons, installed app icons, or supported icon packs. Missing apps or packs retain their references and use fallback icons. Standalone buttons omit the container. Empty buttons reserve a layout cell.
 
-None, editing guides, and disabled system animations use no transition. Screen-off, editing-session changes, errors, and service shutdown remove windows immediately and cancel pending animations. There is no idle animation loop.
+**Active background** and **Active icon** colors are shared panel appearance settings for supported toggles. Each supports automatic or selected colors. Existing opacity settings still apply. Image icons retain their artwork; standalone icons use an outline for the active background effect.
 
-## Closing panels
+## Pause and visibility controls
 
-Each panel has an Outside touch setting:
+**Pause handles** temporarily stops gesture input without changing saved Enable switches. Turning the master switch off or restarting clears pauses.
 
-- Close and block touch consumes the complete outside gesture and closes on release. Nothing beneath is activated. This is the default.
-- Close and pass touch through closes the panel and lets Android deliver the original touch to the window beneath.
-- Pass touch through and keep open delivers the original touch beneath the panel and retains the panel.
+**Hide visible handles** hides the bars while gestures remain available. Hiding survives restarts and retains appearance values. Editing guides remain available.
 
-Nudge does not replay or inject touches. A drag that starts inside the panel does not become an outside dismissal. Handle gestures remain available above the panel. Back closes the panel without navigating the app beneath. Panels have no Close button.
+**Toggle handles** and **Toggle handle visibility** offer **All handles**, **This handle**, and **Other handles**. They target enabled handles. This handle means the one that invoked the action.
 
-When a native volume popup is behind the panel, the same outside-touch setting applies. In blocking mode, the first outside tap closes Nudge's panel without changing the native controls.
+**Toggle and hide handles** has separate pause/resume and hide/show groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. Partly paused groups resume; partly hidden groups show.
 
-Enable **Close automatically** in a panel's **Auto-close** section to set an idle timeout from 1–60 seconds. The option defaults off, with a saved duration of 3 seconds. Turning it off retains the duration.
+Home shortcuts using This handle or Other handles require a selected handle. The Handles tab's visibility switch applies to every saved handle.
 
-Opening the panel or receiving touch input restarts the timer. The timer pauses while a touch is held, including scrolling. Expiry closes the panel and resets its invoking handle's swipe sequence to the first assigned stage. It also applies to combined panel-and-volume assignments; Android retains control of the native volume popup.
+## Brightness controls
 
-Editing guides have no timeout. **Test panel** uses the saved timeout. Only an open interactive panel has a pending delay. Replacement, dismissal, screen-off, and service cleanup cancel it. Unrelated settings or overlay refreshes do not extend its deadline.
+Home contains brightness popup placement, size, timeout, appearance, animation, and touch settings. **Jump to touch** uses the touched position. **Slide to adjust** preserves the initial value, then follows movement relative to the track height.
 
-## Actions and icons
+The custom popup approximates MIUI styling. It cannot read Xiaomi's private volume popup bounds, so select the volume side and adjust brightness placement on your phone.
 
-Panels provide Phone settings, Nudge settings, media volume up/down/mute, Silent ringer, Vibrate, Do Not Disturb, Lock screen, and Open app. Sound adjustments keep the panel open. App, settings, and lock actions close it. Power controls are excluded.
+**Maximum brightness** recognizes an already selected manual maximum. Pressing it while active restores an available previous value or immediately uses **Return brightness**. **Minimum brightness** becomes active after Nudge selects the minimum.
 
-Silent ringer and Vibrate select their respective modes. Tapping the active mode returns to Normal. Media mute does not change the ringtone mode. Sound-mode actions can require Do Not Disturb access. On Android 15 and later, another active DND rule can keep DND on after Nudge's rule is turned off.
+Each maximum/minimum action has **Use previous brightness** and its own **Return brightness**, initially 50%. A valid previous value includes its automatic mode. External changes and restarts discard the captured previous value. Return settings stay saved.
 
-Choose a default icon pack for a panel or a manual static icon for any button. Common appfilter mappings and drawable lists are supported. Missing apps and packs retain their references and use fallback icons. Dynamic clocks and calendars are excluded. Icon shape and corners are independent of panel corners.
+### Brightness percentages and calibration
 
-The development button editor keeps changes private until Save. Volume up and Volume down have an optional Show volume popup switch. It changes the native UI flag while keeping the media adjustment to one system step. Sound buttons still keep the Nudge panel open.
+Brightness percentages represent slider positions. Manufacturers can use different curves. On Home, calibration appears below the brightness slider controls. Five samples at 0%, 25%, 50%, 75%, and 100% define an interpolated curve.
 
-Maximum brightness and Minimum brightness are available as panel buttons and direct gesture actions. The first use opens Android's Modify system settings screen if access is missing. Grant access, return, and run the action again. Nudge does not change brightness before access is granted.
+**Manual calibration:** turn off automatic brightness. Set each requested native slider position, return to Home, and select **Capture**. Zero is a valid minimum. Negative, repeated, and decreasing samples are rejected. **Reset calibration** restores the default Android curve.
 
-Each brightness limit uses manual brightness. Maximum brightness is active whenever manual brightness is at maximum, including after a manual adjustment or app restart. At maximum, one press restores an available previous value or immediately uses Return brightness. Minimum brightness remains active only after a Nudge action. External changes and app restarts discard captured previous values.
+**Automatic calibration:**
 
-Each action has **Use previous brightness**, enabled by default, and **Return brightness**, initially 50%. Tap an active action to return to its previous level and automatic mode when available. Previous maximum brightness is unavailable. Minimum also rejects a previous minimum. If the previous level is unavailable, or Use previous brightness is off, use Return brightness in manual mode. Returning clears the restore session. Maximum brightness remains active if the return value is 100%.
+1. Select Automatic calibration and read the permission disclosure.
+2. Allow **Modify system settings** access and enable the separate **Nudge brightness calibration** accessibility service.
+3. Return to Home and select **Start calibration**.
+4. On Xiaomi, open Control center manually and keep the brightness slider visible. With the new style, swipe from the top right. With the old style, expand quick settings. Other phones request Android's quick settings panel.
+5. Wait for measurement and restoration. Review the samples, then select **Save** or discard them.
 
-The same controls appear for panel buttons, direct gestures, and Home shortcuts. Saved return settings are independent of runtime restore values. Return settings survive backups, duplication, and restarts. Runtime values are never exported. They do not wake the screen. Device brightness limits require a Redmi check.
+Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 20-second deadline. The screen becomes dim and bright during measurement.
 
-Toggle handles is available as a panel button and direct gesture action. Select All handles, This handle, or Other handles. This handle means the handle that opened the panel or ran the gesture. A panel test without a preview handle cannot select This handle or Other handles.
+The temporary service uses known System UI brightness controls that expose a valid range and accept accessibility progress actions. It checks ownership and rejects unrelated controls. It does not inspect screen text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
 
-The action pauses currently enabled handles without changing their saved Enable switches. Its tile shows On when all selected handles are available through this pause control. Tap again to resume. If only some are paused, tapping resumes the group. Existing panels remain usable while their handle is paused. Saved disabling, the master switch, and normal eligibility rules still close panels.
+Cancel, screen-off, lock, rotation, service loss, or unstable measurements stop the run. Nudge attempts to restore the original brightness and automatic mode before showing results. A failed run leaves the saved profile unchanged. The temporary service disables itself when the run ends.
 
-The **Pause handles** switch is above **Add handle**. Both global switches scroll with the handle list, so editing remains reachable on small displays. Switch it on to pause all enabled handles. Switch it off to clear every pause, including a handle paused by its own gesture. The switch is on if any handles are paused. Turning off Enable Gestures or restarting the app clears pauses. Saved disabled handles remain disabled. Pauses are runtime state and are not included in backups.
+If restoration is interrupted, Home offers **Restore previous brightness** or **Keep current brightness**. Other Nudge brightness writes remain blocked until recovery is resolved. Measurement never resumes after process death.
 
-The **Hide visible handles** switch is below **Pause handles**. It hides all runtime visible bars until switched off. Gestures still work. Each handle keeps its saved visibility, color, size, and placement. Editing previews remain available. The override survives app and phone restarts.
+Profiles and recovery records stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. Five samples do not prove an exact mapping at every intermediate position.
 
-The **Handle animations** switch controls pull and reveal feedback for every handle. It is on by default. Turn it off to keep handles still. Gesture actions continue to work.
+Redmi Note 12 / HyperOS 1.0 failed automatic calibration with both Control center styles before the manual-opening discovery fix. That fix still needs a phone recheck. If the native slider is unsupported, use Manual calibration.
 
-**Toggle handle visibility** applies the same override from a panel button, direct gesture, or Home shortcut. Its tile is On when visibility is allowed and Off while bars are hidden. It keeps an open panel usable. Restoring visibility shows only bars enabled in each handle's settings. **Toggle handles** follows **Close panels** in the action picker; **Toggle handle visibility** is next.
+## Home screen shortcuts
 
-Choose a built-in icon, including Camera and Wallet, without an icon pack. Each button can follow the panel's background setting, use a container, or stand alone. Standalone icons fill the button and retain the configured icon corners. App and icon-pack images retain their original colors. Automatic icon color applies to built-in symbols and uses the effective background for contrast. Color controls show a compact swatch. Tap it to open the palette and enter a hex value. Panel backgrounds, button backgrounds, icons, and visible handles have independent opacity controls, including automatic colors.
+In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
 
-The built-in Nudge icon uses the separated pill mark without the app background. It follows the panel's icon color and opacity. Select Standalone for a button with no container. The default Nudge settings icon keeps the full app icon.
+Shortcuts require the connected Nudge handles service but can run with Enable Gestures off. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
 
-Each handle can be enabled on the awake lock screen. Apps and settings use Android's normal unlock step. Cancelling authentication cancels the action. Nudge does not wake the screen. Screen-off and always-on-display operation remain disabled.
+Backups retain shortcut definitions. Import does not grant permissions or pin icons.
 
-## Backups and persistence
+## Backups and updates
 
-Export or import JSON through Info → Backup. Files contain handles, panels, gesture links, and icon references, including hidden buttons. They do not contain icon-pack images, permissions, signing material, or transient sessions.
+Use **Info → Backup** to export or import JSON. Backups include handles, panels, bindings, icon references, and shortcut definitions. They exclude icon-pack images, permissions, runtime sessions, and brightness calibration.
 
-The development navigation names this destination **Info**. Existing backup and help controls remain there. New display settings and built-in icon references are included in JSON backups. Older configurations use compatible defaults for these fields.
+**Add handles and panels** creates disabled copies with fresh IDs and preserves shared links within the imported group. **Replace configuration** requires confirmation and leaves the master switch off. Older backups migrate on import; older app versions may reject newer backup formats.
 
-Add handles and panels is the default import mode. It creates disabled handle copies and independent panel copies with fresh IDs. Shared panel links within the imported group remain shared. Current settings stay unchanged. Replace configuration requires confirmation and leaves the master switch off for review. Invalid files and files larger than 1 MiB are rejected before configuration changes.
+In **Info → Updates**, select **Check for updates**. **Include pre-releases (testing)** defaults off. Checks and downloads start only when requested.
 
-Existing single-handle preferences migrate into Handle 1. Its old activation mode keeps the volume popup assignment. The master switch, testing preference, appearance, landscape settings, and exclusions are retained. Migration keeps unrelated stored keys.
+**Download APK** uses Android Download Manager. Nudge verifies the package, version, and signing identity before offering **Install update**. Android requires installation confirmation. Debug and release builds install separately; a release APK does not update the debug app.
 
-Schema 6 introduced brightness actions and per-button handle-toggle scopes. Schema 5 introduced visible thickness in dp. Schemas 1 through 5 migrate while preserving assignments and physical placement. Schema-2 documents keep their existing assignments and timeout. Existing configured or assigned panels from schema 1 migrate with their settings, button order, overflow, icons, and gesture links intact. Untouched, unassigned slots are omitted. Older backup files use the same conversion. A failed migration preserves the original stored document.
+Install updates over the existing app without uninstalling to retain settings.
 
-Backups include direct action settings and selected app references. Added or duplicated handles receive fresh action IDs and start disabled. Panel links remain shared within an imported group. Older app builds reject the newer format instead of silently discarding direct actions.
+## Diagnostics and device checks
 
-Field changes apply immediately to the current draft. Disk saves wait for 150 ms of quiet and flush when an adjustment ends or the app backgrounds. Failed saves retain the draft and offer Retry. Delayed writes do not roll back newer edits or restore deleted handles.
+For disconnections or unexpected panel closures, note the reproduction steps and select **Info → Copy compatibility details**. Panel dismissal entries include a reason and may include app package names. Opening Nudge can itself produce a later app-change entry; use the entry for the original incident. Review copied details before sharing.
 
-## Battery and verification
+Nudge has no scheduled update checks, wake locks, or idle redraw loop. All handles share one runtime service. Automatic calibration adds only its temporary opt-in service.
 
-All handles share one accessibility service. Static windows schedule no idle frames. Hold recognition and swipe sequences use timestamps. Direct actions reuse the existing action executor. Panels own their event observers only while open. Brightness observes its two settings only while a restore value exists. Handle pauses use state updates without timers or polling. Icons load off the main thread with an 8 MiB bitmap cache.
-
-Optional panel auto-close uses one cancellable delay while a panel is open. It adds no polling, wake lock, periodic job, or idle frame loop.
-
-There are no wake locks, periodic restart jobs, foreground services, or scheduled update checks. HyperOS Background autostart remains recommended. Use No restrictions only when needed for reliability, then measure battery use.
-
-Automated tests cover models, persistence, gestures, layout, window ordering, and panel touch handling. They cannot establish HyperOS behavior, native-popup coexistence, Recents survival, or battery drain. Record those checks in the ignored `plans/compatibility.md` on the actual phone. A signed upgrade check waits for the next authorized release.
-
-## Unreleased handle controls
-
-Touch length normally reaches the usable shorter screen edge. Enable longer touch length extends its maximum to the longer edge. The active edge and screen constraints limit rendering without reducing the saved length. Turning the option off retains the saved value. Re-enable it to restore the longer size.
-
-Soft hide in full screen starts off. When enabled, the first valid gesture reveals the handle with one brief bounce and runs no action. Later gestures execute normally. Hide after defaults to three seconds and accepts 1 to 30 seconds. Contact and an owned panel suspend expiry. Hidden touch areas still receive touches. Detection uses status-bar visibility; unknown visibility retains normal behavior. HyperOS detection remains pending device verification.
-
-## Unreleased panel controls
-
-Pass touch through and keep open adds a third outside-touch policy. The panel and swipe sequence remain active until dismissal, including Back or timeout. Verify Back consumption after pass-through touches on the actual phone.
-
-Empty button adds a grid cell with no action. Its Appearance dropdown selects No icon (container only), No button (blank space), or Slash icon. Each cell owns its appearance. Blank spaces retain capacity and remain inside the panel touch area. Empty cells do not become runtime click targets.
-
-Button drags beyond touch slop cancel clicking until the next press, including when the pointer returns to the same button. Scrolling remains available. The unexpected panel dismissal investigation is deferred to a separate task; app-change detection is unchanged.
-
-Version 0.3.1 converts earlier thickness percentages to dp using the saved touch depth. For example, 25% of 24 dp becomes 6 dp. Configuration and backup schema 5 stores that value independently. Older backups can be imported; older Nudge versions cannot import schema-5 backups.
-
-Development backups use schema 13 for brightness popup animations, per-action brightness return preferences, slider touch behavior, and the global visible-handle override. Schema 14 adds the global handle-animation switch. Earlier configurations default to animations on. Add import keeps the current global settings; Replace import restores the file's value. Schema 9 and older backups receive Use previous brightness on and Return brightness at 50%. Older slider settings keep Jump to touch and No animation. Existing actions, icon settings, and other preferences are retained.
-
-## Brightness popup animations
-
-Expand **Appearance** under the brightness slider controls on Home. **Open animation** and **Close animation** each offer No animation, Fade, Slide and fade, and Scale, slide, and fade. Both default to No animation. Each control has its own reset button. Backup and restore retain both choices.
-
-Slide direction follows the popup's nearest screen side. Opening takes 180 ms, and closing takes 120 ms at normal system speed. Dismissal and timeout use the closing effect. Closing stops touch input, accessibility actions, brightness observers, and the timeout immediately. Preview guides and disabled system animations stay still. Screen-off, editor changes, screenshots, and service cleanup cancel transitions and remove the popup immediately.
-
-The automatic brightness control is a horizontal pill below the slider. Its touch area stays separate from the slider.
-
-## Brightness touch behavior
-
-Home provides **Touch behavior** beside the brightness slider preview. **Jump to touch** uses the touched track position. **Slide to adjust** starts at the current brightness and applies each drag distance relative to the track height. Touching without movement does not change brightness in Slide mode. A full track of movement changes the level by 100 percentage points. Both modes clamp at the limits. Reversing direction responds immediately, including after an overshoot.
-
-Expand **Appearance** to edit the brightness background, track, fill, and icon colors. The live Preview brightness slider switch remains available.
-
-Jump to touch remains the default for new and existing configurations. Previews stay non-interactive. Accessibility progress actions use the requested level in both modes. Changing modes during a drag cancels that input. Relative motion retains frame-coalesced writes and creates no idle work.
-
-## Settings with additional options
-
-Settings that offer more options show a chevron. Additional controls appear directly below their parent setting where possible. A subtle left line groups each set of dependent controls. In gesture bindings, Slide to adjust appears below its selected volume or brightness option. Action-specific controls appear below the action choice. The action picker places a gear badge over the lower-right corner of actions with additional options. The badge shares the picker background and does not change the action's touch target. Common icon editing does not add a badge to every action. Direct gesture actions omit the volume-step badge because their popup choice is configured separately.
-
-## Brightness percentages and calibration
-
-Brightness percentages use perceptual slider positions. Previous brightness retains its exact system value and automatic mode. Home provides optional calibration below the brightness slider controls at 0%, 25%, 50%, 75%, and 100% of the native slider. Turn off automatic brightness, set each position in Control center, return to Home, and select Capture. Samples must increase. Calibration stays in this device's no-backup storage and resets after an OS build change. Reset calibration restores the Android curve.
-
-**Manual calibration** keeps that capture flow. A native minimum of zero is accepted. Negative, repeated, and decreasing samples are rejected.
-
-**Automatic calibration** first explains its separate accessibility permission. Allow Modify system settings access, then enable **Nudge brightness calibration** in Android Accessibility. Return to Home and select **Start calibration**. Enabling the service alone does not start measurement. It waits up to two minutes for setup, then turns itself off if setup is not completed.
-
-The automatic run opens Control center and uses the native brightness control's accessibility progress action at five positions. It identifies known brightness resource IDs and confirms System UI ownership, including controls whose resources come from a plugin. Unrelated color and dimming controls are rejected. It confirms progress and stable manual brightness readings. It does not inspect text, take screenshots, record the screen, or inject coordinate taps. No hierarchy or measurement data is sent or logged. The normal handle service retains its existing capabilities and cannot retrieve window content.
-
-Your screen becomes dim and bright during measurement. A temporary overlay shows progress and **Cancel**. Nudge brightness actions and handles are suspended during the run. Cancellation, screen-off, lock, rotation, interruption, refused actions, invalid measurements, and service loss stop the run. Measurement is bounded to 20 seconds, with shorter control-discovery and settling limits. There is no idle sampling or automatic retry.
-
-The original system brightness and automatic mode are recorded before any change. Normal completion and cancellation restore both before results are shown. **Save** applies a complete five-point profile. Cancelling review, a failed run, or a failed save keeps the existing calibration. The temporary service is disabled and its overlay removed when the run ends. Phones without a unique supported brightness control use Manual calibration.
-
-If a process ends unexpectedly, measurement does not resume. Home offers **Restore previous brightness** or **Keep current brightness** using the device-local restoration record. Failed restoration keeps that record and blocks other Nudge brightness writes until it is resolved. Allow brightness access again if needed. Calibration samples and restoration records stay outside Android backup and exported configurations.
-
-Automated checks exercise the supported native-action flow and recovery. Actual HyperOS control exposure, screen brightness, overlay placement, and update behavior still require a device check.
-
-Schema 15 saves swipe-and-hold distance direction. Earlier backups default to Any direction.
-
-## Scoped visibility and combined handle control
-
-Toggle handle visibility offers All handles, This handle, and Other handles. It targets enabled handles. If any target is hidden, the action reveals the group; otherwise it hides the group. Revealing still respects each handle's visible-handle and full-screen hiding settings. Visibility suppression stays saved per handle. The Handles tab applies its visibility switch to every saved handle, including disabled handles, and shows it on only when all are hidden.
-
-Toggle and hide handles has separate Handles to toggle and Handles to hide/show scopes: None, All handles, This handle, and Other handles. Select at least one group. Each group toggles independently. A partly paused group resumes; a partly hidden group shows. Pauses remain temporary and do not change saved Enable switches. Both groups are validated before either changes. This handle and Other handles require an invoking handle; Home shortcuts ask for one. An open panel remains usable after its invoking handle is paused.
-
-Schema 16 saves per-handle visibility and both combined scopes. Earlier global hiding migrates to each saved handle. Duplication and Add import retain each handle's own hiding state.
-
-## Active button colors
-
-Panel Appearance provides separate active background and icon controls. Each supports automatic or selected colors. Turn either effect off independently. Existing button and icon opacity controls still apply. Standalone icons use an outline for the active background effect. Image icons keep their artwork. Inactive and Active previews show the result. There are no per-button color overrides. DND selection follows Nudge's own rule on Android 15 and later.
-
-Schema 17 adds panel active colors. Older panels receive automatic active colors. Backups, duplication, and Add import retain them.
-
-
-## Continuous adjustment from a handle
-
-In a gesture selector, select exactly one popup and enable **Slide to adjust**. Tap does not offer this option. A swipe opens its popup as soon as it reaches its distance. **Start adjustment** defaults to **After hold** for new and existing swipe bindings. Keep your finger still, then slide without lifting it. **Adjustment hold time** accepts 100 to 1,000 ms and defaults to 200 ms. Movement beyond an 8 dp radius restarts this timer, including horizontal or diagonal movement. Small jitter does not restart it. Releasing before activation leaves the slider value unchanged.
-
-When the hold ends, a brief ready cue follows that swipe's haptic setting and Android's haptic policy. The current system value and finger position become the new starting point. The first 8 dp of vertical movement is ignored; further motion adjusts proportionally. This initial tolerance applies once. Reversing direction then responds immediately. **Immediate** retains adjustment as soon as the popup opens, without the extra hold or initial tolerance. An assigned button action still runs when the popup opens; the guard delays only slide adjustment.
-
-Hold and swipe and hold start adjustment at their existing deadlines, including when normal hold execution uses On release. They do not add this extra hold. Keep your finger down, then move up or down. Horizontal movement after adjustment starts does not change the value. Release ends adjustment and does not run the action again.
-
-Any continuous swipe stage disables swipe and hold for that handle. Its saved assignment stays intact. The next swipe stage resumes after release; its sequence timeout starts then.
-
-**Slider travel** sets a separate full-range distance for media volume and brightness on each handle. The default is 240 dp; the range is 48-600 dp. Volume uses the media stream's actual system range and rounds to its available steps. Brightness uses the same percentage mapping and device calibration as Return brightness. Values clamp at their endpoints, and reversing responds immediately. The optional editor guide shows the full distance at real size, its endpoints, and the current-value anchor. Arrows identify endpoints outside the screen. The guide neither moves a native popup nor changes system values.
-
-Brightness stays open while held, including during the adjustment hold, then starts its normal timeout. Native media volume receives an unchanged-value UI request once per second only while held. There is no idle keepalive. Cancellation, a second finger, rotation, service cleanup, and unavailable handles stop adjustment and discard pending writes and hold callbacks. Schema 18 retains each binding's option and both travel distances in backups and copies. Schema 20 also retains the activation choice and adjustment hold time. Backups before schema 18 keep ordinary popup behavior.
-
-Automated checks cover capture, proportional motion, limits, timers, cancellation, and persistence. Native volume touch ownership, popup coexistence, and brightness calibration still require checks on the target HyperOS device.
-
-
-## Handle window handoff
-
-Opening a panel can require raising its handles above the panel. The successor window stays transparent until its first pre-draw. At that boundary, the old handle stops drawing and is removed before the successor draws. Only one visible handle contributes opacity. Retiring handles no longer accept input or accessibility clicks. Rapid raises retain one drawing owner. Captured gestures and their return animations still finish before a raise, and full-screen reveal state carries into the replacement.
-
-Automated checks cover ownership, alpha composition, rapid replacement, failed attachment, cleanup, and reveal state. A physical HyperOS check is still needed for compositor timing and the visible result.
+Automated tests cannot establish native popup touch ownership, HyperOS control exposure, compositor behavior, update installation, or battery use. Record actual phone observations separately. See [development and releases](development.md#device-verification) for the device-profile command.

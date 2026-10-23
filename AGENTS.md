@@ -4,12 +4,25 @@
 
 - Use `type(scope): description` for the title, with concise, imperative wording that follows the existing commit style.
 - Choose the type for the change, such as `fix`, `feat`, `build`, `docs`, `test`, or `chore`.
-- Read `.plans/scopes.md` and use the narrowest applicable approved scope. If none fits, suggest a new scope for user approval before using it.
+- Use the narrowest applicable approved scope from the table below. If none fits, suggest a new scope for user approval before using it.
 - Follow ASD-STE100 English loosely for the body only. Use short sentences, clear verbs, and consistent technical terms.
 - Start every body item with `- `.
 - Do not include blank lines, a `[merge]` label, or a PR number.
 - When asked only for a commit message, return only that message.
 - Apply these rules to future commits. Do not rewrite existing commits or release tags to change their format unless the user explicitly asks.
+
+### Approved scopes
+
+Approved by the user on 2026-10-17. Keep local planning files in the ignored `.plans/` directory.
+
+| Scope | Use for |
+| --- | --- |
+| `trigger` | Coordinated edge-shortcut changes to geometry, activation, visibility, rotation, lock-screen operation, or its live preview. |
+| `settings` | Preference storage, migration, defaults, field updates, and save coordination. |
+| `accessibility` | Service binding, connection reporting, permission checks, lifecycle cleanup, and service diagnostics. |
+| `ui` | Settings screens, controls, help text, previews, and app branding when trigger behavior is unchanged. |
+| `release` | Versioning, signing, APK packaging, release scripts, changelog, and compatibility records. |
+| `repo` | Git configuration, repository instructions, commit conventions, and scope definitions. |
 
 ## App text
 
@@ -27,7 +40,7 @@
 - During development, keep changes under Unreleased and use tests, lint, or debug builds for verification. Do not invoke `scripts/Release.ps1` automatically.
 - Store each version's APK, checksum, exported notes, and build metadata in `releases/<version>/`. Keep archived builds under `releases/archive/`.
 - Treat established local version tags (`v<major>.<minor>.<patch>`) as published releases. The newest tag can remain a working release until the user marks it ready. Do not use a working tag as the published baseline merely because it exists.
-- Use the latest earlier, reachable published tag as the changelog baseline. On 2026-10-23, GitHub releases/latest confirmed `v0.4.4`, code 13, is published as a stable release (published at 2026-10-22T17:51:33Z). `0.4.5`, code 14, is the current working release. Use `-FromTag v0.4.4` for its notes. Do not treat `0.4.5` as published until publication is confirmed.
+- Use the latest earlier, reachable published tag as the changelog baseline. On 2026-10-23, GitHub releases/latest confirmed `v0.4.5`, code 14, is published as a stable release (published at 2026-10-23T03:34:56Z). `0.4.6`, code 15, is the current working release. Use `-FromTag v0.4.5` for its notes. Do not treat `0.4.6` as published until publication is confirmed.
 - Prepare the version and reviewed notes on the feature branch. Build the final signed APK and create its tag from clean `main` after a GitHub merge or a user-authorized local merge. Do not merge, push, or publish without the user's instruction.
 - Preserve the earlier unpublished code-3 APK and exact tag object under `releases/archive/0.1.2-build.3/` and `archive/v0.1.2-build.3`. The old tag was never pushed. The 0.1.3 build was canceled before export or tagging.
 - Commit completed features and fixes before preparing release notes. Increase both version values in `version.properties` for a new distributed APK.

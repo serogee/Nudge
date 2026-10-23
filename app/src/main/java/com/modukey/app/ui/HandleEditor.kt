@@ -82,7 +82,7 @@ import kotlin.math.roundToInt
                         Section(R.string.visible_handle) {
                             Toggle(R.string.make_handle_visible, R.string.visible_help, s.indicatorVisible, default = false, optionsExpanded = s.indicatorVisible) { value -> vm.editTrigger(h.id) { it.copy(indicatorVisible = value) } }
                             DependentSettings(R.string.make_handle_visible) {
-                                SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
+                                SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f, valueScale = 100f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
                                 SettingSlider(R.string.indicator_thickness, s.indicatorThicknessDp, 0f..32f, t(R.string.dp_value, s.indicatorThicknessDp.roundToInt()), s.indicatorVisible, default = 4f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessDp = value) } }
                                 Help(R.string.indicator_thickness_help)
                                 PercentSlider(R.string.opacity, s.indicatorOpacity, s.indicatorVisible, default = .65f) { value -> vm.editTrigger(h.id) { it.copy(indicatorOpacity = value) } }

@@ -49,6 +49,6 @@ import kotlin.math.roundToInt
 @Composable private fun GestureFeedbackControls(@StringRes title: Int, s: GestureFeedback, change: (GestureFeedback) -> Unit) {
     Toggle(title, R.string.gesture_feedback_help, s.enabled, default = false, optionsExpanded = s.enabled) { change(s.copy(enabled = it)) }
     DependentSettings(title) {
-        SettingSlider(R.string.haptic_strength, s.strength, .1f..1f, t(R.string.percent, (s.strength * 100).roundToInt()), enabled = s.enabled, default = .5f) { change(s.copy(strength = it)) }
+        SettingSlider(R.string.haptic_strength, s.strength, .1f..1f, t(R.string.percent, (s.strength * 100).roundToInt()), enabled = s.enabled, default = .5f, valueScale = 100f) { change(s.copy(strength = it)) }
     }
 }

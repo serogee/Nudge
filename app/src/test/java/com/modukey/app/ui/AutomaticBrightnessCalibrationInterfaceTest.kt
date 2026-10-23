@@ -12,6 +12,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
+import com.modukey.app.R
 import com.modukey.app.platform.*
 import org.junit.After
 import org.junit.Assert.*
@@ -77,6 +78,31 @@ class AutomaticBrightnessCalibrationInterfaceTest {
         rule.runOnIdle {
             assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
             assertFalse(app.brightness.calibrationNeedsRecovery)
+        }
+        rule.onNodeWithText("Manual calibration").assertIsEnabled()
+    }
+    @Test fun waitingForThePanelShowsInstructionsAndCanBeCancelledWithoutBrightnessChanges() {
+        content(); var closed = 0
+        rule.runOnIdle {
+            Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 73)
+            Settings.System.putInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 1)
+            assertTrue(app.automaticCalibration.prepare())
+            assertTrue(app.automaticCalibration.connect(object : CalibrationServicePort {
+                override fun open() = true
+                override fun control(): NativeBrightnessControl? = null
+                override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean { fail(); return false }
+                override fun progress(percent: Int) = Unit
+                override fun close() { closed++ }
+            }))
+        }
+        rule.onNodeWithText("Start calibration").performClick()
+        rule.onNodeWithText(app.getString(R.string.auto_calibration_waiting_panel)).assertExists()
+        rule.runOnIdle { assertFalse(app.brightness.calibrationNeedsRecovery) }
+        rule.onNodeWithText("Cancel").performClick()
+        rule.runOnIdle {
+            assertEquals(1, closed)
+            assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+            assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
         }
         rule.onNodeWithText("Manual calibration").assertIsEnabled()
     }

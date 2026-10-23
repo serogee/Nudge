@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.4.6 - 2026-10-23
+
+### Added
+
+- Tap a settings slider's percentage or dp readout to enter a value. Save or keyboard Done applies the value within that slider's minimum and maximum. Cancel keeps the current value. Disabled controls remain disabled. (754f4e5)
+
+### Fixed
+
+- Wait up to 30 seconds for a supported native brightness control before recording or changing brightness. On Xiaomi, open Control center manually during calibration. Search System UI application windows and the active System UI root while rejecting other apps and duplicate roots. (c55e744)
+- Show Xiaomi guidance when the Control panel action opens notifications. Keep gesture injection and screenshot capabilities disabled. (c55e744)
+- Use a 75%-opaque background for action-picker settings badges. Keep the gear icon fully opaque and retain the action's touch target. (c78fbf5)
+
+### Maintenance
+
+- License Nudge under **GNU GPL version 3 or later** (`GPL-3.0-or-later`). Add the full license and project grant to APK assets. Document matching-source distribution and third-party notices. (3f100d4)
+- Rebuild the README with the app logo, stack badges, contents, demo placeholders, features, privacy, development, and support. Condense the user guide and replace repeated release checklists with one development and release guide. Remove the old panel investigation write-up. (e6deefc)
+- Keep `.plans/` local and untracked. Move the approved commit scopes to AGENTS.md so fresh clones retain the rules. Use the same directory pattern as the other ignore rules. (9f2b20a, dff8f1c)
+
 ## 0.4.5 - 2026-10-23
 
 ### Added

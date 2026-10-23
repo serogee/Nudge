@@ -26,7 +26,7 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
     private val coordinator get() = (application as NudgeApplication).automaticCalibration
     private var running = false
     private var stopping = false
-    private var opened = false
+    private var panelSession = false
     private var registered = false
     private var rotation = 0
     private var overlay: View? = null
@@ -57,16 +57,30 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         ContextCompat.registerReceiver(this, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         registered = true
         showProgress()
-        opened = performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
-        return opened
+        panelSession = true
+        // Xiaomi can route this global action to notifications. Let the user open either panel style.
+        if (!HyperOsSettings.isXiaomiDevice()) performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
+        return true
     }
     private fun roots(): List<AccessibilityNodeInfo> {
         if (!running || stopping) return emptyList()
-        // Do not request application-window roots, including Nudge's own cancel overlay.
-        return windows.filter { it.type == AccessibilityWindowInfo.TYPE_SYSTEM }.mapNotNull { it.root }
+        val roots = mutableListOf<AccessibilityNodeInfo>()
+        @Suppress("DEPRECATION")
+        fun accept(root: AccessibilityNodeInfo?, active: Boolean = false) {
+            if (root == null) return
+            // Some System UI panels are application windows. Inspect ownership before traversing a root.
+            val duplicate = if (root.windowId >= 0) roots.any { it.windowId == root.windowId } else active && roots.isNotEmpty()
+            if (root.packageName?.toString() == NativeBrightnessNode.SYSTEM_UI && !duplicate) roots += root else root.recycle()
+        }
+        windows.filter { it.type == AccessibilityWindowInfo.TYPE_SYSTEM || it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+            .forEach { accept(it.root) }
+        // Older System UI builds can expose only the active root rather than interactive windows.
+        accept(rootInActiveWindow, active = true)
+        return roots
     }
     override fun control(): NativeBrightnessControl? = NativeBrightnessNode.read(roots())
     override fun move(expected: NativeBrightnessControl, fraction: Float): Boolean = NativeBrightnessNode.move(roots(), expected, fraction)
+    override fun waitingForPanel() { status?.setText(R.string.auto_calibration_waiting_panel) }
     override fun progress(percent: Int) { status?.text = getString(R.string.auto_calibration_progress, percent) }
     private fun showProgress() {
         val density = resources.displayMetrics.density
@@ -75,7 +89,10 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
             setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (8 * density).toInt())
             background = GradientDrawable().apply { setColor(Color.rgb(32, 32, 32)); cornerRadius = 16 * density }
         }
-        status = TextView(this).apply { text = getString(R.string.auto_calibration_opening); setTextColor(Color.WHITE); textSize = 16f }
+        status = TextView(this).apply {
+            text = getString(R.string.auto_calibration_opening); setTextColor(Color.WHITE); textSize = 16f
+            maxWidth = (resources.displayMetrics.widthPixels - 64 * density).toInt().coerceAtLeast((200 * density).toInt())
+        }
         layout.addView(status)
         layout.addView(Button(this).apply { setText(R.string.cancel); contentDescription = getString(R.string.cancel_auto_calibration)
             setOnClickListener { coordinator.cancel() } })
@@ -92,9 +109,9 @@ class BrightnessCalibrationService : AccessibilityService(), CalibrationServiceP
         if (registered) { runCatching { unregisterReceiver(screenOff) }; registered = false }
         overlay?.let { runCatching { manager.removeViewImmediate(it) } }; overlay = null; status = null
         runCatching { restrict() }
-        if (opened && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked)
+        if (panelSession && getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked)
             runCatching { performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE) }
-        opened = false
+        panelSession = false
         disableSelf()
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit

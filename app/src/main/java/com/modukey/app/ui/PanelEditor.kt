@@ -73,7 +73,7 @@ import kotlin.math.roundToInt
                 Help(R.string.fixed_help)
             } else {
                 SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
-                    t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f) { value -> layout { it.copy(extentFraction = value) } }
+                    t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f, valueScale = 100f) { value -> layout { it.copy(extentFraction = value) } }
                 Help(R.string.scrollable_help)
             }
         }
@@ -115,12 +115,12 @@ import kotlin.math.roundToInt
     }
     Section(R.string.appearance) {
         ColorPicker(p.background, title = R.string.panel_background, default = panelDefaults.background) { value -> vm.editPanel(entry.id) { it.copy(background = value) } }
-        SettingSlider(R.string.opacity, p.opacity, 0f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
+        SettingSlider(R.string.opacity, p.opacity, 0f..1f, t(R.string.percent, (p.opacity * 100).roundToInt()), default = .98f, valueScale = 100f) { value -> vm.editPanel(entry.id) { it.copy(opacity = value) } }
         SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
         OptionRow(t(R.string.icon_shape), IconShape.entries, p.iconShape, IconShape.ROUNDED_SQUARE) { value -> vm.editPanel(entry.id) { it.copy(iconShape = value) } }
         if (p.iconShape != IconShape.CIRCLE) DependentSettings(R.string.icon_shape) {
             SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
-                t(R.string.percent, (p.iconCornerFraction * 100).roundToInt()), default = .25f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
+                t(R.string.percent, (p.iconCornerFraction * 100).roundToInt()), default = .25f, valueScale = 100f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
         }
         Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
         Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true, optionsExpanded = !p.automaticButtonColor) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
