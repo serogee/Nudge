@@ -14,7 +14,7 @@ On MIUI or HyperOS, menu names vary. Enable **Background autostart** if needed. 
 
 Brightness actions need **Modify system settings** access. Some sound actions need **Do Not Disturb** access. Nudge does not require root, device administrator, or the separate **Display over other apps** permission.
 
-**Notifications** and **Control panel** use Android's native system actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. Nudge shows Xiaomi guidance; it cannot reliably force the vendor Control center through that action.
+**Notifications** and **Control panel** use Android's native accessibility actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. The old style combines notifications and quick settings. The new style has a separate Control center with brightness and volume sliders. On the connected Redmi, native shell requests opened these as distinct panels. This does not verify the app's accessibility routing. Nudge retains Xiaomi opening guidance and does not inject a top-right swipe.
 
 ## Handles
 
@@ -162,7 +162,7 @@ Each maximum/minimum action has **Use previous brightness** and its own **Return
 
 ### Brightness percentages and calibration
 
-Brightness percentages represent slider positions. Manufacturers can use different curves. On Home, calibration appears below the brightness slider controls. Five samples at 0%, 25%, 50%, 75%, and 100% define an interpolated curve.
+Brightness percentages represent slider positions. Manufacturers can use different curves. On Home, calibration appears below the brightness slider controls. Manual calibration uses five positions: 0%, 25%, 50%, 75%, and 100%. Automatic calibration uses 17 positions at 6.25% intervals. Both produce an interpolated curve. Existing five-point profiles remain valid until you replace or reset them.
 
 **Manual calibration:** turn off automatic brightness. Set each requested native slider position, return to Home, and select **Capture**. Zero is a valid minimum. Negative, repeated, and decreasing samples are rejected. **Reset calibration** restores the default Android curve.
 
@@ -174,17 +174,21 @@ Brightness percentages represent slider positions. Manufacturers can use differe
 4. On Xiaomi, open Control center manually and keep the brightness slider visible. With the new style, swipe from the top right. With the old style, expand quick settings. Other phones request Android's quick settings panel.
 5. Wait for measurement and restoration. Review the samples, then select **Save** or discard them.
 
-Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 20-second deadline. The screen becomes dim and bright during measurement.
+Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 60-second deadline. The screen becomes dim and bright during measurement. Adjacent automatic samples can share a hardware level. Decreasing or completely flat curves are rejected. Manual capture still rejects repeated levels.
 
-The temporary service uses known System UI brightness controls that expose a valid range and accept accessibility progress actions. It checks ownership and rejects unrelated controls. It does not inspect screen text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
+The calibration service uses native brightness controls that expose a valid range and accept accessibility progress actions. It includes non-interactive layout containers so a generic slider can retain its brightness identity. It can also compare a generic slider's accessibility label with the exact translated brightness label from System UI. On Xiaomi, the installed system UI plugin can own the control. A user-installed package with the same plugin name is not accepted. Unrelated controls and ambiguous matches are rejected. It does not read notification text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
 
-Cancel, screen-off, lock, rotation, service loss, or unstable measurements stop the run. Nudge attempts to restore the original brightness and automatic mode before showing results. A failed run leaves the saved profile unchanged. The temporary service disables itself when the run ends.
+If detection fails again, open **Info → Copy compatibility details** after the run. These details include a bounded discovery report: inspected node counts, resource IDs, class names, ownership, supported ranges, and progress-action availability. They exclude screen text, accessibility descriptions, and the current brightness value. This report can distinguish a missing brightness identifier from a slider that exposes no writable range.
+
+Cancel, screen-off, lock, rotation, service loss, or unstable measurements stop the run. Nudge attempts to restore the original brightness and automatic mode before showing results. A failed run leaves the saved profile unchanged. By default, the calibration service disables itself when the run ends.
+
+Enable **Keep calibration service enabled** to reuse its connection. The service remains idle between runs, with event subscriptions and window-query flags cleared. It does not inspect controls, run discovery timers, or resume measurement after a restart. Select **Automatic calibration**, then **Start calibration** for another run. Use **Disable calibration service** to turn it off manually. Turning the keep-enabled option off also disables an idle connection. Completed measurements remain available to save.
 
 If restoration is interrupted, Home offers **Restore previous brightness** or **Keep current brightness**. Other Nudge brightness writes remain blocked until recovery is resolved. Measurement never resumes after process death.
 
-Profiles and recovery records stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. Five samples do not prove an exact mapping at every intermediate position.
+Profiles, recovery records, and the keep-enabled preference stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. More samples improve interpolation but do not add hardware brightness levels or prove an exact mapping at every position.
 
-Redmi Note 12 / HyperOS 1.0 failed automatic calibration with both Control center styles before the manual-opening discovery fix. That fix still needs a phone recheck. If the native slider is unsupported, use Manual calibration.
+On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automatic run completed and was saved. Brightness and mode restoration passed an immediate comparison. The filtered accessibility tree had removed the old-style brightness container. The new style exposes brightness and volume with the same slider ID, but different native labels. The native-label fix, 17-point sampling, and enabled standby have local automated coverage; their final on-device checks remain pending. If the native slider is unsupported, use Manual calibration.
 
 ## Home screen shortcuts
 
@@ -210,6 +214,6 @@ Install updates over the existing app without uninstalling to retain settings.
 
 For disconnections or unexpected panel closures, note the reproduction steps and select **Info → Copy compatibility details**. Panel dismissal entries include a reason and may include app package names. Opening Nudge can itself produce a later app-change entry; use the entry for the original incident. Review copied details before sharing.
 
-Nudge has no scheduled update checks, wake locks, or idle redraw loop. All handles share one runtime service. Automatic calibration adds only its temporary opt-in service.
+Nudge has no scheduled update checks, wake locks, or idle redraw loop. All handles share one runtime service. Automatic calibration adds a separate opt-in service. An enabled standby connection does not poll controls.
 
 Automated tests cannot establish native popup touch ownership, HyperOS control exposure, compositor behavior, update installation, or battery use. Record actual phone observations separately. See [development and releases](development.md#device-verification) for the device-profile command.

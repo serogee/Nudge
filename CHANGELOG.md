@@ -7,6 +7,13 @@
 - Add a Wheels tab with reusable semicircular layouts and up to six visible buttons. Keep overflow buttons editable.
 - Add optional Drag to pick for non-tap gestures. Configure selection distances, expanding selection, and a quick-release window for later swipes.
 - Store Wheel layouts and assignments in backup schema 21. Retain existing panel behavior and older backup compatibility.
+- Measure 17 automatic brightness positions at 6.25% intervals. Keep manual calibration at five points and retain existing profiles. Support repeated hardware levels in dense curves.
+- Add Keep calibration service enabled and a manual Disable calibration service button. Reuse an idle connection without reopening Android settings. Keep automatic disabling as the default.
+
+### Fixed
+
+- Include non-interactive brightness containers and known slider wrappers during automatic calibration. Match exact translated native brightness labels when the new HyperOS sliders share an ID. Accept plugin-owned controls only when the plugin is a system app. Keep the main handle service permissions unchanged.
+- Record bounded brightness discovery metadata in compatibility details. Exclude screen text, accessibility descriptions, and current brightness. Guide failed runs to Info → Copy compatibility details. Old-style calibration and restoration passed on Redmi Note 12 / HyperOS 1.0; final device checks for the new-style label fix, 17-point sampling, and enabled standby remain pending.
 
 ## 0.4.6 - 2026-10-23
 

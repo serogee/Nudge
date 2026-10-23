@@ -115,7 +115,7 @@ See the [user guide](docs/handles-and-panels.md) for setup, gesture behavior, ca
 | Do Not Disturb access | Run supported sound-mode actions. |
 | Install unknown apps | Open Android's installer for an APK you downloaded. Android still requires confirmation. |
 
-The calibration service does not inspect screen text, take screenshots, or record the screen. It disables itself when a run ends or setup expires. Calibration profiles and recovery records are excluded from Android backup and JSON exports. See [calibration and recovery](docs/handles-and-panels.md#brightness-percentages-and-calibration).
+The calibration service checks native control IDs and exact brightness labels. It does not read notification text, take screenshots, or record the screen. By default, it disables itself when a run ends or setup expires. You can keep it enabled and idle between runs, then disable it manually. It reads controls only during calibration. Profiles, recovery records, and this service preference are excluded from Android backup and JSON exports. See [calibration and recovery](docs/handles-and-panels.md#brightness-percentages-and-calibration).
 
 <a id="development"></a>
 
