@@ -2,11 +2,6 @@
 
 ## Unreleased
 
-### Fixed
-
-- Keep handle pauses after app and phone restarts, master-switch changes, and handle disable/re-enable. Restore them before attaching handles. Clear pauses through explicit resume actions or handle deletion.
-- Save combined pause and visibility changes together. Use the pause group to choose pause-and-hide or resume-and-show. Correct mismatches caused by separate controls. Retain independent visibility-only actions and include pause selections in backups.
-
 ## 0.5.0 - 2026-10-23
 
 ### Added
@@ -18,6 +13,8 @@
 
 ### Fixed
 
+- Retain saved handle pauses after app and phone restarts, master-switch changes, and handle disable/re-enable. Restore them before attaching handles and include them in backups. (e0a2111)
+- Use one direction for combined pause and visibility actions: pause and hide, or resume and show. Save both states together. Correct mismatches from separate controls while retaining visibility-only actions. (e0a2111)
 - Apply the saved background corner radius to the Wheel fan. (76f4339)
 - Keep Wheel touch targets at least 48 dp, prevent overlap during expansion, and clamp placement within safe screen bounds. Retain the selected button at a shared boundary until the finger crosses it. Show capacity and disable Add when the Wheel is full. (f91d972, 4ac0026, 88429b3, f6efb4b)
 - Include non-interactive brightness containers and known slider wrappers during discovery. Match exact translated native brightness labels when new HyperOS sliders share an ID. Accept Xiaomi plugin controls only from the installed system app. Keep the main handle service permissions unchanged. (5a66d1c)
@@ -32,7 +29,8 @@
 ### Compatibility and known limits
 
 - Backups use schema 21. Import older backups; earlier Nudge versions cannot import new exports. Keep five manual calibration points and existing device profiles.
-- Old-style Redmi calibration and restoration passed. Final new-style calibration, 17-point sampling, enabled standby, physical Wheel touch ownership, and update installation still need device checks. See the [reviewed release notes](docs/release-notes-0.5.0.md) for details.
+- Retain saved pauses across restarts and master or Enable changes. Resume actions and deletion clear pauses. Older backups without pause selections start resumed.
+- Old-style Redmi calibration and restoration passed. Final new-style calibration, 17-point sampling, enabled standby, physical Wheel touch ownership, pause restoration after a phone reboot, and update installation still need device checks. See the [reviewed release notes](docs/release-notes-0.5.0.md) for details.
 
 ## 0.4.6 - 2026-10-23
 

@@ -9,6 +9,8 @@
 
 ## Fixed
 
+- Retain saved handle pauses after app and phone restarts, master-switch changes, and handle disable/re-enable. Restore them before attaching handles and include them in backups. (e0a2111)
+- Use one direction for combined pause and visibility actions: pause and hide, or resume and show. Save both states together. Correct mismatches from separate controls while retaining visibility-only actions. (e0a2111)
 - Apply the saved background corner radius to the Wheel fan. (76f4339)
 - Keep Wheel touch targets at least 48 dp, prevent overlap during expansion, and clamp placement within safe screen bounds. Retain the selected button at a shared boundary until the finger crosses it. Show capacity and disable Add when the Wheel is full. (f91d972, 4ac0026, 88429b3, f6efb4b)
 - Include non-interactive brightness containers and known slider wrappers during discovery. Match exact translated native brightness labels when new HyperOS sliders share an ID. Accept Xiaomi plugin controls only from the installed system app. Keep the main handle service permissions unchanged. (5a66d1c)
@@ -22,6 +24,7 @@
 
 ## Compatibility and known limits
 
+- Saved pauses survive master and Enable changes. Use **Pause handles → Off** or resume actions to clear them. Deletion removes the handle's pause. Older backups without pause selections start resumed; new copies start disabled and unpaused.
 - Backups now use schema 21. Older backups remain importable. Nudge 0.4.6 and earlier cannot import schema-21 backups. Wheel copies and imports retain shared panel links, settings, and overflow buttons.
 - A drag Wheel disables **Slide to adjust** for its assignment. An ordinary swipe with a drag Wheel suppresses **Swipe and hold**. The first drag Wheel with **Allow later swipes** off disables later stages without deleting their assignments.
 - Quick release advances only before the configured deadline. At or after that deadline, fresh movement beyond 8 dp is required before highlighting. Release cannot create the first highlight. Selection distances start at the visible Wheel center.
@@ -31,11 +34,11 @@
 - Profiles, recovery records, and the keep-enabled preference remain device-local and are excluded from configuration exports and Android backup. The normal handle service still cannot retrieve window content. The calibration service reads controls only during an explicit run.
 - On Redmi Note 12 / Android 14 / HyperOS 1.0, an earlier old-style five-point debug run completed and was saved. Its immediate brightness and mode restoration comparison passed. The final new-style label fix, 17-point sampling, and enabled standby still need a physical-device recheck.
 - Native shell requests opened notifications and the new Control center as distinct panels on that Redmi. This does not establish the app's accessibility action routing. The Control panel action remains vendor-dependent and retains Xiaomi guidance. No top-right swipe is injected.
-- Physical Wheel touch ownership, especially with native popups, remains pending. Installation over 0.4.6, final brightness mapping, and battery comparisons also require device checks. Do not treat automated passes as those results.
+- Physical Wheel touch ownership, especially with native popups, and pause restoration after a phone reboot remain pending. Installation over 0.4.6, final brightness mapping, and battery comparisons also require device checks. Do not treat automated passes as those results.
 
 ## Automated preparation checks
 
-- Staged unit verification covered 722 test cases across 110 classes, with no failures, errors, or skipped cases after completed reruns. Focused brightness and final integration checks followed the completed Wheel suite.
+- Staged unit verification covered 735 test cases across 110 classes, with no failures, errors, or skipped cases after completed reruns. Focused checks for brightness, pause controls, and final integration followed the completed Wheel suite. The latest pause and gesture regression run passed 103 cases.
 - Debug lint passed with 0 errors and 25 warnings. The debug build passed with version 0.5.0-debug, code 16.
 - Release tools passed 29 changelog integration checks and 10 isolated finalization checks. All 28 local documentation links passed. Published notes, release artifacts, and earlier changelog entries remain unchanged.
 - Final signing, signer comparison, and installation over 0.4.6 happen after the GitHub merge. No final release APK or version tag is created on the feature branch.
