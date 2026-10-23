@@ -11,7 +11,8 @@ import kotlin.math.roundToInt
 enum class AutomaticCalibrationPhase { IDLE, WAITING_SERVICE, READY, RUNNING, REVIEW, SAVED, CANCELLED, FAILED, RECOVERY }
 enum class AutomaticCalibrationError { ACCESS, LOCKED, SETUP_TIMEOUT, UNSUPPORTED, CONTROL_CHANGED, UNSTABLE, INVALID_SAMPLES, RESTORE, SAVE, DISCONNECTED, SETTINGS }
 data class AutomaticCalibrationState(val phase: AutomaticCalibrationPhase = AutomaticCalibrationPhase.IDLE,
-    val position: Int = 0, val samples: List<Int> = emptyList(), val error: AutomaticCalibrationError? = null) {
+    val position: Int = 0, val samples: List<Int> = emptyList(), val error: AutomaticCalibrationError? = null,
+    val waitingForPanel: Boolean = false) {
     val busy get() = phase in listOf(AutomaticCalibrationPhase.WAITING_SERVICE, AutomaticCalibrationPhase.READY, AutomaticCalibrationPhase.RUNNING)
 }
 data class NativeBrightnessControl(val key: String, val minimum: Float, val maximum: Float, val current: Float, val integer: Boolean) {
@@ -23,6 +24,7 @@ interface CalibrationServicePort {
     fun open(): Boolean
     fun control(): NativeBrightnessControl?
     fun move(expected: NativeBrightnessControl, fraction: Float): Boolean
+    fun waitingForPanel() = Unit
     fun progress(percent: Int)
     fun close()
 }
@@ -80,20 +82,23 @@ class AutomaticBrightnessCalibration internal constructor(private val brightness
         if (mutable.value.phase != AutomaticCalibrationPhase.READY) return
         setup?.cancel(); setup = null
         val owner = Any(); token = owner
-        mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING)
+        mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, waitingForPanel = true)
         job = scope.launch(start = CoroutineStart.LAZY) {
             var result: List<Int>? = null
             var failure: AutomaticCalibrationError? = null
             try {
                 eligible()
-                if (!brightness.begin()) throw Failure(if (!brightness.canWrite) AutomaticCalibrationError.ACCESS else AutomaticCalibrationError.RESTORE)
                 if (!service.open()) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
                 if (token !== owner) throw CancellationException()
+                service.waitingForPanel()
+                var control: NativeBrightnessControl? = null
+                withTimeoutOrNull(30_000) { while (control == null) { eligible(); control = service.control(); if (control == null) delay(100) } }
+                if (control == null) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
+                eligible()
+                if (token !== owner) throw CancellationException()
+                if (!brightness.begin()) throw Failure(if (!brightness.canWrite) AutomaticCalibrationError.ACCESS else AutomaticCalibrationError.RESTORE)
+                val expected = requireNotNull(control)
                 result = withTimeout(20_000) {
-                    var control: NativeBrightnessControl? = null
-                    withTimeoutOrNull(3_000) { while (control == null) { eligible(); control = service.control(); if (control == null) delay(100) } }
-                    if (control == null) throw Failure(AutomaticCalibrationError.UNSUPPORTED)
-                    val expected = requireNotNull(control)
                     val samples = mutableListOf<Int>()
                     for (point in 0..4) {
                         eligible(); mutable.value = AutomaticCalibrationState(AutomaticCalibrationPhase.RUNNING, point * 25)

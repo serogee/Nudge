@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Looper
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.accessibility.AccessibilityNodeInfo
@@ -58,7 +59,8 @@ class BrightnessCalibrationServiceTest {
         destroy = { controller.destroy() }
         return controller.get().also { ReflectionHelpers.callInstanceMethod<Void>(it, "onServiceConnected") }
     }
-    private fun provideBrightnessWindow(service: BrightnessCalibrationService, writes: MutableList<Int>, initial: Float = 50f) {
+    private fun provideBrightnessWindow(service: BrightnessCalibrationService, writes: MutableList<Int>, initial: Float = 50f,
+        windowType: Int = AccessibilityWindowInfo.TYPE_SYSTEM, activeOnly: Boolean = false): AccessibilityNodeInfo {
         val node = AccessibilityNodeInfo.obtain().apply {
             packageName = NativeBrightnessNode.SYSTEM_UI; viewIdResourceName = "com.android.systemui:id/brightness_slider"
             isEnabled = true; isVisibleToUser = true
@@ -75,8 +77,10 @@ class BrightnessCalibrationServiceTest {
             }
         }
         val window = AccessibilityWindowInfo.obtain()
-        shadowOf(window).setType(AccessibilityWindowInfo.TYPE_SYSTEM); shadowOf(window).setRoot(node)
-        shadowOf(service).setWindows(listOf(window))
+        shadowOf(window).setType(windowType); shadowOf(window).setRoot(node)
+        shadowOf(service).setWindows(if (activeOnly) emptyList() else listOf(window))
+        if (activeOnly) shadowOf(service).setRootInActiveWindow(node)
+        return node
     }
     @Test fun calibrationHasSeparateContentCapabilityWithoutGesturesOrScreenshots() {
         fun attribute(resource: Int, name: String): Boolean = app.resources.getXml(resource).use { xml ->
@@ -86,7 +90,7 @@ class BrightnessCalibrationServiceTest {
         assertFalse(attribute(R.xml.accessibility_service, "canRetrieveWindowContent"))
         assertTrue(attribute(R.xml.brightness_calibration_service, "canRetrieveWindowContent"))
         for (name in listOf("canPerformGestures", "canTakeScreenshot", "canRequestFilterKeyEvents", "canRequestTouchExplorationMode"))
-            assertFalse(attribute(R.xml.brightness_calibration_service, name))
+            for (resource in listOf(R.xml.brightness_calibration_service, R.xml.accessibility_service)) assertFalse(attribute(resource, name))
         val metadata = app.packageManager.getServiceInfo(ComponentName(app, BrightnessCalibrationService::class.java), PackageManager.GET_META_DATA)
         assertEquals("android.permission.BIND_ACCESSIBILITY_SERVICE", metadata.permission)
     }
@@ -152,5 +156,60 @@ class BrightnessCalibrationServiceTest {
         assertEquals(AutomaticCalibrationPhase.CANCELLED, app.automaticCalibration.state.value.phase)
         assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
         assertNull(ReflectionHelpers.getField(service, "overlay")); assertEquals(1, writes.size)
+    }
+    @Test fun xiaomiWaitsForManualOpeningAndMeasuresAnApplicationTypeSystemUiWindow() {
+        val manufacturer = Build.MANUFACTURER
+        try {
+            ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "Xiaomi")
+            val service = fixture(); val writes = mutableListOf<Int>()
+            app.automaticCalibration.start(); idle(5_000)
+            assertTrue(app.automaticCalibration.state.value.waitingForPanel)
+            assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+            assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
+            assertFalse(app.brightness.calibrationNeedsRecovery)
+            assertTrue(shadowOf(service).globalActionsPerformed.isEmpty())
+            val overlay = ReflectionHelpers.getField<android.widget.LinearLayout>(service, "overlay")
+            assertEquals(app.getString(R.string.auto_calibration_waiting_panel), (overlay.getChildAt(0) as android.widget.TextView).text)
+            provideBrightnessWindow(service, writes, windowType = AccessibilityWindowInfo.TYPE_APPLICATION)
+            idle(3_000)
+            assertEquals(AutomaticCalibrationPhase.REVIEW, app.automaticCalibration.state.value.phase)
+            assertEquals(listOf(0, 25, 50, 75, 100), writes)
+            assertEquals(73, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS))
+            assertEquals(1, Settings.System.getInt(app.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE))
+            assertEquals(listOf(AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE), shadowOf(service).globalActionsPerformed)
+            assertTrue(shadowOf(service).gesturesDispatched.isEmpty())
+        } finally { ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", manufacturer) }
+    }
+    @Test fun activeSystemUiRootCanExposeAControlMissingFromTheWindowList() {
+        val service = fixture(); assertTrue(service.open())
+        val writes = mutableListOf<Int>()
+        val active = provideBrightnessWindow(service, writes, activeOnly = true)
+        ReflectionHelpers.setField(active, "mWindowId", 20)
+        val status = AccessibilityNodeInfo.obtain().apply { packageName = NativeBrightnessNode.SYSTEM_UI }
+        ReflectionHelpers.setField(status, "mWindowId", 10)
+        val window = AccessibilityWindowInfo.obtain()
+        shadowOf(window).setType(AccessibilityWindowInfo.TYPE_SYSTEM); shadowOf(window).setRoot(status)
+        shadowOf(service).setWindows(listOf(window))
+        assertNotNull(service.control()); assertTrue(writes.isEmpty())
+    }
+    @Test fun duplicateActiveRootsDoNotMakeTheSameControlAmbiguous() {
+        val service = fixture(); assertTrue(service.open())
+        val node = provideBrightnessWindow(service, mutableListOf())
+        ReflectionHelpers.setField(node, "mWindowId", 7)
+        shadowOf(service).setRootInActiveWindow(AccessibilityNodeInfo.obtain(node))
+        assertNotNull(service.control())
+    }
+    @Test fun otherApplicationRootsAndActiveWindowsCannotSupplyBrightnessControls() {
+        val service = fixture(); assertTrue(service.open())
+        val writes = mutableListOf<Int>()
+        val node = provideBrightnessWindow(service, writes, windowType = AccessibilityWindowInfo.TYPE_APPLICATION)
+        node.packageName = "other.app"
+        shadowOf(service).setRootInActiveWindow(AccessibilityNodeInfo.obtain(node))
+        assertNull(service.control()); assertTrue(writes.isEmpty())
+    }
+    @Test fun xiaomiDetectionUsesExactManufacturerOrBrandNames() {
+        assertTrue(HyperOsSettings.isXiaomiDevice("Xiaomi", "Redmi"))
+        assertTrue(HyperOsSettings.isXiaomiDevice("unknown", "POCO"))
+        assertFalse(HyperOsSettings.isXiaomiDevice("XiaomiHelper", "Pixel"))
     }
 }

@@ -10,6 +10,8 @@ Version [0.4.4 is published](https://github.com/serogee/Nudge/releases/tag/v0.4.
 
 Version 0.4.5 adds **Automatic calibration** beside **Manual calibration** in Home. It uses a separately enabled, temporary **Nudge brightness calibration** accessibility service. After enabling it, return to Home and select **Start calibration**. It moves the identified native brightness control through five positions, restores brightness and automatic mode, then offers Save. Screenshots, screen recording, and coordinate taps are not used. The normal handle service cannot read window content. Unsupported native controls keep the manual capture flow. See the [calibration and recovery instructions](docs/handles-and-panels.md#brightness-percentages-and-calibration).
 
+Unreleased fixes let Xiaomi users open Control center manually during automatic calibration. After Start, keep the brightness slider visible. Nudge waits up to 30 seconds before reporting that a supported control was not found. Brightness and automatic mode stay unchanged until discovery succeeds. The Control panel action still depends on Android's native request and shows Xiaomi guidance when notifications open.
+
 ## Build
 
 Use Android SDK 36, build-tools 36.0.0, and a JDK supported by Gradle 9.1. The local environment uses JDK 24. Set `ANDROID_HOME` or create the ignored `local.properties` with your SDK path.

@@ -3,6 +3,7 @@ package com.modukey.app.platform
 import android.accessibilityservice.AccessibilityService
 import android.app.KeyguardManager
 import android.os.Looper
+import android.os.Build
 import android.os.PowerManager
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
@@ -57,6 +58,17 @@ class PanelUtilityRuntimeTest {
     }
     private data class Fixture(val service: EdgeAccessibilityService, val owner: HandleConfig, val other: HandleConfig,
         val panel: SavedPanel, val host: Host, val actions: Actions)
+    @Test fun xiaomiControlPanelKeepsTheNativeRequestAndShowsManualOpeningGuidance() {
+        val manufacturer = Build.MANUFACTURER
+        try {
+            ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "Xiaomi")
+            val f = fixture()
+            gesture(f, kind = GestureKind.SWIPE_HOLD); idle()
+            assertEquals(listOf(AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS), f.actions.requests)
+            assertEquals(app.getString(R.string.native_control_center_manual_help), ShadowToast.getTextOfLatestToast())
+            assertTrue(f.actions.gesturesDispatched.isEmpty())
+        } finally { ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", manufacturer) }
+    }
     private fun fixture(): Fixture {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
         val service = controller.get(); destroy = { controller.destroy() }

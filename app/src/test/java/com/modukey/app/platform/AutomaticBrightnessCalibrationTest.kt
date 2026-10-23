@@ -140,8 +140,41 @@ class AutomaticBrightnessCalibrationTest {
         brightness.canWrite = true; assertTrue(next.prepare())
         val unsupported = Port(brightness).apply { exposed = false }; assertTrue(next.connect(unsupported))
         next.start(); idle(3_500)
+        assertEquals(AutomaticCalibrationPhase.RUNNING, next.state.value.phase)
+        assertTrue(next.state.value.waitingForPanel)
+        assertTrue(brightness.automatic); assertFalse(brightness.pendingRestore)
+        assertTrue(unsupported.moves.isEmpty())
+        idle(27_000)
         assertEquals(AutomaticCalibrationError.UNSUPPORTED, next.state.value.error)
         assertEquals(87, brightness.level); assertEquals(1, unsupported.closes)
+        assertEquals(0, brightness.restores)
         val reads = unsupported.reads; idle(30_000); assertEquals(reads, unsupported.reads)
+    }
+    @Test fun delayedPanelDiscoveryLeavesBrightnessUntouchedUntilTheControlAppears() {
+        val (next, brightness, port) = run()
+        port.exposed = false
+        next.start(); idle(5_000)
+        assertTrue(next.state.value.waitingForPanel); assertTrue(brightness.automatic)
+        assertFalse(brightness.pendingRestore); assertEquals(0, brightness.restores)
+        assertTrue(port.moves.isEmpty())
+        brightness.level = 101
+        port.exposed = true; idle(3_000)
+        assertEquals(AutomaticCalibrationPhase.REVIEW, next.state.value.phase)
+        assertEquals(listOf(0, 16, 64, 144, 255), next.state.value.samples)
+        assertEquals(101, brightness.level); assertTrue(brightness.automatic)
+        assertEquals(1, brightness.restores)
+    }
+    @Test fun cancelOrLockWhileWaitingDoesNotWriteBrightnessOrLeaveCallbacks() {
+        var awake = true
+        val (next, brightness, port) = run(awake = { awake })
+        port.exposed = false; next.start(); idle(4_000); next.cancel(); idle(1_000)
+        assertEquals(AutomaticCalibrationPhase.CANCELLED, next.state.value.phase)
+        assertEquals(0, brightness.restores); assertFalse(brightness.pendingRestore)
+        assertEquals(87, brightness.level); assertTrue(brightness.automatic)
+        val reads = port.reads; idle(30_000); assertEquals(reads, port.reads)
+        assertTrue(next.prepare()); val replacement = Port(brightness).apply { exposed = false }; assertTrue(next.connect(replacement))
+        next.start(); idle(100); awake = false; idle(200)
+        assertEquals(AutomaticCalibrationError.LOCKED, next.state.value.error)
+        assertEquals(0, brightness.restores); assertTrue(brightness.automatic)
     }
 }

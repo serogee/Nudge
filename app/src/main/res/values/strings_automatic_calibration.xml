@@ -3,7 +3,7 @@
     <string name="manual_brightness_calibration">Manual calibration</string>
     <string name="calibration_service_name">Nudge brightness calibration</string>
     <string name="calibration_service_description">Temporarily read the System UI brightness control and set its progress to measure five brightness positions. Enable this service from Automatic calibration in Nudge. It turns off when calibration ends. It does not take screenshots or record the screen.</string>
-    <string name="auto_calibration_consent">Nudge opens Control center and moves its brightness slider through five positions. Your screen will become dim and bright.</string>
+    <string name="auto_calibration_consent">Nudge measures five positions on the native brightness slider. You may need to open Control center yourself. Your screen will become dim and bright.</string>
     <string name="auto_calibration_access_disclosure">Android grants this separate service access to window content. Nudge uses it only for System UI brightness controls during calibration.</string>
     <string name="auto_calibration_privacy">No screenshots, screen recording, or coordinate taps are used. Measurements stay on this device. The service turns off when calibration ends.</string>
     <string name="auto_calibration_restore_disclosure">Nudge restores your brightness and automatic mode before showing results. You choose whether to save the measurements.</string>
@@ -11,7 +11,8 @@
     <string name="enable_calibration_service">Enable calibration service</string>
     <string name="allow_brightness_access">Allow brightness access</string>
     <string name="start_brightness_calibration">Start calibration</string>
-    <string name="auto_calibration_ready">The calibration service is ready. Select Start calibration to move the native brightness slider.</string>
+    <string name="auto_calibration_ready">Select Start calibration. Then open Control center and keep the brightness slider visible. Measurement starts when Nudge finds the control.</string>
+    <string name="auto_calibration_waiting_panel">Keep the brightness slider visible. If notifications open, open Control center from the top right. In the old style, expand quick settings. Nudge waits up to 30 seconds.</string>
     <string name="auto_calibration_opening">Opening Control center…</string>
     <string name="auto_calibration_progress">Calibrating brightness: %1$d%%</string>
     <string name="cancel_auto_calibration">Cancel automatic calibration</string>
@@ -23,7 +24,7 @@
     <string name="keep_calibration_brightness">Keep current brightness</string>
     <string name="auto_calibration_locked">Unlock your phone and keep the screen on during calibration.</string>
     <string name="auto_calibration_setup_timeout">Calibration setup timed out. Start Automatic calibration again when you are ready.</string>
-    <string name="auto_calibration_unsupported">This phone did not expose a supported brightness control. Use Manual calibration.</string>
+    <string name="auto_calibration_unsupported">Cannot find or adjust the native brightness slider. Keep it visible in Control center, or use Manual calibration.</string>
     <string name="auto_calibration_control_changed">The brightness control changed or the screen rotated. Start again with Control center available.</string>
     <string name="auto_calibration_unstable">The brightness readings did not settle. Use Manual calibration or try again.</string>
     <string name="auto_calibration_invalid">The measurements were not valid. Use Manual calibration.</string>
