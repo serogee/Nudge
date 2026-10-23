@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.modukey.app.R
 import com.modukey.app.core.*
+import kotlin.math.roundToInt
 
 @Composable fun GestureBindingRow(config: AppConfiguration, slot: GestureSlot, target: GestureTarget, vm: NudgeViewModel, enabled: Boolean = true, change: (GestureTarget) -> Unit) {
     val context = LocalContext.current
@@ -24,7 +25,7 @@ import com.modukey.app.core.*
         SettingTitle(t(label(slot)), enabled = enabled, reset = if (enabled && target != default) ({ change(default) }) else null)
         OutlinedButton(onClick = { picking = true }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
             if (target.panelId != null || target.action != null) {
-                Icon(AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
+                Icon(if (config.panel(target.panelId)?.isWheel == true) AppIcons.Wheel else AppIcons.Apps, null, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp))
             }
             Text(context.targetLabel(config, target), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
         }
@@ -42,7 +43,7 @@ import com.modukey.app.core.*
             ActionPicker({ page = 0 }, includeEmpty = false, volumePopupOptions = false) { selected ->
                 val action = (draft.action ?: PanelButton()).copy(action = selected, showVolumePopup = false)
                 if (selected == ButtonAction.OPEN_APP) { pendingApp = action; vm.loadApps(); page = 2 }
-                else { draft = draft.copy(panelId = null, action = action); page = 0 }
+                else { draft = draft.copy(panelId = null, action = action).normalized(); page = 0 }
             }
             return
         }
@@ -50,7 +51,7 @@ import com.modukey.app.core.*
             AppPicker(vm, { pendingApp = null; page = 0 }) { app ->
                 val action = (pendingApp ?: draft.action ?: PanelButton(action = ButtonAction.OPEN_APP)).copy(
                     appPackage = app.packageName, appActivity = app.activityName, appLabel = app.label)
-                draft = draft.copy(panelId = null, action = action)
+                draft = draft.copy(panelId = null, action = action).normalized()
                 pendingApp = null; page = 0
             }
             return
@@ -59,12 +60,44 @@ import com.modukey.app.core.*
             PanelTargetPicker(config, { page = 0 }) { id -> draft = draft.copy(panelId = id, action = null); page = 0 }
             return
         }
+        4 -> {
+            PanelTargetPicker(config, { page = 0 }, wheels = true) { id -> draft = draft.copy(panelId = id, action = null); page = 0 }
+            return
+        }
     }
     AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.gesture_action)) }, text = {
         LazyColumn(Modifier.heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = draft.copy(panelId = null, action = null) } }
-            item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), draft.panelId != null, showTypeIcon = true) { page = 3 } }
+            item { TargetChoice(t(R.string.no_action), draft.panelId == null && draft.action == null) { draft = draft.copy(panelId = null, action = null).normalized() } }
+            item { TargetChoice(t(R.string.panel_target, config.panel(draft.panelId)?.takeIf { !it.isWheel }?.let { context.panelLabel(it) } ?: t(R.string.select_panel)), config.panel(draft.panelId)?.isWheel == false, showTypeIcon = true) { page = 3 } }
+            item { TargetChoice(t(R.string.wheel_target, config.panel(draft.panelId)?.takeIf { it.isWheel }?.let { context.panelLabel(it) } ?: t(R.string.select_wheel)), config.panel(draft.panelId)?.isWheel == true, showTypeIcon = true) { page = 4 } }
             item { TargetChoice(t(R.string.action_target, draft.action?.let { context.buttonLabel(it) } ?: t(R.string.direct_action)), draft.action != null, showTypeIcon = true) { page = 1 } }
+            if (slot != GestureSlot.TAP && config.panel(draft.panelId)?.isWheel == true) item {
+                DependentSettings(R.string.wheel) {
+                    Toggle(R.string.wheel_drag, R.string.wheel_drag_help, draft.wheelPick.enabled, default = false, optionsExpanded = draft.wheelPick.enabled) {
+                        draft = draft.copy(wheelPick = draft.wheelPick.copy(enabled = it), slideToAdjust = if (it) false else draft.slideToAdjust)
+                    }
+                    if (draft.wheelPick.enabled) DependentSettings(R.string.wheel_drag) {
+                        val pick = draft.wheelPick
+                        SettingSlider(R.string.wheel_minimum_distance, pick.minimumDistanceDp, 16f..160f, t(R.string.dp_value, pick.minimumDistanceDp.roundToInt()), default = 32f) {
+                            draft = draft.copy(wheelPick = pick.copy(minimumDistanceDp = it).normalized())
+                        }
+                        SettingSlider(R.string.wheel_maximum_distance, pick.maximumDistanceDp, maxOf(48f, pick.minimumDistanceDp + 8f)..600f, t(R.string.dp_value, pick.maximumDistanceDp.roundToInt()), default = 240f) {
+                            draft = draft.copy(wheelPick = pick.copy(maximumDistanceDp = it).normalized())
+                        }
+                        Help(R.string.wheel_distance_help)
+                        if (slot.ordinal < 3) {
+                            Toggle(R.string.wheel_allow_later, R.string.wheel_allow_later_help, pick.allowLaterSwipes, default = false, optionsExpanded = pick.allowLaterSwipes) {
+                                draft = draft.copy(wheelPick = pick.copy(allowLaterSwipes = it))
+                            }
+                            if (pick.allowLaterSwipes) DependentSettings(R.string.wheel_allow_later) {
+                                DurationInput(R.string.wheel_release_window, pick.releaseWindowMs, 100L..1_000L, 200) { draft = draft.copy(wheelPick = pick.copy(releaseWindowMs = it)) }
+                                Help(R.string.wheel_release_help)
+                            }
+                        } else Help(R.string.wheel_hold_help)
+                        Help(R.string.wheel_orientation_help)
+                    }
+                }
+            }
             if (draft.action?.action in listOf(ButtonAction.TOGGLE_HANDLES, ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES)) item {
                 HandleActionControls(requireNotNull(draft.action)) { draft = draft.copy(action = it) }
             }
@@ -88,12 +121,12 @@ import com.modukey.app.core.*
             }
             item { Toggle(R.string.show_volume_popup, R.string.gesture_popup_help, draft.volume, default = false,
                 optionsExpanded = if (slot != GestureSlot.TAP && !draft.brightness) draft.volume else null) { draft = draft.copy(volume = it).normalized() } }
-            if (slot != GestureSlot.TAP && draft.volume && !draft.brightness) item {
+            if (slot != GestureSlot.TAP && draft.volume && !draft.brightness && !draft.wheelPick.enabled) item {
                 SliderAdjustmentOptions(slot, draft) { draft = it }
             }
             item { Toggle(R.string.show_brightness_slider, R.string.brightness_gesture_help, draft.brightness, default = false,
                 optionsExpanded = if (slot != GestureSlot.TAP && !draft.volume) draft.brightness else null) { draft = draft.copy(brightness = it).normalized() } }
-            if (slot != GestureSlot.TAP && draft.brightness && !draft.volume) item {
+            if (slot != GestureSlot.TAP && draft.brightness && !draft.volume && !draft.wheelPick.enabled) item {
                 SliderAdjustmentOptions(slot, draft) { draft = it }
             }
         }
@@ -107,7 +140,7 @@ import com.modukey.app.core.*
     DependentSettings(if (target.volume) R.string.show_volume_popup else R.string.show_brightness_slider) {
         val ordinarySwipe = slot in listOf(GestureSlot.SWIPE_1, GestureSlot.SWIPE_2, GestureSlot.SWIPE_3)
         Toggle(R.string.slide_to_adjust, R.string.slide_to_adjust_help, target.slideToAdjust, default = false,
-            optionsExpanded = if (ordinarySwipe) target.slideToAdjust else null) { change(target.copy(slideToAdjust = it)) }
+            optionsExpanded = if (ordinarySwipe) target.slideToAdjust else null) { change(target.copy(slideToAdjust = it, wheelPick = target.wheelPick.copy(enabled = false))) }
         if (ordinarySwipe && target.slideToAdjust) DependentSettings(R.string.slide_to_adjust) {
             OptionRow(t(R.string.slider_activation), SliderActivation.entries, target.sliderActivation, SliderActivation.AFTER_HOLD) { change(target.copy(sliderActivation = it)) }
             if (target.sliderActivation == SliderActivation.AFTER_HOLD) DependentSettings(R.string.slider_after_hold) {
@@ -119,16 +152,16 @@ import com.modukey.app.core.*
     }
 }
 
-@Composable private fun PanelTargetPicker(config: AppConfiguration, dismiss: () -> Unit, choose: (String) -> Unit) {
+@Composable private fun PanelTargetPicker(config: AppConfiguration, dismiss: () -> Unit, wheels: Boolean = false, choose: (String) -> Unit) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = dismiss, title = { Text(t(R.string.select_panel)) }, text = {
+    AlertDialog(onDismissRequest = dismiss, title = { Text(t(if (wheels) R.string.select_wheel else R.string.select_panel)) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(query, { query = it }, label = { Text(t(R.string.search_panels)) }, singleLine = true)
-            if (config.panels.isEmpty()) Help(R.string.create_panel_help)
+            OutlinedTextField(query, { query = it }, label = { Text(t(if (wheels) R.string.search_wheels else R.string.search_panels)) }, singleLine = true)
+            if (config.panels.none { it.isWheel == wheels }) Help(if (wheels) R.string.create_wheel_help else R.string.create_panel_help)
             LazyColumn(Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(config.panels.filter { context.panelLabel(it).contains(query, true) }, key = { it.id }) { panel ->
-                    ListItem(headlineContent = { Text(context.panelLabel(panel)) }, leadingContent = { Icon(AppIcons.Apps, null) },
+                items(config.panels.filter { it.isWheel == wheels && context.panelLabel(it).contains(query, true) }, key = { it.id }) { panel ->
+                    ListItem(headlineContent = { Text(context.panelLabel(panel)) }, leadingContent = { Icon(if (wheels) AppIcons.Wheel else AppIcons.Apps, null) },
                         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(role = Role.Button) { choose(panel.id) })
                 }

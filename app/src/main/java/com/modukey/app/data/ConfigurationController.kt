@@ -13,7 +13,8 @@ enum class ConfigurationError { READ, SAVE }
  * Revisioned snapshots keep pending edits (including deletions) until their save succeeds.
  * Disk completion never replaces a newer draft, and storage emissions never drive live editing.
  */
-class ConfigurationController(private val repository: ConfigurationRepository, private val scope: CoroutineScope) {
+class ConfigurationController(private val repository: ConfigurationRepository, private val scope: CoroutineScope,
+    private val onStateChanged: (AppConfiguration) -> Unit = {}) {
     private val mutable = MutableStateFlow<AppConfiguration?>(null)
     val state = mutable.asStateFlow()
     private val mutablePreview = MutableStateFlow<AppConfiguration?>(null)
@@ -32,7 +33,7 @@ class ConfigurationController(private val repository: ConfigurationRepository, p
     private fun load() {
         if (loading?.isActive == true) return
         loading = scope.launch {
-            try { val first = repository.configuration.first(); if (mutable.value == null) { mutable.value = first; publishPreview(); mutableError.value = null } }
+            try { val first = repository.configuration.first(); if (mutable.value == null) { mutable.value = first; onStateChanged(first); publishPreview(); mutableError.value = null } }
             catch (_: IOException) { mutableError.value = ConfigurationError.READ }
         }
     }
@@ -41,6 +42,7 @@ class ConfigurationController(private val repository: ConfigurationRepository, p
         val after = edit(before).normalized()
         if (before == after) return
         mutable.value = after; revision++
+        onStateChanged(after)
         publishPreview()
         debounce?.cancel()
         debounce = scope.launch { delay(150); debounce = null; scope.launch { save() } }

@@ -70,6 +70,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 ### Custom panels and actions
 
 - Create reusable panels and open the same panel from several handles.
+- Create semicircular wheels in the Wheels tab, with up to six buttons. Tap buttons or use optional Drag to pick.
 - Choose fixed or scrollable layouts, vertical or horizontal direction, placement, animations, and outside-touch behavior.
 - Add app shortcuts, volume and sound controls, brightness controls, Lock screen, Input Method, Screenshot, and native panel actions.
 - Customize colors, opacity, button containers, built-in icons, and supported installed icon packs.
@@ -114,7 +115,7 @@ See the [user guide](docs/handles-and-panels.md) for setup, gesture behavior, ca
 | Do Not Disturb access | Run supported sound-mode actions. |
 | Install unknown apps | Open Android's installer for an APK you downloaded. Android still requires confirmation. |
 
-The calibration service does not inspect screen text, take screenshots, or record the screen. It disables itself when a run ends or setup expires. Calibration profiles and recovery records are excluded from Android backup and JSON exports. See [calibration and recovery](docs/handles-and-panels.md#brightness-percentages-and-calibration).
+The calibration service checks native control IDs and exact brightness labels. It does not read notification text, take screenshots, or record the screen. By default, it disables itself when a run ends or setup expires. You can keep it enabled and idle between runs, then disable it manually. It reads controls only during calibration. Profiles, recovery records, and this service preference are excluded from Android backup and JSON exports. See [calibration and recovery](docs/handles-and-panels.md#brightness-percentages-and-calibration).
 
 <a id="development"></a>
 

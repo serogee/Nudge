@@ -92,7 +92,7 @@ import kotlin.math.roundToInt
                             if (!s.indicatorVisible) Help(R.string.visible_off_help)
                         }
                     }
-                    1 -> HandleGestureSettings(config, h, vm)
+                    1 -> HandleGestureSettings(config, h, vm, landscape)
                     else -> Section(R.string.availability) {
                         Text(t(availabilityLabel(service.handles[h.id], h.enabled)), style = MaterialTheme.typography.bodyMedium)
                         Toggle(R.string.lock_available, R.string.lock_help, s.lockScreenEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(lockScreenEnabled = value) } }

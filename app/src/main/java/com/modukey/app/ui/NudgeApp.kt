@@ -61,7 +61,7 @@ import com.modukey.app.platform.*
         if (draft?.changed == true) pendingNavigation = action
         else { vm.closeEditing(); action() }
     }
-    fun back() = navigate { if (tab == 2) panelId = null else handleId = null }
+    fun back() = navigate { if (panelId != null) panelId = null else handleId = null }
     BackHandler(enabled = handle != null || panel != null) { back() }
     LaunchedEffect(vm) { vm.notices.collect { snackbar.showSnackbar(context.getString(it)) } }
     DisposableEffect(lifecycle, tab, handle?.id, panel?.id, previewHandle?.id, overlayPreview, handleTab, previewLandscape) {
@@ -69,7 +69,7 @@ import com.modukey.app.platform.*
         fun resume() {
             vm.refreshPermissions()
             if (tab == 1 && handle != null) vm.beginEditor(token, handle.id, preview = overlayPreview && handleTab == 0, landscape = previewLandscape)
-            else if (tab == 2 && panel != null) vm.beginEditor(token, previewHandle?.id, panel.id, preview = overlayPreview, landscape = previewLandscape)
+            else if (tab in 2..3 && panel != null) vm.beginEditor(token, previewHandle?.id, panel.id, preview = overlayPreview, landscape = previewLandscape)
         }
         val observer = LifecycleEventObserver { _, event -> when (event) {
             Lifecycle.Event.ON_RESUME -> resume()
@@ -91,9 +91,9 @@ import com.modukey.app.platform.*
                 navigationIcon = { if (handle != null || panel != null) EditIcon(AppIcons.Back, R.string.back, action = ::back) },
                 actions = { Text(BuildConfig.VERSION_NAME, Modifier.padding(end = 16.dp), style = MaterialTheme.typography.labelSmall) })
         }, bottomBar = { NavigationBar {
-            listOf(R.string.home, R.string.handles, R.string.panels, R.string.info).forEachIndexed { index, title ->
+            listOf(R.string.home, R.string.handles, R.string.panels, R.string.wheels, R.string.info).forEachIndexed { index, title ->
                 NavigationBarItem(selected = tab == index, onClick = { navigate { tab = index; handleId = null; panelId = null; previewHandleId = null } }, label = { Text(t(title)) },
-                    icon = { Icon(when(index) { 0 -> Icons.Outlined.Home; 1 -> AppIcons.Handle; 2 -> AppIcons.Apps; else -> Icons.Outlined.Info }, null) })
+                    icon = { Icon(when(index) { 0 -> Icons.Outlined.Home; 1 -> AppIcons.Handle; 2 -> AppIcons.Apps; 3 -> AppIcons.Wheel; else -> Icons.Outlined.Info }, null) })
             }
         } }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -107,8 +107,9 @@ import com.modukey.app.platform.*
                 else when {
                     tab == 1 && handle != null -> HandleEditor(c, handle, vm, handleTab, { handleTab = it }, overlayPreview, { overlayPreview = it }, previewLandscape) { previewLandscape = it }
                     tab == 1 -> HandlesScreen(c, vm) { handleId = it }
-                    tab == 2 && panel != null -> PanelEditor(c, panel, previewHandle?.id, vm, { previewHandleId = it }, overlayPreview, { overlayPreview = it }, previewLandscape) { previewLandscape = it }
+                    tab in 2..3 && panel != null -> PanelEditor(c, panel, previewHandle?.id, vm, { previewHandleId = it }, overlayPreview, { overlayPreview = it }, previewLandscape) { previewLandscape = it }
                     tab == 2 -> PanelsScreen(c, vm) { panelId = it; previewHandleId = c.handles.firstOrNull()?.id }
+                    tab == 3 -> PanelsScreen(c, vm, wheels = true) { panelId = it; previewHandleId = c.handles.firstOrNull()?.id }
                     else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (tab == 0) HomeScreen(c, vm, service, accessibility, ::settings) else SettingsScreen(c, vm, ::settings)
                     }

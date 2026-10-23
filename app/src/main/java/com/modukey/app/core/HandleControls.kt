@@ -14,7 +14,7 @@ val PanelButton.hasHandleGroups get() = toggleScope != HandleGroupScope.NONE || 
 
 data class HandleControlChange(val pauseTargets: Set<String>, val paused: Boolean, val visibilityTargets: Set<String>, val hidden: Boolean)
 
-/** Resolve both groups before any mutation. Pauses and visibility use independent group toggles. */
+/** Resolve both groups before any mutation. A pause group sets the direction for both groups. */
 fun handleControlChange(configuration: AppConfiguration, owner: String?, paused: Set<String>,
     toggleScope: HandleGroupScope, visibilityScope: HandleGroupScope): HandleControlChange? {
     if (toggleScope == HandleGroupScope.NONE && visibilityScope == HandleGroupScope.NONE) return null
@@ -24,6 +24,7 @@ fun handleControlChange(configuration: AppConfiguration, owner: String?, paused:
     val visibilityTargets = handleGroupTargets(visibilityScope, owner, enabled)
     if (toggleScope != HandleGroupScope.NONE && pauseTargets.isEmpty()) return null
     if (visibilityScope != HandleGroupScope.NONE && visibilityTargets.isEmpty()) return null
-    return HandleControlChange(pauseTargets, pauseTargets.none { it in paused }, visibilityTargets,
-        visibilityTargets.none { it in configuration.hiddenIndicatorIds })
+    val pause = pauseTargets.none { it in paused }
+    return HandleControlChange(pauseTargets, pause, visibilityTargets,
+        if (pauseTargets.isNotEmpty()) pause else visibilityTargets.none { it in configuration.hiddenIndicatorIds })
 }

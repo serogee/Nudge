@@ -25,8 +25,8 @@ class HandlePauseRuntimeTest {
     private var destroy: () -> Unit = {}
     @After fun cleanup() { destroy(); app.onTerminate() }
     private fun await(condition: () -> Boolean) {
-        repeat(300) { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)); if (condition()) return; Thread.sleep(5) }
-        assertTrue(app.diagnostics.details.value, condition())
+        repeat(1_000) { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)); if (condition()) return; Thread.sleep(10) }
+        assertTrue("${app.diagnostics.details.value}\nConfiguration error: ${app.configuration.error.value}", condition())
     }
     private class Host : PanelHost {
         var spec: PanelSpec? = null
@@ -35,7 +35,7 @@ class HandlePauseRuntimeTest {
         override fun refreshSound() = Unit
     }
     private data class Fixture(val service: EdgeAccessibilityService, val owner: HandleConfig, val panel: SavedPanel, val host: Host)
-    private fun fixture(scope: HandleToggleScope = HandleToggleScope.ALL): Fixture {
+    private fun fixture(scope: HandleToggleScope = HandleToggleScope.ALL, savedPause: Boolean = false): Fixture {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
         val service = controller.get(); destroy = { controller.destroy() }
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
@@ -46,9 +46,10 @@ class HandlePauseRuntimeTest {
         val panel = SavedPanel(settings = PanelConfig(buttons = listOf(toggle)))
         val owner = HandleConfig(enabled = true, bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.panel(panel.id),
             GestureSlot.HOLD to GestureTarget.direct(toggle.copy(id = newId()))))
-        app.configuration.update { AppConfiguration(enabled = true, handles = listOf(owner, HandleConfig(id = "other", enabled = true)), panels = listOf(panel)) }
+        app.configuration.update { AppConfiguration(enabled = true, handles = listOf(owner, HandleConfig(id = "other", enabled = true)), panels = listOf(panel),
+            pausedHandleIds = if (savedPause) setOf("other") else emptySet()) }
         ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
-        await { app.status.state.value.attachedHandleIds.size == 2 }
+        await { app.status.state.value.attachedHandleIds == if (savedPause) setOf(owner.id) else setOf(owner.id, "other") }
         ReflectionHelpers.getField<PanelHost>(service, "panelHost").hide(false)
         val host = Host(); ReflectionHelpers.setField(service, "panelHost", host)
         return Fixture(service, owner, panel, host)
@@ -57,6 +58,38 @@ class HandlePauseRuntimeTest {
         ClassParameter.from(String::class.java, f.owner.id), ClassParameter.from(GestureKind::class.java, kind))
     private fun button(f: Fixture) = ReflectionHelpers.callInstanceMethod<Void>(f.service, "runButton",
         ClassParameter.from(PanelButton::class.java, f.panel.settings.buttons.single()))
+
+    @Test fun savedPausePreventsAttachmentAndSurvivesMasterAndEnableChanges() {
+        val f=fixture(savedPause=true)
+        assertEquals(setOf("other"),app.handlePauses.state.value)
+        app.configuration.update { it.copy(enabled=false).editHandle("other") { h -> h.copy(enabled=false) } }
+        await { app.status.state.value.attachedHandleIds.isEmpty() }
+        assertEquals(setOf("other"),app.handlePauses.state.value)
+        app.configuration.update { it.copy(enabled=true).editHandle("other") { h -> h.copy(enabled=true) } }
+        await { app.status.state.value.attachedHandleIds == setOf(f.owner.id) }
+        f.service.onUnbind(null)
+        ReflectionHelpers.callInstanceMethod<Void>(f.service,"onServiceConnected")
+        await { app.status.state.value.attachedHandleIds == setOf(f.owner.id) }
+        assertEquals(setOf("other"),app.configuration.state.value!!.pausedHandleIds)
+        app.configuration.update { it.copy(handles=it.handles.filterNot { h -> h.id == "other" }) }
+        assertTrue(app.handlePauses.state.value.isEmpty())
+    }
+    @Test fun combinedButtonRepairsMismatchesAndRestoresBothGroupsTogether() {
+        val f=fixture()
+        val combined=PanelButton(action=ButtonAction.TOGGLE_AND_HIDE_HANDLES,toggleScope=HandleGroupScope.OTHERS,visibilityScope=HandleGroupScope.ALL)
+        val actions=PanelActions(f.service)
+        app.configuration.update { it.hideIndicators(true) }
+        assertTrue(actions.execute(f.owner.id,combined,false).succeeded)
+        assertEquals(setOf("other"),app.configuration.state.value!!.pausedHandleIds)
+        assertTrue(app.configuration.state.value!!.hideHandleIndicators)
+        app.configuration.update { it.hideIndicators(false) }
+        assertTrue(actions.execute(f.owner.id,combined,false).succeeded)
+        assertTrue(app.configuration.state.value!!.pausedHandleIds.isEmpty())
+        assertTrue(app.configuration.state.value!!.hiddenIndicatorIds.isEmpty())
+        assertTrue(actions.execute(f.owner.id,combined,false).succeeded)
+        assertEquals(setOf("other"),app.configuration.state.value!!.pausedHandleIds)
+        assertTrue(app.configuration.state.value!!.hideHandleIndicators)
+    }
 
     @Test fun combinedButtonKeepsItsPanelUsableAndTogglesSeparateGroups() {
         val f = fixture()

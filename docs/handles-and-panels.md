@@ -14,7 +14,7 @@ On MIUI or HyperOS, menu names vary. Enable **Background autostart** if needed. 
 
 Brightness actions need **Modify system settings** access. Some sound actions need **Do Not Disturb** access. Nudge does not require root, device administrator, or the separate **Display over other apps** permission.
 
-**Notifications** and **Control panel** use Android's native system actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. Nudge shows Xiaomi guidance; it cannot reliably force the vendor Control center through that action.
+**Notifications** and **Control panel** use Android's native accessibility actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. The old style combines notifications and quick settings. The new style has a separate Control center with brightness and volume sliders. On the connected Redmi, native shell requests opened these as distinct panels. This does not verify the app's accessibility routing. Nudge retains Xiaomi opening guidance and does not inject a top-right swipe.
 
 ## Handles
 
@@ -40,7 +40,7 @@ Chevrons mark additional options. Dependent controls appear below their parent, 
 
 ## Gestures
 
-Each assignment can run a direct action, open a panel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
+Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
 
 | Gesture | Behavior |
 | --- | --- |
@@ -96,7 +96,37 @@ Opening and closing animations are independent. Disabled Android animations skip
 
 Nudge does not replay or inject touches. Back closes the panel. The optional **Close automatically** timeout accepts 1–60 seconds and defaults off. Held input pauses the timer; interaction restarts it.
 
-A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is temporarily paused.
+A confirmed change to another app closes the panel. Native volume popups and unrelated window events should not close it. Screen-off and unavailable saved handles also close runtime panels. A panel stays usable after its handle is paused.
+
+## Wheels
+
+Create wheels in **Wheels**, then assign them to handle gestures. Wheels share panel actions, icons, colors, placement, and editing controls.
+
+A Wheel layout shows a semicircular fan facing inward from its handle. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
+
+Each wheel shows **up to six buttons**. Radius, button size, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable. Changing an existing panel to Wheel does not delete its extra buttons.
+
+**Wheel radius** sets the center-to-button distance from 96–240 dp and defaults to 128 dp. **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The selected button and its selection area expand while adjacent buttons shrink. Toggle action colors keep their usual meaning.
+
+### Drag to pick
+
+Without **Drag to pick**, the wheel stays open for normal button taps. Enable this option below a Wheel gesture assignment to select without lifting. Tap does not offer it. Drag to pick and Slide to adjust cannot use the same assignment.
+
+Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
+
+Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Inside the minimum, outside the fan, or beyond the maximum, nothing is highlighted. Move back into range to select again.
+
+For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
+
+**Allow later swipes** defaults off. The first drag wheel with this option off disables later swipe stages. Their assignments remain saved. The next touch starts the sequence again.
+
+When Allow later swipes is on, **Quick-release window** accepts 100–1,000 ms and defaults to 200 ms. Time starts when the wheel opens. Release before the deadline to close without running an action and preserve the next configured stage. The existing Swipe sequence timeout starts from that release. At or after the deadline, fresh movement is required before highlighting. A confirmed pick or later cancellation resets the sequence.
+
+Landscape overrides retain their own layout and Wheel settings. If an orientation uses a grid layout, its assignment opens as a normal panel. Its saved drag settings remain available for Wheel layouts. A saved item with a Wheel layout in either active orientation appears in Wheels.
+
+Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
+
+Backups use schema 21 and retain Wheel layouts, drag settings, shared links, and overflow buttons. Older backups migrate with drag picking off.
 
 ## Actions and appearance
 
@@ -110,13 +140,15 @@ Choose built-in icons, installed app icons, or supported icon packs. Missing app
 
 ## Pause and visibility controls
 
-**Pause handles** temporarily stops gesture input without changing saved Enable switches. Turning the master switch off or restarting clears pauses.
+**Pause handles** stops gesture input without changing saved Enable switches. Pauses survive app and phone restarts, master-switch changes, and handle disable/re-enable. A disabled handle keeps its saved pause until you resume it. Turn Pause handles off to clear all pauses, including those on disabled handles. Deleting a handle removes its saved pause.
 
 **Hide visible handles** hides the bars while gestures remain available. Hiding survives restarts and retains appearance values. Editing guides remain available.
 
 **Toggle handles** and **Toggle handle visibility** offer **All handles**, **This handle**, and **Other handles**. They target enabled handles. This handle means the one that invoked the action.
 
-**Toggle and hide handles** has separate pause/resume and hide/show groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. Partly paused groups resume; partly hidden groups show.
+**Toggle and hide handles** has separate pause/resume and hide/show target groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. If any handle in the pause group is paused, the button resumes that group and shows the visibility group. Otherwise, it pauses and hides the selected groups. This corrects differences caused by separate controls. With no pause group, show the visibility group if any target is hidden. Otherwise, hide it.
+
+Combined pause and visibility changes save together. Backups retain saved pauses, including pauses on disabled handles. Older backups without pause selections start resumed. Adding copies creates new handles that start disabled and unpaused. Replacing the configuration retains its saved pauses while the master switch stays off for review.
 
 Home shortcuts using This handle or Other handles require a selected handle. The Handles tab's visibility switch applies to every saved handle.
 
@@ -132,7 +164,7 @@ Each maximum/minimum action has **Use previous brightness** and its own **Return
 
 ### Brightness percentages and calibration
 
-Brightness percentages represent slider positions. Manufacturers can use different curves. On Home, calibration appears below the brightness slider controls. Five samples at 0%, 25%, 50%, 75%, and 100% define an interpolated curve.
+Brightness percentages represent slider positions. Manufacturers can use different curves. On Home, calibration appears below the brightness slider controls. Manual calibration uses five positions: 0%, 25%, 50%, 75%, and 100%. Automatic calibration uses 17 positions at 6.25% intervals. Both produce an interpolated curve. Existing five-point profiles remain valid until you replace or reset them.
 
 **Manual calibration:** turn off automatic brightness. Set each requested native slider position, return to Home, and select **Capture**. Zero is a valid minimum. Negative, repeated, and decreasing samples are rejected. **Reset calibration** restores the default Android curve.
 
@@ -144,17 +176,21 @@ Brightness percentages represent slider positions. Manufacturers can use differe
 4. On Xiaomi, open Control center manually and keep the brightness slider visible. With the new style, swipe from the top right. With the old style, expand quick settings. Other phones request Android's quick settings panel.
 5. Wait for measurement and restoration. Review the samples, then select **Save** or discard them.
 
-Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 20-second deadline. The screen becomes dim and bright during measurement.
+Enabling the service alone does not move a slider. Setup expires after two minutes. After Start, discovery waits up to 30 seconds without changing brightness or automatic mode. Once a supported control is found, measurement has a 60-second deadline. The screen becomes dim and bright during measurement. Adjacent automatic samples can share a hardware level. Decreasing or completely flat curves are rejected. Manual capture still rejects repeated levels.
 
-The temporary service uses known System UI brightness controls that expose a valid range and accept accessibility progress actions. It checks ownership and rejects unrelated controls. It does not inspect screen text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
+The calibration service uses native brightness controls that expose a valid range and accept accessibility progress actions. It includes non-interactive layout containers so a generic slider can retain its brightness identity. It can also compare a generic slider's accessibility label with the exact translated brightness label from System UI. On Xiaomi, the installed system UI plugin can own the control. A user-installed package with the same plugin name is not accepted. Unrelated controls and ambiguous matches are rejected. It does not read notification text, take screenshots, record the screen, or inject coordinate taps. The normal handle service still cannot retrieve window content.
 
-Cancel, screen-off, lock, rotation, service loss, or unstable measurements stop the run. Nudge attempts to restore the original brightness and automatic mode before showing results. A failed run leaves the saved profile unchanged. The temporary service disables itself when the run ends.
+If detection fails again, open **Info → Copy compatibility details** after the run. These details include a bounded discovery report: inspected node counts, resource IDs, class names, ownership, supported ranges, and progress-action availability. They exclude screen text, accessibility descriptions, and the current brightness value. This report can distinguish a missing brightness identifier from a slider that exposes no writable range.
+
+Cancel, screen-off, lock, rotation, service loss, or unstable measurements stop the run. Nudge attempts to restore the original brightness and automatic mode before showing results. A failed run leaves the saved profile unchanged. By default, the calibration service disables itself when the run ends.
+
+Enable **Keep calibration service enabled** to reuse its connection. The service remains idle between runs, with event subscriptions and window-query flags cleared. It does not inspect controls, run discovery timers, or resume measurement after a restart. Select **Automatic calibration**, then **Start calibration** for another run. Use **Disable calibration service** to turn it off manually. Turning the keep-enabled option off also disables an idle connection. Completed measurements remain available to save.
 
 If restoration is interrupted, Home offers **Restore previous brightness** or **Keep current brightness**. Other Nudge brightness writes remain blocked until recovery is resolved. Measurement never resumes after process death.
 
-Profiles and recovery records stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. Five samples do not prove an exact mapping at every intermediate position.
+Profiles, recovery records, and the keep-enabled preference stay on the device, outside configuration exports and Android backup. An OS build fingerprint change resets the profile. More samples improve interpolation but do not add hardware brightness levels or prove an exact mapping at every position.
 
-Redmi Note 12 / HyperOS 1.0 failed automatic calibration with both Control center styles before the manual-opening discovery fix. That fix still needs a phone recheck. If the native slider is unsupported, use Manual calibration.
+On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automatic run completed and was saved. Brightness and mode restoration passed an immediate comparison. The filtered accessibility tree had removed the old-style brightness container. The new style exposes brightness and volume with the same slider ID, but different native labels. The native-label fix, 17-point sampling, and enabled standby have local automated coverage; their final on-device checks remain pending. If the native slider is unsupported, use Manual calibration.
 
 ## Home screen shortcuts
 
@@ -180,6 +216,6 @@ Install updates over the existing app without uninstalling to retain settings.
 
 For disconnections or unexpected panel closures, note the reproduction steps and select **Info → Copy compatibility details**. Panel dismissal entries include a reason and may include app package names. Opening Nudge can itself produce a later app-change entry; use the entry for the original incident. Review copied details before sharing.
 
-Nudge has no scheduled update checks, wake locks, or idle redraw loop. All handles share one runtime service. Automatic calibration adds only its temporary opt-in service.
+Nudge has no scheduled update checks, wake locks, or idle redraw loop. All handles share one runtime service. Automatic calibration adds a separate opt-in service. An enabled standby connection does not poll controls.
 
 Automated tests cannot establish native popup touch ownership, HyperOS control exposure, compositor behavior, update installation, or battery use. Record actual phone observations separately. See [development and releases](development.md#device-verification) for the device-profile command.

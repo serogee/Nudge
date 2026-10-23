@@ -39,7 +39,11 @@ import com.modukey.app.platform.SoundState
 /** Fixed uses plain rows/columns; no scroll container can expose overflow accidentally. */
 @Composable
 fun PanelContent(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometryResult, state: SoundState = SoundState(),
-    interactive: Boolean = false, onAction: (PanelButton) -> Unit = {}) {
+    interactive: Boolean = false, wheelSelection: Int? = null, wheelDragging: Boolean = false, onAction: (PanelButton) -> Unit = {}) {
+    geometry.wheel?.let {
+        WheelContent(panel, it, state, interactive && !wheelDragging, wheelSelection, onAction)
+        return
+    }
     val density = LocalDensity.current
     val cell = with(density) { geometry.cell.toDp() }
     val gap = with(density) { geometry.gap.toDp() }

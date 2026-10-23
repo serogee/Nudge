@@ -6,11 +6,14 @@ enum class GestureKind { SWIPE, SWIPE_HOLD, TAP, HOLD }
 enum class GestureSlot { SWIPE_1, SWIPE_2, SWIPE_3, SWIPE_HOLD, TAP, HOLD }
 enum class SliderActivation { AFTER_HOLD, IMMEDIATE }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false,
-    val slideToAdjust: Boolean = false, val sliderActivation: SliderActivation = SliderActivation.AFTER_HOLD, val sliderHoldMs: Long = 200) {
+    val slideToAdjust: Boolean = false, val sliderActivation: SliderActivation = SliderActivation.AFTER_HOLD, val sliderHoldMs: Long = 200,
+    val wheelPick: WheelPickSettings = WheelPickSettings()) {
     val isNone get() = panelId == null && !volume && action == null && !brightness
     fun normalized(): GestureTarget {
         val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
-        return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness), sliderHoldMs = target.sliderHoldMs.coerceIn(100, 1_000))
+        val pick = target.wheelPick.normalized().let { if (target.panelId == null) it.copy(enabled = false) else it }
+        return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness) && !pick.enabled,
+            sliderHoldMs = target.sliderHoldMs.coerceIn(100, 1_000), wheelPick = pick)
     }
     fun duplicate() = copy(action = action?.copy(id = newId()))
     companion object {
@@ -20,7 +23,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
         fun direct(action: PanelButton) = GestureTarget(action = action).normalized()
     }
 }
-enum class PanelMode { FIXED, SCROLLABLE }
+enum class PanelMode { FIXED, SCROLLABLE, WHEEL }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
 enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, TOGGLE_HANDLES, TOGGLE_HANDLE_VISIBILITY, TOGGLE_AND_HIDE_HANDLES, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
@@ -56,11 +59,12 @@ data class PanelLayout(
     val followHandle: Boolean = true,
     val x: Float = 0.5f, val y: Float = 0.5f,
     val offsetXDp: Float = 0f, val offsetYDp: Float = 0f,
+    val wheel: WheelLayoutSettings = WheelLayoutSettings(),
 ) {
     fun normalized() = copy(crossCount = crossCount.coerceIn(1, 12), maximumLines = maximumLines.coerceIn(1, 20),
         extentFraction = extentFraction.valid(0.6f).coerceIn(0.15f, 1f), buttonSizeDp = buttonSizeDp.valid(56f).coerceIn(48f, 96f),
         x = x.valid(0.5f).coerceIn(0f, 1f), y = y.valid(0.5f).coerceIn(0f, 1f),
-        offsetXDp = offsetXDp.valid(0f).coerceIn(-240f, 240f), offsetYDp = offsetYDp.valid(0f).coerceIn(-240f, 240f))
+        offsetXDp = offsetXDp.valid(0f).coerceIn(-240f, 240f), offsetYDp = offsetYDp.valid(0f).coerceIn(-240f, 240f), wheel = wheel.normalized())
 }
 data class PanelConfig(
     val buttons: List<PanelButton> = emptyList(),
@@ -108,13 +112,14 @@ data class HandleConfig(
     val hasContinuousSwipe get() = GestureSlot.entries.take(3).any { target(it).normalized().slideToAdjust }
     fun runtimeTarget(slot: GestureSlot) = if (slot == GestureSlot.SWIPE_HOLD && hasContinuousSwipe) GestureTarget.NONE else target(slot)
     fun normalized() = copy(name = name.take(80), trigger = trigger.normalized().copy(enabled = false, includePrereleases = false, activation = Activation.SWIPE),
-        bindings = GestureSlot.entries.associateWith { slot -> target(slot).normalized().let { if (slot == GestureSlot.TAP) it.copy(slideToAdjust = false) else it } },
+        bindings = GestureSlot.entries.associateWith { slot -> target(slot).normalized().let { if (slot == GestureSlot.TAP) it.copy(slideToAdjust = false, wheelPick = it.wheelPick.copy(enabled = false)) else it } },
         volumeSequenceMs = volumeSequenceMs.coerceIn(1_000, 10_000),
         volumeTravelDp = volumeTravelDp.valid(240f).coerceIn(48f, 600f), brightnessTravelDp = brightnessTravelDp.valid(240f).coerceIn(48f, 600f))
     fun duplicate() = copy(id = newId(), enabled = false, bindings = bindings.mapValues { it.value.duplicate() })
 }
 
 data class SavedPanel(val id: String = newId(), val name: String = "", val settings: PanelConfig = PanelConfig()) {
+    val isWheel get() = settings.portrait.mode == PanelMode.WHEEL || (settings.landscapeOverride && settings.landscape.mode == PanelMode.WHEEL)
     fun normalized() = copy(name = name.take(80), settings = settings.normalized())
     fun duplicate() = copy(id = newId(), settings = settings.copy(buttons = settings.buttons.map { it.copy(id = newId()) }))
 }
@@ -125,14 +130,17 @@ data class AppConfiguration(
     val brightnessPopup: BrightnessPopupSettings = BrightnessPopupSettings(),
     val shortcuts: List<HomeShortcut> = emptyList(),
     val handleAnimationsEnabled: Boolean = true,
+    val pausedHandleIds: Set<String> = emptySet(),
 ) {
     val hideHandleIndicators get() = handles.isNotEmpty() && handles.all { it.indicatorHidden }
     val hiddenIndicatorIds get() = handles.filter { it.indicatorHidden }.mapTo(mutableSetOf()) { it.id }
     fun hideIndicators(hidden: Boolean) = copy(handles = handles.map { it.copy(indicatorHidden = hidden) })
     fun hideIndicators(targets: Set<String>, hidden: Boolean) = copy(handles = handles.map { if (it.id in targets) it.copy(indicatorHidden = hidden) else it })
+    fun pauseHandles(targets: Set<String>, paused: Boolean) = copy(pausedHandleIds = if (paused) pausedHandleIds + targets else pausedHandleIds - targets)
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
-        return copy(brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+        return copy(pausedHandleIds = pausedHandleIds.intersect(handles.map { it.id }.toSet()),
+            brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
             h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
                 if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
             }) }

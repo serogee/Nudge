@@ -15,7 +15,7 @@ import com.modukey.app.core.*
     Edge.LEFT -> R.string.left; Edge.RIGHT -> R.string.right; Edge.BOTTOM -> R.string.bottom
     GestureSlot.SWIPE_1 -> R.string.swipe_1; GestureSlot.SWIPE_2 -> R.string.swipe_2; GestureSlot.SWIPE_3 -> R.string.swipe_3
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
-    PanelMode.FIXED -> R.string.fixed; PanelMode.SCROLLABLE -> R.string.scrollable
+    PanelMode.FIXED -> R.string.fixed; PanelMode.SCROLLABLE -> R.string.scrollable; PanelMode.WHEEL -> R.string.wheel
     PanelDirection.VERTICAL -> R.string.vertical; PanelDirection.HORIZONTAL -> R.string.horizontal
     OutsideTouch.BLOCK -> R.string.outside_block; OutsideTouch.PASS_THROUGH -> R.string.outside_pass; OutsideTouch.KEEP_OPEN -> R.string.outside_keep
     ButtonAction.PHONE_SETTINGS -> R.string.phone_settings; ButtonAction.NUDGE_SETTINGS -> R.string.nudge_settings
@@ -50,10 +50,10 @@ import com.modukey.app.core.*
 }
 fun Context.buttonLabel(button: PanelButton): String = if (button.action == ButtonAction.OPEN_APP && button.appLabel.isNotBlank()) button.appLabel else getString(label(button.action))
 fun Context.handleLabel(config: AppConfiguration, handle: HandleConfig): String = handle.name.ifBlank { getString(R.string.handle_name, config.handles.indexOfFirst { it.id == handle.id } + 1) }
-fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(R.string.untitled_panel) }
+fun Context.panelLabel(panel: SavedPanel): String = panel.name.ifBlank { getString(if (panel.isWheel) R.string.untitled_wheel else R.string.untitled_panel) }
 fun Context.targetLabel(config: AppConfiguration, target: GestureTarget): String {
     var name = target.action?.let { getString(R.string.action_target, buttonLabel(it)) }
-        ?: config.panel(target.panelId)?.let { getString(R.string.panel_target, panelLabel(it)) }
+        ?: config.panel(target.panelId)?.let { getString(if (it.isWheel) R.string.wheel_target else R.string.panel_target, panelLabel(it)) }
     name = if (target.volume) name?.let { getString(R.string.panel_with_volume, it) } ?: getString(R.string.volume_popup) else name
     return if (target.brightness) name?.let { getString(R.string.target_with_brightness, it) } ?: getString(R.string.brightness_slider)
         else name ?: getString(R.string.no_action)

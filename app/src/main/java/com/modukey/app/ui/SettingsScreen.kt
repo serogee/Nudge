@@ -40,6 +40,12 @@ import com.modukey.app.updates.*
         if(busy) CircularProgressIndicator()
     }
     HyperOsSetup(vm, openSettings)
+    Section(R.string.wheel_help_title) {
+        Help(R.string.wheel_help_setup)
+        Help(R.string.wheel_drag_help)
+        Help(R.string.wheel_distance_help)
+        Help(R.string.wheel_release_help)
+    }
     Section(R.string.dnd) {
         Help(R.string.policy_required); Help(R.string.dnd_other_rule)
         OutlinedButton(onClick={ openSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }) { Text(t(R.string.open_policy)) }

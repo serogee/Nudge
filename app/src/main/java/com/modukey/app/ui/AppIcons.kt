@@ -16,6 +16,10 @@ object AppIcons {
         path(fill = null, stroke = SolidColor(Color.Black), strokeLineWidth = 1.8f, strokeLineCap = StrokeCap.Round,
             strokeLineJoin = StrokeJoin.Round, pathBuilder = draw)
     }.build()
+    val Wheel = icon("Wheel") {
+        moveTo(2f,21f); curveTo(2f,7f,22f,7f,22f,21f); close()
+        moveTo(12f,21f); lineTo(5f,13f); moveTo(12f,21f); lineTo(12f,10.5f); moveTo(12f,21f); lineTo(19f,13f)
+    }
     val Back = icon("Back") { moveTo(19f,12f); lineTo(5f,12f); moveTo(11f,5f); lineTo(4f,12f); lineTo(11f,19f) }
     val Edit = icon("Edit") { moveTo(4f,16f); lineTo(15f,5f); lineTo(19f,9f); lineTo(8f,20f); lineTo(3f,21f); close(); moveTo(14f,6f); lineTo(18f,10f) }
     val Delete = icon("Delete") { moveTo(4f,6f); lineTo(20f,6f); moveTo(9f,6f); lineTo(9f,3f); lineTo(15f,3f); lineTo(15f,6f); moveTo(6f,6f); lineTo(7f,21f); lineTo(17f,21f); lineTo(18f,6f); moveTo(10f,10f); lineTo(10f,17f); moveTo(14f,10f); lineTo(14f,17f) }

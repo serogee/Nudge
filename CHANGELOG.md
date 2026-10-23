@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-23
+
+### Added
+
+- Create reusable semicircular wheels in the new **Wheels** tab. Show up to six buttons facing inward from a left, right, or bottom handle. Smaller layouts can show fewer buttons. Keep overflow buttons saved, editable, and reorderable. (0a95ca5, 59069b4)
+- Tap Wheel buttons normally or enable **Drag to pick** for a non-tap gesture. Configure selection distances, selection expansion, and selected size. Release a highlighted button to run its action once and close the Wheel. Use **Allow later swipes** and its quick-release window to continue a swipe sequence without picking. (0a95ca5, 59069b4)
+- Measure 17 automatic brightness positions at 6.25% intervals. Keep manual calibration at five points and retain existing profiles. Dense curves accept repeated hardware levels and wait for stable readings. (0cbb3a7)
+- Enable **Keep calibration service enabled** to reuse an idle connection. Select **Disable calibration service** to turn it off manually. Automatic disabling remains the default. The idle service clears event subscriptions and window-query flags. (e6baef8)
+
+### Fixed
+
+- Retain saved handle pauses after app and phone restarts, master-switch changes, and handle disable/re-enable. Restore them before attaching handles and include them in backups. (e0a2111)
+- Use one direction for combined pause and visibility actions: pause and hide, or resume and show. Save both states together. Correct mismatches from separate controls while retaining visibility-only actions. (e0a2111)
+- Apply the saved background corner radius to the Wheel fan. (76f4339)
+- Keep Wheel touch targets at least 48 dp, prevent overlap during expansion, and clamp placement within safe screen bounds. Retain the selected button at a shared boundary until the finger crosses it. Show capacity and disable Add when the Wheel is full. (f91d972, 4ac0026, 88429b3, f6efb4b)
+- Include non-interactive brightness containers and known slider wrappers during discovery. Match exact translated native brightness labels when new HyperOS sliders share an ID. Accept Xiaomi plugin controls only from the installed system app. Keep the main handle service permissions unchanged. (5a66d1c)
+- Include bounded brightness discovery metadata in **Info → Copy compatibility details**. Exclude screen text, accessibility descriptions, and current brightness values. Reject unrelated controls and ambiguous matches. (5a66d1c)
+
+### Maintenance
+
+- Share original handle touch capture between sliders and Wheels. Cancel the original recognizer and its deadlines after capture. (88d31b0)
+- Update Help and the user guide for Wheel controls, swipe timing, calibration density, service reuse, and observed Redmi behavior. (dc5ec91, 559615b)
+- Verify highlighted Wheel cancellation through Back, screen-off, interruption, and service loss. (57f8ef5)
+
+### Compatibility and known limits
+
+- Backups use schema 21. Import older backups; earlier Nudge versions cannot import new exports. Keep five manual calibration points and existing device profiles.
+- Retain saved pauses across restarts and master or Enable changes. Resume actions and deletion clear pauses. Older backups without pause selections start resumed.
+- Old-style Redmi calibration and restoration passed. Final new-style calibration, 17-point sampling, enabled standby, physical Wheel touch ownership, pause restoration after a phone reboot, and update installation still need device checks. See the [reviewed release notes](docs/release-notes-0.5.0.md) for details.
+
 ## 0.4.6 - 2026-10-23
 
 ### Added

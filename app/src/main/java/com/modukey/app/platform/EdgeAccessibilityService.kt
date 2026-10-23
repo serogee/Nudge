@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 private data class OpenPanel(val panelId: String, val handleId: String? = null, val testing: Boolean = false)
 private enum class PanelCloseReason { APP_CHANGED, BACK, OUTSIDE_TOUCH, WINDOW_DETACHED, TIMEOUT, SCREEN_STATE, EDITOR_CHANGED,
-    TEST_REPLACED, GESTURE_REPLACED, HANDLE_UNAVAILABLE, PANEL_REMOVED, TEST_ENDED, ACTION_COMPLETED, REFRESH_ERROR, WINDOW_ERROR, SERVICE_STOPPED }
+    TEST_REPLACED, GESTURE_REPLACED, HANDLE_UNAVAILABLE, PANEL_REMOVED, TEST_ENDED, ACTION_COMPLETED, REFRESH_ERROR, WINDOW_ERROR, SERVICE_STOPPED, WHEEL_RELEASED }
 internal data class ScreenSpace(val width: Float, val height: Float, val density: Float, val insets: Insets, val landscape: Boolean, val rotation: Int = 0) {
     val usable get() = Bounds(insets.left, insets.top, (width-insets.left-insets.right).coerceAtLeast(1f), (height-insets.top-insets.bottom).coerceAtLeast(1f))
 }
@@ -65,6 +65,9 @@ class EdgeAccessibilityService : AccessibilityService() {
     private val sessions = GestureSessions()
     private data class SliderBinding(val handleId: String, val slot: GestureSlot, val target: GestureTarget)
     private var sliderBinding: SliderBinding? = null
+    private data class WheelBinding(val handle: HandleConfig, val slot: GestureSlot, val target: GestureTarget, val stage: Int?,
+        val panel: SavedPanel, val session: WheelPickSession, var armJob: Job? = null)
+    private var wheelBinding: WheelBinding? = null
     private val haptics by lazy { GestureHaptics(this) }
     private val errors = mutableMapOf<String, String>()
     private val frame = Choreographer.FrameCallback { frames?.onFrame() }
@@ -187,7 +190,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     }
     private fun activate(id: String, kind: GestureKind) {
         val config = app.configuration.state.value ?: return
-        val handle = config.handle(id) ?: return
+        val handle = config.handle(id)?.effectiveGestures(config, screen().landscape) ?: return
         if (app.editor.state.value != null || reason(config, handle) != HandleAvailability.ACTIVE) { refresh(); return }
         haptics.perform(handle.trigger.feedback(kind))
         val now = SystemClock.elapsedRealtime(); val (target, stage) = sessions.next(handle, kind, now)
@@ -231,19 +234,88 @@ class EdgeAccessibilityService : AccessibilityService() {
         }
         val sliding = continuous && ((target.volume && volumeSubmitted) ||
             (target.brightness && brightnessHost?.visible == true && app.brightness.canWrite)) && beginSlider(handle, slot, target, stage)
+        if (target.dragsWheel(config, screen().landscape)) cancelSlider()
+        val picking = target.dragsWheel(config, screen().landscape) && beginWheel(handle, slot, target, stage)
+        if (target.dragsWheel(config, screen().landscape) && !picking) dismissPanel(PanelCloseReason.WHEEL_RELEASED)
         if (continuous && target.brightness && !sliding) brightnessHost?.holdFromHandle(false)
         if (submitted) {
             sessions.submitted(handle, stage, target, now)
-            if (sliding && stage != null) sessions.keepWhileTouch(id)
+            if ((sliding || picking) && stage != null) sessions.keepWhileTouch(id)
         } else sessions.reset(id)
         if (target.action?.action in listOf(ButtonAction.CLOSE_PANELS, ButtonAction.SCREENSHOT)) sessions.reset(id)
+        if (target.dragsWheel(config, screen().landscape) && !picking) sessions.reset(id)
         refresh()
     }
     private fun gesturePolicy(id: String): HandleGesturePolicy {
-        val h = app.configuration.state.value?.handle(id) ?: return HandleGesturePolicy()
+        val config = app.configuration.state.value ?: return HandleGesturePolicy()
+        val landscape = screen().landscape
+        val h = config.handle(id)?.effectiveGestures(config, landscape) ?: return HandleGesturePolicy()
         val next = sessions.next(h, GestureKind.SWIPE, SystemClock.elapsedRealtime()).first.normalized()
-        return HandleGesturePolicy(next.slideToAdjust, h.target(GestureSlot.HOLD).normalized().slideToAdjust,
-            h.runtimeTarget(GestureSlot.SWIPE_HOLD).normalized().slideToAdjust, !h.hasContinuousSwipe)
+        fun captures(t: GestureTarget) = t.slideToAdjust || t.dragsWheel(config, landscape)
+        return HandleGesturePolicy(captures(next), captures(h.target(GestureSlot.HOLD).normalized()),
+            captures(h.runtimeTarget(GestureSlot.SWIPE_HOLD).normalized()), !h.hasContinuousSwipe &&
+                (0..2).none { h.target(GestureSlot.entries[it]).dragsWheel(config, landscape) })
+    }
+    private fun beginWheel(handle: HandleConfig, slot: GestureSlot, target: GestureTarget, stage: Int?): Boolean {
+        val config = app.configuration.state.value ?: return false
+        val original = config.handle(handle.id) ?: return false
+        val panel = config.panel(target.panelId) ?: return false
+        val view = views[handle.id] ?: return false
+        if (!view.isTouching || app.editor.state.value != null || reason(config, original) != HandleAvailability.ACTIVE) return false
+        val space = screen()
+        val bounds = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, original.trigger, space.landscape)
+        val geometry = PanelGeometry.calculate(space.usable, space.density, panel.settings.layout(space.landscape), panel.settings.buttons.size,
+            bounds, original.trigger.placement(space.landscape).edge).wheel ?: return false
+        val driver = WheelPickSession(geometry, target.wheelPick, space.density, view.touchX, view.touchY, SystemClock.uptimeMillis(), slot.ordinal < 3)
+        val binding = WheelBinding(original, slot, target, stage, panel, driver)
+        val captured = view.captureInteraction({ x, y, moving ->
+            if (moving && wheelBinding === binding) {
+                val old = driver.selected
+                driver.move(x, y, SystemClock.uptimeMillis())
+                if (old != driver.selected) {
+                    if (driver.selected != null) haptics.perform(original.trigger.feedback(when (slot) {
+                        GestureSlot.HOLD -> GestureKind.HOLD; GestureSlot.SWIPE_HOLD -> GestureKind.SWIPE_HOLD; else -> GestureKind.SWIPE }))
+                    frames?.request()
+                }
+            }
+        }) { cancelled -> finishWheel(binding, view.touchX, view.touchY, cancelled) }
+        if (!captured) return false
+        wheelBinding = binding
+        driver.deadline?.let { deadline -> binding.armJob = scope?.launch {
+            delay((deadline - SystemClock.uptimeMillis()).coerceAtLeast(0))
+            if (wheelBinding === binding) driver.arm(SystemClock.uptimeMillis())
+        } }
+        panelTimeout?.touch(true)
+        return true
+    }
+    private fun wheelValid(binding: WheelBinding): Boolean {
+        val config = app.configuration.state.value ?: return false
+        return app.editor.state.value == null && config.handle(binding.handle.id) == binding.handle && config.panel(binding.panel.id) == binding.panel &&
+            reason(config, binding.handle) == HandleAvailability.ACTIVE && open?.let { it.panelId == binding.panel.id && it.handleId == binding.handle.id } == true
+    }
+    private fun finishWheel(binding: WheelBinding, x: Float, y: Float, cancelled: Boolean) {
+        if (wheelBinding !== binding) return
+        val valid = wheelValid(binding)
+        val result = binding.session.finish(x, y, SystemClock.uptimeMillis(), cancelled || !valid)
+        val button = result.index?.let { binding.panel.settings.buttons.getOrNull(it) }?.takeIf { it.action != ButtonAction.EMPTY }
+        wheelBinding = null; binding.armJob?.cancel()
+        dismissPanel(PanelCloseReason.WHEEL_RELEASED)
+        clearPanelWindows()
+        if (valid && result.kind == WheelFinishKind.NEXT_SWIPE) {
+            sessions.submitted(binding.handle, binding.stage, binding.target.copy(panelId = null), SystemClock.elapsedRealtime())
+        } else if (valid && result.kind == WheelFinishKind.PICK && button != null) {
+            actions?.execute(binding.handle.id, button, testing = false)?.message?.let { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+        }
+        frames?.request()
+    }
+    private fun cancelWheel() {
+        val binding = wheelBinding ?: return
+        wheelBinding = null; binding.armJob?.cancel()
+        views[binding.handle.id]?.let { view ->
+            binding.session.finish(view.touchX, view.touchY, SystemClock.uptimeMillis(), cancelled = true)
+            view.cancelGesture()
+        }
+        sessions.reset(binding.handle.id)
     }
     private fun cancelSlider() {
         val old = sliderBinding ?: return
@@ -280,7 +352,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         }, startX = view.touchX, holdMs = if (guarded) target.sliderHoldMs else 0, slopPx = 8f * resources.displayMetrics.density,
             readOnArm = { if (target.volume) app.volume.read()?.fraction else app.brightness.fraction() },
             onArmed = { if (handle.trigger.feedback(GestureKind.SWIPE).enabled) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) })
-        val captured = view.captureSlider(driver::move) { cancelled ->
+        val captured = view.captureInteraction(driver::move) { cancelled ->
             val completed = driver.finish(cancelled)
             val owns = sliderBinding === binding
             if (owns) sliderBinding = null
@@ -296,11 +368,13 @@ class EdgeAccessibilityService : AccessibilityService() {
         return true
     }
     private fun replacePanel(next: OpenPanel?, keepSession: String) {
+        cancelWheel()
         panelTimeout?.stop(); open?.handleId?.takeIf { it != keepSession }?.let(sessions::reset)
         if (open != next) recordDismissal(PanelCloseReason.GESTURE_REPLACED)
         open = next; panelOpenedAt = next?.let { SystemClock.uptimeMillis() }
     }
     private fun dismissPanel(reason: PanelCloseReason, event: AccessibilityEvent? = null, previous: String? = foreground) {
+        cancelWheel()
         recordDismissal(reason, event, previous)
         panelTimeout?.stop(); open?.handleId?.let(sessions::reset); open = null; panelOpenedAt = null
     }
@@ -319,6 +393,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         }
     }
     private fun runButton(button: PanelButton) {
+        if (wheelBinding != null) return
         val owner = open ?: return
         val config = (if (owner.testing) app.configuration.preview.value else app.configuration.state.value) ?: return
         val h = config.handle(owner.handleId)
@@ -347,6 +422,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (scope == null) return
         val selected = app.editor.state.value
         val config = (if (selected != null) app.configuration.preview.value else app.configuration.state.value) ?: return
+        wheelBinding?.let { if (!wheelValid(it)) dismissPanel(PanelCloseReason.HANDLE_UNAVAILABLE) }
         sliderBinding?.let { binding ->
             val h = config.handle(binding.handleId)
             if (selected != null || h == null || h.target(binding.slot) != binding.target || reason(config, h) != HandleAvailability.ACTIVE) cancelSlider()
@@ -415,7 +491,9 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, trigger, space.landscape)
                 val geometry = PanelGeometry.calculate(space.usable, space.density, p.layout(space.landscape), p.buttons.size, b, edge)
                 panelHost?.show(PanelSpec(p, p.layout(space.landscape), if (panelEditing && preview != null) geometry.copy(bounds = preview.toDisplay(geometry.bounds)) else geometry,
-                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId))
+                    panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId,
+                    wheelBinding?.session?.selected ?: if (panelEditing && geometry.wheel != null && p.layout(space.landscape).wheel.expandSelection && geometry.visibleCount > 0) geometry.visibleCount / 2 else null,
+                    wheelBinding != null))
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
@@ -425,6 +503,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         }
         val timedPanel = open?.let { config.panel(it.panelId)?.settings }
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
+        if (wheelBinding != null) panelTimeout?.touch(true)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
         if (wanted == null) raiseHandles = false else if (changed) raiseHandles = true
         // Keep captured input and its return animation until the handle is idle.

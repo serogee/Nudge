@@ -8,6 +8,7 @@ import kotlin.math.min
 data class PanelGeometryResult(
     val bounds: Bounds, val crossCount: Int, val lines: Int, val visibleCount: Int,
     val cell: Float, val gap: Float, val padding: Float,
+    val wheel: WheelGeometryResult? = null,
 ) {
     fun cellPosition(index: Int, direction: PanelDirection): Pair<Int, Int> =
         if (direction == PanelDirection.VERTICAL) index % crossCount to index / crossCount
@@ -16,6 +17,10 @@ data class PanelGeometryResult(
 object PanelGeometry {
     fun calculate(screen: Bounds, density: Float, layout: PanelLayout, count: Int, handle: Bounds, edge: Edge): PanelGeometryResult {
         val s = layout.normalized()
+        if (s.mode == PanelMode.WHEEL) {
+            val wheel = WheelGeometry.calculate(screen, density, s, s.wheel, count, handle, edge)
+            return PanelGeometryResult(wheel.bounds, wheel.capacity, 1, wheel.count, wheel.cell, 8f * density, 8f * density, wheel)
+        }
         val vertical = s.direction == PanelDirection.VERTICAL
         val padding = 8f * density
         val gap = 8f * density

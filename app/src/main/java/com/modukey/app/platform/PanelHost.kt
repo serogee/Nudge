@@ -23,7 +23,7 @@ import com.modukey.app.ui.PanelContent
 import kotlin.math.roundToInt
 
 data class PanelSpec(val panel: PanelConfig, val layout: PanelLayout, val geometry: PanelGeometryResult, val editing: Boolean, val edge: Edge = Edge.RIGHT, val previewQuarterTurns: Int = 0,
-    val handleId: String? = null)
+    val handleId: String? = null, val wheelSelection: Int? = null, val wheelDragging: Boolean = false)
 interface PanelHost { fun show(spec: PanelSpec); fun hide(animate: Boolean = true); fun refreshSound() }
 enum class PanelDismissReason { BACK, OUTSIDE_TOUCH, WINDOW_DETACHED }
 
@@ -92,7 +92,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
             // These states belong to this window. Clearing or replacing active does not blank an exit frame.
             setContent { NudgeTheme {
                 val p = spec
-                PanelContent(p.panel, p.layout, p.geometry, sound, !p.editing) { if (active === this@AttachedPanel) onAction(it) }
+                PanelContent(p.panel, p.layout, p.geometry, sound, !p.editing, p.wheelSelection, p.wheelDragging) { if (active === this@AttachedPanel) onAction(it) }
             } }
         }
         private val detached = object : View.OnAttachStateChangeListener {
@@ -163,6 +163,7 @@ class AccessibilityPanelHost(private val context: Context, private val manager: 
     private fun params(spec: PanelSpec) = WindowManager.LayoutParams(spec.geometry.bounds.width.roundToInt().coerceAtLeast(1),
         spec.geometry.bounds.height.roundToInt().coerceAtLeast(1), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            (if (spec.wheelDragging) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0) or
             (if (spec.editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
             (if (spec.panel.outsideTouch != OutsideTouch.BLOCK) WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH else 0),
         PixelFormat.TRANSLUCENT).apply {
