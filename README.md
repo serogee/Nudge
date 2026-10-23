@@ -18,17 +18,19 @@ Nudge adds configurable edge handles to Android. Use gestures to open volume con
 
 This README describes the current source. Check each release's notes for the features included in its APK.
 
-## Contents
+## 📑 Contents
 
-- [Quick start](#quick-start)
-- [Demo](#demo)
-- [Features](#features)
-- [Privacy](#privacy)
-- [Development](#development)
-- [License](#license)
-- [Contact and support](#contact-and-support)
+- [🚀 1. Quick start](#quick-start)
+- [📱 2. Demo](#demo)
+- [✨ 3. Features](#features)
+- [🔒 4. Privacy](#privacy)
+- [🛠️ 5. Development](#development)
+- [📜 6. License](#license)
+- [💬 7. Contact and support](#contact-and-support)
 
-## Quick start
+<a id="quick-start"></a>
+
+## 🚀 1. Quick start
 
 1. Download and install the APK from [GitHub Releases](https://github.com/serogee/Nudge/releases).
 2. Open Nudge. On Home, select **Open Accessibility** and enable **Nudge handles**.
@@ -39,7 +41,9 @@ Nudge requires Android 12 or later. Brightness actions need **Modify system sett
 
 HyperOS setup and native popup behavior vary by build. See [setup and troubleshooting](docs/handles-and-panels.md#setup-and-troubleshooting) if Android blocks accessibility or opens the wrong panel.
 
-## Demo
+<a id="demo"></a>
+
+## 📱 2. Demo
 
 TODO: Replace these descriptions with real screenshots or short recordings.
 
@@ -51,7 +55,9 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 | Customization screenshot | Show handle placement, panel appearance, and the non-interactive editing guide. |
 | Calibration screenshot | Show Home's manual and automatic calibration options with a supported result or recovery state. |
 
-## Features
+<a id="features"></a>
+
+## ✨ 3. Features
 
 ### Edge handles and gestures
 
@@ -88,7 +94,9 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 
 See the [user guide](docs/handles-and-panels.md) for setup, gesture behavior, calibration, backups, and known limits.
 
-## Privacy
+<a id="privacy"></a>
+
+## 🔒 4. Privacy
 
 - **No account, ads, or analytics.** Handles, panels, and controls work offline.
 - **Updates are requested by you.** Update checks and APK downloads contact GitHub. Nudge does not upload settings or diagnostics.
@@ -108,7 +116,9 @@ See the [user guide](docs/handles-and-panels.md) for setup, gesture behavior, ca
 
 The calibration service does not inspect screen text, take screenshots, or record the screen. It disables itself when a run ends or setup expires. Calibration profiles and recovery records are excluded from Android backup and JSON exports. See [calibration and recovery](docs/handles-and-panels.md#brightness-percentages-and-calibration).
 
-## Development
+<a id="development"></a>
+
+## 🛠️ 5. Development
 
 ### Requirements
 
@@ -143,7 +153,9 @@ On macOS or Linux, replace `.\gradlew.bat` with `bash ./gradlew`. Release script
 
 See [development and releases](docs/development.md) for repository conventions, device checks, signing, and publication. Features under development belong in [Unreleased](CHANGELOG.md#unreleased); release notes are stored in [docs](docs).
 
-## License
+<a id="license"></a>
+
+## 📜 6. License
 
 Copyright (C) 2026 serogee and Nudge contributors.
 
@@ -153,7 +165,9 @@ See [LICENSE](LICENSE) for the full terms. SPDX identifier: `GPL-3.0-or-later`.
 
 Nudge is distributed without any warranty. Third-party components retain their own licenses and notices.
 
-## Contact and support
+<a id="contact-and-support"></a>
+
+## 💬 7. Contact and support
 
 For bug reports, feature requests, or questions, [open a GitHub issue](https://github.com/serogee/Nudge/issues).
 
