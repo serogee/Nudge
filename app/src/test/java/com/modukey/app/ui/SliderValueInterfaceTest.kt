@@ -59,6 +59,22 @@ class SliderValueInterfaceTest {
         rule.onNodeWithText("65%").assertExists()
     }
 
+    @Test fun iconCornersUseTheFullZeroToOneHundredPercentRange() {
+        val value = mutableStateOf(.25f)
+        rule.activity.setContent { NudgeTheme {
+            SettingSlider(R.string.icon_corners, value.value, 0f.. .5f, t(R.string.percent, (value.value * 200).toInt()),
+                valueScale = 200f) { value.value = it }
+        } }
+        rule.onNodeWithText("50%").performClick()
+        entry().performTextReplacement("100")
+        rule.onNodeWithText("Save").performClick()
+        rule.runOnIdle { assertEquals(.5f, value.value) }
+        rule.onNodeWithText("100%").performClick()
+        entry().performTextReplacement("0")
+        entry().performImeAction()
+        rule.runOnIdle { assertEquals(0f, value.value) }
+    }
+
     @Test fun manualPercentEntryUsesEachSlidersOwnMinimumAndMaximum() {
         val value = mutableStateOf(.25f)
         rule.activity.setContent { NudgeTheme {

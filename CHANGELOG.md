@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Replace icon shape choices with one corner control for panels and Wheels. Use 0% for square icons and 100% for circles. Import older shapes as rounded squares and preserve circles. Backups use schema 26.
+
 ## 0.5.2 - 2026-10-24
 
 ### Added

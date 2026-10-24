@@ -27,7 +27,6 @@ enum class PanelMode { FIXED, SCROLLABLE, WHEEL }
 enum class PanelDirection { VERTICAL, HORIZONTAL }
 enum class OutsideTouch { BLOCK, PASS_THROUGH, KEEP_OPEN }
 enum class ButtonAction { PHONE_SETTINGS, NUDGE_SETTINGS, VOLUME_UP, VOLUME_DOWN, MEDIA_MUTE, SILENT, VIBRATE, DND, LOCK, OPEN_APP, INPUT_METHOD_PICKER, CLOSE_PANELS, TOGGLE_HANDLES, TOGGLE_HANDLE_VISIBILITY, TOGGLE_AND_HIDE_HANDLES, SCREENSHOT, BRIGHTNESS_MAXIMUM, BRIGHTNESS_MINIMUM, NOTIFICATIONS, CONTROL_PANEL, BRIGHTNESS_UP, BRIGHTNESS_DOWN, BRIGHTNESS_AUTOMATIC, EMPTY }
-enum class IconShape { CIRCLE, ROUNDED_SQUARE, SQUIRCLE }
 enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
 
@@ -75,7 +74,6 @@ data class PanelConfig(
     val background: Long = 0xFF252A21,
     val opacity: Float = 0.98f,
     val cornerDp: Float = 24f,
-    val iconShape: IconShape = IconShape.ROUNDED_SQUARE,
     val iconCornerFraction: Float = 0.25f,
     val iconPack: String = "",
     val animation: PanelAnimation = PanelAnimation.NONE,

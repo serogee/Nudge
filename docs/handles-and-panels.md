@@ -140,9 +140,11 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 25 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-25 backups.
+New backups use schema 26 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-26 backups.
 
 ## Actions and appearance
+
+**Icon corners** applies to panel and Wheel icons and their button containers. Use 0% for a square, 100% for a circle, or a value between them for rounded corners. The default is 50%. Older circles keep their circular shape. Other old shapes keep their corner amount and use rounded squares.
 
 Panel buttons and direct gestures can open apps or settings, control sound and brightness, lock the screen, open the keyboard chooser, close panels, request a native screenshot, or open notifications and quick settings.
 
