@@ -114,6 +114,14 @@ Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, a
 
 The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on. **Highlight transition** offers **No animation**, **Smooth**, and **Spring**. Smooth defaults to 140 ms and accepts 80–400 ms. The outline, wedge, and icon transition together, and a new selection interrupts the current motion. No animation applies highlight and shape changes immediately. Transitions also work when expansion is off. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
 
+### Hover colors
+
+In a Wheel editor, open **Appearance → Wheel hover colors**. Hover follows the button highlighted during Drag to pick. By default, the icon and highlight outline keep their existing colors; only the wedge background changes slightly.
+
+Enable **Custom hover icon color**, **Custom hover background color**, or **Custom hover highlight color** independently to choose their colors. Hover icon colors also tint app artwork while highlighted. Normal artwork returns when selection clears. Existing opacity controls still apply.
+
+Turn **Change colors on hover** off to keep the original icon and background colors and the normal theme highlight. Custom choices remain saved. Hover colors use the selected highlight transition, including No animation. The editor preview shows a highlighted button even when expansion is off. Hover colors do not change a button's saved toggle state; its active colors return after hover ends. Panels do not offer these controls.
+
 ### Drag to pick
 
 Without **Drag to pick**, the wheel stays open for normal button taps. Enable this option below a Wheel gesture assignment to select without lifting. Tap does not offer it. Drag to pick and Slide to adjust cannot use the same assignment.
@@ -132,7 +140,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 24 and retain both Wheel radii, highlight transitions, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-24 backups.
+New backups use schema 25 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-25 backups.
 
 ## Actions and appearance
 

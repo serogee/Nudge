@@ -4,11 +4,13 @@
 
 ### Added
 
+- Set optional hover colors for Wheel icons, wedge backgrounds, and highlight outlines. Keep the current icon and outline colors by default, with a subtle background tint. Animate colors with focus transitions and restore normal or toggle colors when selection clears.
 - Adjust inner and outer Wheel radii on one track with two directly draggable points. Preserve previous wheel sizes when loading older backups.
 - Choose No animation, Smooth, or Spring for Wheel highlight transitions. Set Smooth duration from 80–400 ms. Fade outlines with wedge and icon motion, and retarget interrupted transitions.
 
 ### Fixed
 
+- Keep color picker dialogs stable when their titles are long. Verify hexadecimal entry and preset selection.
 - Keep Wheel backgrounds and button containers concentric when rounding their corners.
 - Keep Wheels separate from panels in both orientations. Remove conversion choices and retain saved buttons and gesture links.
 - Require thumb dragging for settings sliders. Ignore track taps and track swipes. Respond immediately when a drag reverses at a limit.
@@ -16,7 +18,7 @@
 
 ### Compatibility
 
-- Backups now use schema 24. Older backups remain importable; builds supporting earlier schemas cannot import the new format.
+- Backups now use schema 25. Older backups remain importable; builds supporting earlier schemas cannot import the new format.
 - Physical-device checks for Wheel shape, drag transitions, rotation, and slider input remain pending.
 
 ## 0.5.1 - 2026-10-24
