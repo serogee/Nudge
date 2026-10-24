@@ -167,7 +167,7 @@ object ConfigurationCodec {
         backgroundOpacity = p.float("backgroundOpacity", 1f), trackOpacity = p.float("trackOpacity", 1f), fillOpacity = p.float("fillOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
         timeoutMs = p.optLong("timeoutMs", 3_000), cornerRadiusDp = p.float("cornerRadiusDp", 32f),
         showBackground = p.optBoolean("showBackground", true), showAutomaticToggle = p.optBoolean("showAutomaticToggle", true),
-        touchBehavior = enumValueOf(p.optString("touchBehavior", "JUMP_TO_TOUCH")),
+        touchBehavior = enumValueOf(p.optString("touchBehavior", "SLIDE_TO_ADJUST")),
         animation = enumValueOf(p.optString("animation", "NONE")), closeAnimation = enumValueOf(p.optString("closeAnimation", "NONE")))
     private fun brightness(p: BrightnessPopupSettings) = JSONObject().put("side", p.side.name).put("volumeSide", p.volumeSide.name)
         .put("width", p.widthDp).put("height", p.heightDp).put("x", p.x).put("y", p.y)

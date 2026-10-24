@@ -33,17 +33,15 @@ class BrightnessReturnInterfaceTest {
         return NudgeViewModel(app)
     }
 
-    @Test fun homeSelectsAndResetsTouchBehaviorWithoutChangingAppearance() {
+    @Test fun homeUsesSwipeAdjustmentWithoutAJumpOption() {
         val vm = ready()
         val before = app.configuration.state.value!!.brightnessPopup
         rule.activity.setContent {
             val current by app.configuration.state.collectAsStateWithLifecycle()
             NudgeTheme { Column(Modifier.verticalScroll(rememberScrollState())) { BrightnessPopupSettingsSection(checkNotNull(current), vm) } }
         }
-        rule.onNodeWithText("Jump to touch").performClick()
-        rule.onNodeWithText("Slide to adjust").performClick()
-        rule.runOnIdle { assertEquals(before.copy(touchBehavior = BrightnessTouchBehavior.SLIDE_TO_ADJUST), app.configuration.state.value!!.brightnessPopup) }
-        rule.onNodeWithContentDescription("Reset Touch behavior").performClick()
+        rule.onNodeWithText("Jump to touch").assertDoesNotExist()
+        rule.onNodeWithText("Swipe to adjust brightness from its current level. Touching the slider does not change the level.").assertExists()
         rule.runOnIdle { assertEquals(before, app.configuration.state.value!!.brightnessPopup) }
     }
 

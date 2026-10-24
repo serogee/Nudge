@@ -31,11 +31,13 @@ class BrightnessTouchBehaviorTest {
         events.forEach { (action, y) -> MotionEvent.obtain(0, 20, action, 30f, y, 0).let { view.dispatchTouchEvent(it); it.recycle() } }
     }
 
-    @Test fun jumpModeUsesTheTouchPosition() {
+    @Test fun legacyJumpSettingsIgnoreTapsAndUseRelativeSwipeTravel() {
         val writes = mutableListOf<Float>()
         val view = view(writes, BrightnessTouchBehavior.JUMP_TO_TOUCH)
         touch(view, MotionEvent.ACTION_DOWN to 180f, MotionEvent.ACTION_UP to 180f)
-        assertEquals(.25f, writes.single(), .001f)
+        assertTrue(writes.isEmpty())
+        touch(view, MotionEvent.ACTION_DOWN to 180f, MotionEvent.ACTION_MOVE to 156f, MotionEvent.ACTION_UP to 156f)
+        assertEquals(.6f, writes.single(), .001f)
     }
 
     @Test fun slideModeStartsAtTheCurrentLevelAndIgnoresStationaryTaps() {
@@ -65,7 +67,7 @@ class BrightnessTouchBehaviorTest {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
         assertTrue(writes.isEmpty())
         touch(view, MotionEvent.ACTION_DOWN to 200f, MotionEvent.ACTION_MOVE to 176f)
-        view.configure(BrightnessPopupSettings(showBackground = false, showAutomaticToggle = false), false, .5f)
+        view.configure(BrightnessPopupSettings(showBackground = false, showAutomaticToggle = false), true, .5f)
         touch(view, MotionEvent.ACTION_UP to 176f)
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
         assertTrue(writes.isEmpty())
