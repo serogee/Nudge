@@ -160,7 +160,7 @@ Home shortcuts using This handle or Other handles require a selected handle. The
 
 ## Brightness controls
 
-Home contains brightness popup placement, size, timeout, appearance, and animation settings. The custom brightness popup always adjusts by swipe travel from its current level. Stationary taps do not change brightness. Imported Jump to touch settings use swipe adjustment too. Android controls its own native volume popup behavior.
+Home contains brightness popup placement, size, timeout, appearance, animation, and touch settings. **Slide to adjust** is the default. It starts at the current brightness and follows swipe travel; stationary taps do not change the level. Choose **Jump to touch** to set brightness at the touched position. Saved touch choices remain unchanged when loading older backups. The thumb-only rule applies to settings sliders, not the brightness popup. Android controls its own native volume popup behavior.
 
 The custom popup approximates MIUI styling. It cannot read Xiaomi's private volume popup bounds, so select the volume side and adjust brightness placement on your phone.
 

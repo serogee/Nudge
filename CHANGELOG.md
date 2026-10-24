@@ -12,7 +12,7 @@
 - Keep Wheel backgrounds and button containers concentric when rounding their corners.
 - Keep Wheels separate from panels in both orientations. Remove conversion choices and retain saved buttons and gesture links.
 - Require thumb dragging for settings sliders. Ignore track taps and track swipes. Respond immediately when a drag reverses at a limit.
-- Adjust the custom brightness popup by swipe travel. Stationary taps do not change the level, including with imported Jump to touch settings.
+- Default the custom brightness popup to Slide to adjust. Retain the Jump to touch choice and preserve saved touch behavior. Settings value sliders remain thumb-only.
 
 ### Compatibility
 
