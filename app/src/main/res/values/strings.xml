@@ -561,6 +561,11 @@
     <string name="wheel_expand_help">Enlarge the highlighted wedge, icon, and selection area. Adjacent wedges shrink. Cross the expanded boundary to change selection.</string>
     <string name="wheel_animations">Wheel animations</string>
     <string name="wheel_animations_help">Smoothly expand and shrink wedges and icons. Turn this off to disable Wheel motion. Selection changes apply immediately.</string>
+    <string name="wheel_focus_animation">Highlight transition</string>
+    <string name="wheel_focus_duration">Transition duration</string>
+    <string name="wheel_focus_animation_help">Choose how highlights, wedges, and icons change selection. None applies the new selection immediately.</string>
+    <string name="animation_smooth">Smooth</string>
+    <string name="animation_spring">Spring</string>
     <string name="wheel_selected_size">Selected size</string>
     <string name="wheel_capacity">Button capacity: %1$d. The maximum is six. Other buttons remain saved.</string>
     <string name="wheel_drag">Drag to pick</string>

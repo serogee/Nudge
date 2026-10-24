@@ -90,6 +90,16 @@ import kotlin.math.roundToInt
             Toggle(R.string.wheel_animations, R.string.wheel_animations_help, l.wheel.animationsEnabled, default = true) { value ->
                 layout { it.copy(wheel = it.wheel.copy(animationsEnabled = value)) }
             }
+            if (l.wheel.animationsEnabled) DependentSettings(R.string.wheel_animations) {
+                OptionRow(t(R.string.wheel_focus_animation), WheelFocusAnimation.entries, l.wheel.focusAnimation, WheelFocusAnimation.SMOOTH) { value ->
+                    layout { it.copy(wheel = it.wheel.copy(focusAnimation = value)) }
+                }
+                if (l.wheel.focusAnimation == WheelFocusAnimation.SMOOTH) SettingSlider(R.string.wheel_focus_duration,
+                    l.wheel.focusDurationMs.toFloat(), 80f..400f, t(R.string.ms_value, l.wheel.focusDurationMs), default = 140f) { value ->
+                    layout { it.copy(wheel = it.wheel.copy(focusDurationMs = value.roundToInt())) }
+                }
+                Help(R.string.wheel_focus_animation_help)
+            }
         } else {
             OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
             DependentSettings(R.string.direction) {

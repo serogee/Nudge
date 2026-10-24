@@ -2,13 +2,16 @@ package com.modukey.app.core
 
 import kotlin.math.*
 
+enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
+
 data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
-    val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null) {
+    val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
+    val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140) {
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(12f, 288f)
         val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: 12f) + 48f, 336f)
         return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f),
-            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer)
+            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400))
     }
     /** Missing bounds retain the old center-radius and button-size geometry on import. */
     fun radii(buttonSizeDp: Float): Pair<Float, Float> {

@@ -47,6 +47,19 @@ class WheelConfigurationTest {
         val migrated = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
         assertEquals(200f, migrated.radiusDp); assertTrue(migrated.animationsEnabled)
     }
+    @Test fun focusTransitionChoicesPersistAndLegacyDocumentsUseSmoothMotion() {
+        for (animation in WheelFocusAnimation.entries) {
+            val wheel = WheelLayoutSettings(focusAnimation = animation, focusDurationMs = 280)
+            val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+                portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = wheel)))))
+            assertEquals(wheel, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
+            val legacy = JSONObject(ConfigurationCodec.encode(config)).put("schema", 23)
+            val saved = legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel")
+            saved.remove("focusAnimation"); saved.remove("focusDurationMs")
+            val restored = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
+            assertEquals(WheelFocusAnimation.SMOOTH, restored.focusAnimation); assertEquals(140, restored.focusDurationMs)
+        }
+    }
     @Test fun independentRadiiRoundTripAndLegacyWidthsRemainUnchanged() {
         val wheel = WheelLayoutSettings(innerRadiusDp = 64f, outerRadiusDp = 180f)
         val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(

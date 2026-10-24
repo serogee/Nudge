@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 23 adds independent inner and outer Wheel radii. */
+/** Schema 24 adds selectable Wheel focus transitions. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 23
+    const val SCHEMA = 24
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -94,13 +94,14 @@ object ConfigurationCodec {
         p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it },
         p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f), it.optBoolean("animationsEnabled", true),
             if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
-            if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null) } ?: WheelLayoutSettings())
+            if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
+            enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140)) } ?: WheelLayoutSettings())
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
         .put("offsetX", p.offsetXDp).put("offsetY", p.offsetYDp)
         .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale).put("animationsEnabled", p.wheel.animationsEnabled)
-            .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp))
+            .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp).put("focusAnimation", p.wheel.focusAnimation.name).put("focusDurationMs", p.wheel.focusDurationMs))
     private fun wheelPick(p: JSONObject) = WheelPickSettings(p.optBoolean("enabled"), p.float("minimumDistanceDp", 32f),
         p.float("maximumDistanceDp", 240f), p.optBoolean("allowLaterSwipes"), p.optLong("releaseWindowMs", 200))
     private fun wheelPick(p: WheelPickSettings) = JSONObject().put("enabled", p.enabled).put("minimumDistanceDp", p.minimumDistanceDp)

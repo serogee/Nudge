@@ -86,6 +86,17 @@ class WheelInterfaceTest {
             assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
     }
+    @Test fun highlightTransitionCanBeChangedAndSavedAsNone() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithText("Smooth").performScrollTo().performClick()
+        rule.onNodeWithText("Spring").performClick()
+        rule.runOnIdle { assertEquals(WheelFocusAnimation.SPRING, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.focusAnimation) }
+        rule.onNodeWithText("Spring").performClick()
+        rule.onNode(hasText("No animation") and hasAnyAncestor(isPopup())).performClick()
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.focusAnimation == WheelFocusAnimation.NONE } }
+    }
     @Test fun wheelPickerOffersDragForSwipesAndExcludesTap() {
         val app = ready(); tab("Handles")
         rule.onNodeWithContentDescription("Edit").performClick()
