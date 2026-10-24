@@ -169,7 +169,7 @@
     <string name="pack_unavailable">Saved icon pack is unavailable. Original icons are shown.</string>
     <string name="circle">Circle</string>
     <string name="icon_corners">Icon corners</string>
-    <string name="icon_corners_help" formatted="false">Use 0% for square icons or 100% for circular icons.</string>
+    <string name="icon_corners_help">Use 0 percent for square icons or 100 percent for circular icons.</string>
     <string name="backup">Backup</string>
     <string name="export_config">Export configuration</string>
     <string name="import_config">Import configuration</string>
