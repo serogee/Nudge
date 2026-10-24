@@ -128,7 +128,7 @@ Without **Drag to pick**, the wheel stays open for normal button taps. Enable th
 
 Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
 
-Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. The hollow center, the minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
+Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Drag picking can highlight up to 12 dp inside the hollow center, limited to 20% of its radius. The minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
 
 For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
 

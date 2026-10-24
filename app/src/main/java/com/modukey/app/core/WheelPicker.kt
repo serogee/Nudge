@@ -91,7 +91,9 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
     fun hit(x: Float, y: Float, minimum: Float, maximum: Float, selected: Int? = null): Int? {
         if (!x.isFinite() || !y.isFinite()) return null
         val distance = hypot(x - center.x, y - center.y)
-        if (distance < maxOf(minimum, innerRadius) || distance > maximum) return null
+        // Drag picking reaches slightly inside the hollow center. Normal taps still pass innerRadius as their minimum.
+        val dragInner = innerRadius - minOf(innerRadius * .2f, gap * 3f)
+        if (distance < maxOf(minimum, dragInner) || distance > maximum) return null
         val angle = angle(x, y)
         if (angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
         val regions = slices(selected)

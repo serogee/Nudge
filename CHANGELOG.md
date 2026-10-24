@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Let Drag to pick highlight up to 12 dp inside a Wheel's hollow center, limited to 20% of its radius. Preserve the minimum selection distance and visible-wedge tap targets.
+
 ### Changed
 
 - Replace icon shape choices with one corner control for panels and Wheels. Use 0% for square icons and 100% for circles. Import older shapes as rounded squares and preserve circles. Backups use schema 26.
