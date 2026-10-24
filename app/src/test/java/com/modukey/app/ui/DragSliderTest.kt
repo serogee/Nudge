@@ -59,6 +59,17 @@ class DragSliderTest {
         rule.onNodeWithContentDescription("outer").performTouchInput { swipe(center, center - Offset(400f, 0f)) }
         rule.runOnIdle { assertEquals(listOf(152f, 200f), values.value) }
     }
+    @Test fun reversingAfterOvershootRespondsWithoutDeadTravel() {
+        val value = mutableStateOf(.5f)
+        rule.activity.setContent { NudgeTheme {
+            DragSlider(listOf(value.value), 0f..1f, listOf("test"), finish = {}) { _, v -> value.value = v }
+        } }
+        val slider = rule.onNodeWithContentDescription("test")
+        slider.performTouchInput { down(center); moveBy(Offset(1000f, 0f)) }
+        rule.runOnIdle { assertEquals(1f, value.value) }
+        slider.performTouchInput { moveBy(Offset(-30f, 0f)); up() }
+        rule.runOnIdle { assertTrue(value.value < 1f) }
+    }
     @Test fun disabledSlidersIgnoreTouchAndRtlThumbsFollowTheDrag() {
         val value = mutableStateOf(.5f)
         val enabled = mutableStateOf(false)

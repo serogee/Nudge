@@ -14,8 +14,8 @@ import kotlin.math.roundToInt
     SettingTitle(t(R.string.wheel_radius), reset = if (inner to outer != defaults) ({ change(defaults.first, defaults.second) }) else null)
     val names = listOf(t(R.string.wheel_inner_radius), t(R.string.wheel_outer_radius))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("${names[0]}: ${t(R.string.dp_value, inner.roundToInt())}")
-        Text("${names[1]}: ${t(R.string.dp_value, outer.roundToInt())}")
+        Text(t(R.string.wheel_radius_value, names[0], inner.roundToInt()))
+        Text(t(R.string.wheel_radius_value, names[1], outer.roundToInt()))
     }
     DragSlider(listOf(inner, outer), 12f..336f, names,
         limits = { if (it == 0) 12f..(outer - 48f) else (inner + 48f)..336f }, finish = LocalFinishAdjustment.current) { index, value ->

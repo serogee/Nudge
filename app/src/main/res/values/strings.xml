@@ -555,6 +555,7 @@
     <string name="create_wheel_help">Create a wheel in the Wheels tab to assign it here.</string>
     <string name="wheel_radius">Wheel radii</string>
     <string name="wheel_inner_radius">Inner radius</string>
+    <string name="wheel_radius_value">%1$s: %2$d dp</string>
     <string name="wheel_outer_radius">Outer radius</string>
     <string name="wheel_radius_help">Drag either point to set the hollow center and outer edge. Press the point first. Small wheels show fewer buttons.</string>
     <string name="wheel_expand">Expand selection</string>

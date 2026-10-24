@@ -40,7 +40,7 @@ import kotlin.math.roundToInt
         return hitRadius + (size.width - hitRadius * 2f).coerceAtLeast(1f) * if (rtl) 1f - fraction else fraction
     }
     fun adjust(index: Int, requested: Float): Boolean {
-        if (!enabled) return false
+        if (!enabled || !requested.isFinite()) return false
         val bounded = requested.coerceIn(latestLimits(index))
         if (bounded == latestValues[index]) return false
         latestChange(index, bounded)
@@ -78,11 +78,14 @@ import kotlin.math.roundToInt
                 val index = latestValues.indices.minByOrNull { abs(down.position.x - x(latestValues[it])) } ?: return@awaitEachGesture
                 if (abs(down.position.x - x(latestValues[index])) > hitRadius ||
                     abs(down.position.y - size.height / 2f) > hitRadius) return@awaitEachGesture
-                val initial = latestValues[index]
+                var current = latestValues[index]
+                var previousX = down.position.x
                 val travel = (size.width - hitRadius * 2f).coerceAtLeast(1f)
                 var changed = false
                 fun move(position: Offset) {
-                    val value = (initial + (position.x - down.position.x) / travel * span * direction).coerceIn(latestLimits(index))
+                    val value = (current + (position.x - previousX) / travel * span * direction).coerceIn(latestLimits(index))
+                    previousX = position.x
+                    current = value
                     if (value != latestValues[index]) { latestChange(index, value); changed = true }
                 }
                 val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { event, _ -> event.consume() }
