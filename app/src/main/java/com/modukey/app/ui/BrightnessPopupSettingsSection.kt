@@ -32,6 +32,7 @@ import kotlin.math.roundToInt
     Section(R.string.brightness_slider) {
         Toggle(R.string.brightness_preview, R.string.brightness_preview_help, preview) { preview = it }
         if (preview && !service.connected) Help(R.string.preview_unavailable)
+        OptionRow(t(R.string.brightness_touch_behavior), BrightnessTouchBehavior.entries, s.touchBehavior, defaults.touchBehavior) { v -> edit { it.copy(touchBehavior = v) } }
         Help(R.string.brightness_touch_behavior_help)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(t(R.string.appearance), Modifier.weight(1f))

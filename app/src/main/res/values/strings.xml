@@ -383,7 +383,7 @@
     <string name="brightness_touch_behavior">Touch behavior</string>
     <string name="brightness_jump_to_touch">Jump to touch</string>
     <string name="brightness_slide_to_adjust">Slide to adjust</string>
-    <string name="brightness_touch_behavior_help">Swipe to adjust brightness from its current level. Touching the slider does not change the level.</string>
+    <string name="brightness_touch_behavior_help">Slide to adjust starts at the current brightness. Jump to touch sets brightness at the touched position.</string>
     <string name="brightness_return_help">Use this level when Use previous brightness is off or the previous level is unavailable. This level uses manual brightness.</string>
     <string name="brightness_access_required">Allow Modify system settings. Then tap the brightness button again.</string>
     <string name="brightness_already_set">Brightness is already at this limit.</string>

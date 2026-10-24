@@ -1,8 +1,10 @@
 package com.modukey.app.platform
 
+import android.app.Activity
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.BrightnessPopupSettings
@@ -11,6 +13,7 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
@@ -31,13 +34,23 @@ class BrightnessTouchBehaviorTest {
         events.forEach { (action, y) -> MotionEvent.obtain(0, 20, action, 30f, y, 0).let { view.dispatchTouchEvent(it); it.recycle() } }
     }
 
-    @Test fun legacyJumpSettingsIgnoreTapsAndUseRelativeSwipeTravel() {
+    @Test fun jumpModeUsesTheTouchPositionOnPressAndWhileDragging() {
         val writes = mutableListOf<Float>()
         val view = view(writes, BrightnessTouchBehavior.JUMP_TO_TOUCH)
-        touch(view, MotionEvent.ACTION_DOWN to 180f, MotionEvent.ACTION_UP to 180f)
-        assertTrue(writes.isEmpty())
-        touch(view, MotionEvent.ACTION_DOWN to 180f, MotionEvent.ACTION_MOVE to 156f, MotionEvent.ACTION_UP to 156f)
-        assertEquals(.6f, writes.single(), .001f)
+        val activity = Robolectric.buildActivity(Activity::class.java).setup()
+        try {
+            activity.get().setContentView(view, ViewGroup.LayoutParams(64, 240))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+            touch(view, MotionEvent.ACTION_DOWN to 180f)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+            assertEquals(.25f, writes.single(), .001f)
+            writes.clear()
+            touch(view, MotionEvent.ACTION_MOVE to 120f, MotionEvent.ACTION_UP to 120f)
+            assertEquals(.5f, writes.single(), .001f)
+            writes.clear()
+            touch(view, MotionEvent.ACTION_DOWN to 60f, MotionEvent.ACTION_UP to 60f)
+            assertEquals(.75f, writes.single(), .001f)
+        } finally { activity.pause().stop().destroy() }
     }
 
     @Test fun slideModeStartsAtTheCurrentLevelAndIgnoresStationaryTaps() {
@@ -58,6 +71,19 @@ class BrightnessTouchBehaviorTest {
         writes.clear()
         touch(view, MotionEvent.ACTION_DOWN to 10f, MotionEvent.ACTION_MOVE to 250f, MotionEvent.ACTION_UP to 226f)
         assertEquals(.1f, writes.single(), .001f)
+    }
+
+    @Test fun changingTouchBehaviorCancelsPendingWritesFromThePreviousMode() {
+        val writes = mutableListOf<Float>()
+        val view = view(writes, BrightnessTouchBehavior.SLIDE_TO_ADJUST)
+        touch(view, MotionEvent.ACTION_DOWN to 200f, MotionEvent.ACTION_MOVE to 176f)
+        view.configure(BrightnessPopupSettings(showBackground = false, showAutomaticToggle = false,
+            touchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH), false, .5f)
+        touch(view, MotionEvent.ACTION_UP to 176f)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+        assertTrue(writes.isEmpty())
+        touch(view, MotionEvent.ACTION_DOWN to 60f, MotionEvent.ACTION_UP to 60f)
+        assertEquals(.75f, writes.single(), .001f)
     }
 
     @Test fun cancellationAndModeChangesDropPendingRelativeWrites() {

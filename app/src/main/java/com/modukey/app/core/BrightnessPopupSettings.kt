@@ -20,7 +20,7 @@ data class BrightnessPopupSettings(
     val animation: PanelAnimation = PanelAnimation.NONE,
     val closeAnimation: PanelAnimation = PanelAnimation.NONE,
 ) {
-    fun normalized() = copy(touchBehavior = BrightnessTouchBehavior.SLIDE_TO_ADJUST, cornerRadiusDp = cornerRadiusDp.finite(32f).coerceIn(0f, 64f), widthDp = widthDp.finite(64f).coerceIn(48f, 128f), heightDp = heightDp.finite(240f).coerceIn(120f, 480f),
+    fun normalized() = copy(cornerRadiusDp = cornerRadiusDp.finite(32f).coerceIn(0f, 64f), widthDp = widthDp.finite(64f).coerceIn(48f, 128f), heightDp = heightDp.finite(240f).coerceIn(120f, 480f),
         x = x.finite(.5f).coerceIn(0f, 1f), y = y.finite(.65f).coerceIn(0f, 1f),
         background = background or 0xFF000000, track = track or 0xFF000000, fill = fill or 0xFF000000, icon = icon or 0xFF000000,
         backgroundOpacity = backgroundOpacity.finite(1f).coerceIn(0f, 1f), trackOpacity = trackOpacity.finite(1f).coerceIn(0f, 1f),

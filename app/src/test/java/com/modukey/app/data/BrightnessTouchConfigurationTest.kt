@@ -9,13 +9,24 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class BrightnessTouchConfigurationTest {
-    @Test fun touchBehaviorRoundTripsAndEarlierDocumentsUseSwipeAdjustment() {
-        val config = AppConfiguration(brightnessPopup = BrightnessPopupSettings(touchBehavior = BrightnessTouchBehavior.SLIDE_TO_ADJUST))
-        assertEquals(config.normalized(), ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+    @Test fun bothTouchBehaviorsSurviveNormalizationAndBackupRoundTrips() {
+        for (mode in BrightnessTouchBehavior.entries) {
+            val config = AppConfiguration(brightnessPopup = BrightnessPopupSettings(touchBehavior = mode))
+            assertEquals(mode, config.normalized().brightnessPopup.touchBehavior)
+            assertEquals(config.normalized(), ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        }
+    }
+    @Test fun newSettingsAndDocumentsWithoutATouchChoiceDefaultToSlide() {
+        assertEquals(BrightnessTouchBehavior.SLIDE_TO_ADJUST, BrightnessPopupSettings().touchBehavior)
+        val config = AppConfiguration(brightnessPopup = BrightnessPopupSettings())
         val old = JSONObject(ConfigurationCodec.encode(config)).put("schema", 10)
         old.getJSONObject("brightnessPopup").remove("touchBehavior")
         val migrated = ConfigurationCodec.decode(ConfigurationCodec.upgrade(old.toString()))
-        assertEquals(BrightnessTouchBehavior.SLIDE_TO_ADJUST, migrated.brightnessPopup.touchBehavior)
-        assertEquals(config.copy(brightnessPopup = config.brightnessPopup.copy(touchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH)).normalized(), migrated)
+        assertEquals(config.normalized(), migrated)
+    }
+    @Test fun olderExplicitJumpChoicesArePreserved() {
+        val config = AppConfiguration(brightnessPopup = BrightnessPopupSettings(touchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH))
+        val old = JSONObject(ConfigurationCodec.encode(config)).put("schema", 22)
+        assertEquals(config.normalized(), ConfigurationCodec.decode(ConfigurationCodec.upgrade(old.toString())))
     }
 }
