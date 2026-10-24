@@ -29,10 +29,26 @@ import kotlin.math.roundToInt
     val l = p.layout(landscape)
     val defaults = PanelLayout()
     val panelDefaults = PanelConfig()
-    val screen = rememberPreviewSpace(landscape)
+    val portraitScreen = rememberPreviewSpace(false)
+    val landscapeScreen = rememberPreviewSpace(true)
+    val screen = if (landscape) landscapeScreen else portraitScreen
     val handle = TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, trigger, landscape)
     val g = PanelGeometry.calculate(screen.usable, screen.density, l, p.buttons.size, handle, trigger.placement(landscape).edge)
     fun layout(change: (PanelLayout) -> PanelLayout) = vm.editLayout(entry.id, landscape, change)
+    fun fitted(value: PanelLayout, isLandscape: Boolean, count: Int): PanelLayout {
+        val space = if (isLandscape) landscapeScreen else portraitScreen
+        val wheel = WheelAutofit.fit(value.wheel, space.usable, space.density, count, trigger.placement(isLandscape).edge)
+        return value.copy(wheel = wheel ?: value.wheel)
+    }
+    fun fitButtons(value: PanelConfig): PanelConfig = if (!value.isWheel) value else value.copy(
+        portrait = fitted(value.portrait, false, value.buttons.size),
+        landscape = if (value.landscapeOverride) fitted(value.landscape, true, value.buttons.size) else value.landscape)
+    val nextWheel = remember(l, screen, p.buttons.size, trigger) {
+        if (l.mode != PanelMode.WHEEL) null else {
+            val next = fitted(l, landscape, p.buttons.size + 1)
+            WheelGeometry.calculate(screen.usable, screen.density, next, next.wheel, p.buttons.size + 1, handle, trigger.placement(landscape).edge)
+        }
+    }
     Section(R.string.buttons) {
         if (p.buttons.isEmpty()) Help(R.string.no_buttons_setup)
         else ReorderableList(p.buttons, { it.id }, context::buttonLabel, Modifier.fillMaxWidth().heightIn(max = 400.dp),
@@ -45,13 +61,22 @@ import kotlin.math.roundToInt
                         Column { Text(context.buttonLabel(b)); if (position >= g.visibleCount) Text(t(R.string.not_shown), style = MaterialTheme.typography.labelSmall) }
                     }
                     EditIcon(AppIcons.Edit, R.string.edit_button) { draft = b }
-                    EditIcon(AppIcons.Delete, R.string.delete) { vm.editPanel(entry.id) { it.copy(buttons = it.buttons.filterNot { item -> item.id == b.id }) }; vm.flush() }
+                    EditIcon(AppIcons.Delete, R.string.delete) { vm.editPanel(entry.id) { fitButtons(it.copy(buttons = it.buttons.filterNot { item -> item.id == b.id })) }; vm.flush() }
                 }
             }
         }
         if (p.buttons.size > g.visibleCount) Notice(t(R.string.panel_overflow, p.buttons.size - g.visibleCount))
         if (g.wheel != null) Text(t(R.string.wheel_capacity, g.wheel.capacity), style = MaterialTheme.typography.bodySmall)
-        FilledTonalButton(onClick = { adding = true }, enabled = g.wheel == null || p.buttons.size < g.wheel.capacity, modifier = Modifier.fillMaxWidth()) {
+        if (entry.isWheel) Toggle(R.string.wheel_autofit, R.string.wheel_autofit_help, l.wheel.autoFit, default = true) { enabled ->
+            vm.editPanel(entry.id) { current ->
+                fun update(value: PanelLayout) = value.copy(wheel = value.wheel.copy(autoFit = enabled)).let {
+                    if (enabled) fitted(it, landscape, current.buttons.size) else it
+                }
+                if (landscape && current.landscapeOverride) current.copy(landscape = update(current.landscape))
+                else current.copy(portrait = update(current.portrait))
+            }
+        }
+        FilledTonalButton(onClick = { adding = true }, enabled = nextWheel == null || (p.buttons.size < 6 && p.buttons.size < nextWheel.capacity), modifier = Modifier.fillMaxWidth()) {
             Icon(AppIcons.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(R.string.add_button))
         }
     }
@@ -63,7 +88,7 @@ import kotlin.math.roundToInt
         Help(R.string.panel_preview_help)
         Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
         OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected && previewEnabled) { Text(t(R.string.test_panel)) }
-        Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { it.copy(landscapeOverride = value) } }
+        Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { fitButtons(it.copy(landscapeOverride = value)) } }
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
     Section(R.string.layout) {
@@ -82,6 +107,7 @@ import kotlin.math.roundToInt
             WheelRadiusControl(l.wheel, l.buttonSizeDp) { inner, outer ->
                 layout { it.copy(wheel = it.wheel.copy(innerRadiusDp = inner, outerRadiusDp = outer)) }
             }
+            Help(R.string.wheel_autofit_priority)
             Help(R.string.wheel_radius_help)
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
@@ -171,7 +197,8 @@ import kotlin.math.roundToInt
     if (adding) ActionPicker({ adding = false }) { action -> adding = false; draft = PanelButton(action = action) }
     draft?.let { button -> ButtonEditor(button, p, vm, dismiss = { draft = null }) { saved ->
         vm.editPanel(entry.id) { current ->
-            current.copy(buttons = if (current.buttons.any { it.id == saved.id }) current.buttons.map { if (it.id == saved.id) saved else it } else current.buttons + saved)
+            if (current.buttons.any { it.id == saved.id }) current.copy(buttons = current.buttons.map { if (it.id == saved.id) saved else it })
+            else fitButtons(current.copy(buttons = current.buttons + saved))
         }
         vm.flush(); draft = null
     } }

@@ -9,6 +9,22 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class WheelConfigurationTest {
+    @Test fun autofitChoicesPersistAndOlderWheelsRetainTheirSizesWithAutofitOff() {
+        assertTrue(WheelLayoutSettings().autoFit)
+        for (enabled in listOf(true, false)) {
+            val portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(innerRadiusDp = 40f, outerRadiusDp = 160f, autoFit = enabled))
+            val landscape = portrait.copy(wheel = portrait.wheel.copy(autoFit = !enabled, innerRadiusDp = 60f))
+            val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(portrait = portrait, landscape = landscape, landscapeOverride = true)))).normalized()
+            assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+            val old = JSONObject(ConfigurationCodec.encode(config)).put("schema", 25)
+            val panel = old.getJSONArray("panels").getJSONObject(0)
+            for (orientation in listOf("portrait", "landscape")) panel.getJSONObject(orientation).getJSONObject("wheel").remove("autoFit")
+            val restored = ConfigurationCodec.decode(ConfigurationCodec.upgrade(old.toString())).panels.single().settings
+            assertFalse(restored.portrait.wheel.autoFit); assertFalse(restored.landscape.wheel.autoFit)
+            assertEquals(portrait.wheel.radii(56f), restored.portrait.wheel.radii(56f))
+            assertEquals(landscape.wheel.radii(56f), restored.landscape.wheel.radii(56f))
+        }
+    }
     private fun configuration(): AppConfiguration {
         val panel = SavedPanel(name = "Tools", settings = PanelConfig(buttons = List(9) { PanelButton() },
             portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(200f, false, 1.4f)),
