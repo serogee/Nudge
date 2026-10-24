@@ -5,7 +5,7 @@
 ### Added
 
 - Set optional hover colors for Wheel icons, wedge backgrounds, and highlight outlines. Keep the current icon and outline colors by default, with a subtle background tint. Animate colors with focus transitions and restore normal or toggle colors when selection clears.
-- Adjust inner and outer Wheel radii on one track with two directly draggable points. Preserve previous wheel sizes when loading older backups.
+- Adjust inner and outer Wheel radii on one track with two directly draggable points. Allow inner radii down to 1 dp while retaining at least 48 dp of band width. Preserve previous wheel sizes when loading older backups.
 - Choose No animation, Smooth, or Spring for Wheel highlight transitions. Set Smooth duration from 80–400 ms. Fade outlines with wedge and icon motion, and retarget interrupted transitions.
 
 ### Fixed

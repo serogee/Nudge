@@ -108,7 +108,7 @@ A Wheel layout shows a hollow semicircle facing inward from its handle. Each but
 
 Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable.
 
-**Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels default to 100 dp inside and 156 dp outside. The range is 12–336 dp, with at least 48 dp between the bounds. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
+**Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels default to 100 dp inside and 156 dp outside. The shared track covers 1–336 dp, with at least 48 dp between the bounds. The smallest pair is 1 dp inside and 49 dp outside. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
 
 **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
 
