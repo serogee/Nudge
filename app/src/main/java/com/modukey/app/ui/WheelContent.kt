@@ -20,13 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -82,27 +78,8 @@ import kotlin.math.roundToInt
             }
         }
     }, modifier = Modifier.fillMaxSize().then(click).drawBehind {
-        fun path(slice: WheelSlice) = Path().apply {
-            val inset = geometry.angularGap(slice) / 2f
-            val first = (slice.start + inset) * 180f / PI.toFloat()
-            val sweep = (slice.end - slice.start - inset * 2f) * 180f / PI.toFloat()
-            val start = when (geometry.edge) { Edge.LEFT -> first; Edge.RIGHT -> 180f - first; Edge.BOTTOM -> first - 90f }
-            val direction = if (geometry.edge == Edge.RIGHT) -1f else 1f
-            val cx = geometry.center.x - geometry.bounds.x; val cy = geometry.center.y - geometry.bounds.y
-            fun rect(radius: Float) = Rect(cx - radius, cy - radius, cx + radius, cy + radius)
-            arcTo(rect(slice.outerRadius), start, sweep * direction, true)
-            val end = geometry.point(slice.end - inset, slice.innerRadius)
-            lineTo(end.x - geometry.bounds.x, end.y - geometry.bounds.y)
-            arcTo(rect(slice.innerRadius), start + sweep * direction, -sweep * direction, false)
-            close()
-        }
-        fun fill(shape: Path, color: Color) = drawIntoCanvas { canvas ->
-            val paint = Paint().apply {
-                this.color = color
-                if (panel.cornerDp > 0f) pathEffect = PathEffect.cornerPathEffect(panel.cornerDp.dp.toPx())
-            }
-            canvas.drawPath(shape, paint)
-        }
+        fun path(slice: WheelSlice) = wheelShape(geometry, slice, panel.cornerDp.dp.toPx())
+        fun fill(shape: Path, color: Color) = drawPath(shape, color)
         val background = Color(panel.background).copy(alpha = panel.opacity)
         if (slices.isEmpty()) {
             val empty = WheelSlice(-PI.toFloat() / 2f, PI.toFloat() / 2f, geometry.center, geometry.cell,
