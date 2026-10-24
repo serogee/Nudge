@@ -17,8 +17,8 @@ import kotlin.math.roundToInt
         Text(t(R.string.wheel_radius_value, names[0], inner.roundToInt()))
         Text(t(R.string.wheel_radius_value, names[1], outer.roundToInt()))
     }
-    DragSlider(listOf(inner, outer), 12f..336f, names,
-        limits = { if (it == 0) 12f..(outer - 48f) else (inner + 48f)..336f }, finish = LocalFinishAdjustment.current) { index, value ->
+    DragSlider(listOf(inner, outer), WheelLayoutSettings.MIN_INNER_RADIUS_DP..336f, names,
+        limits = { if (it == 0) WheelLayoutSettings.MIN_INNER_RADIUS_DP..(outer - 48f) else (inner + 48f)..336f }, finish = LocalFinishAdjustment.current) { index, value ->
         if (index == 0) change(value, outer) else change(inner, value)
     }
 }

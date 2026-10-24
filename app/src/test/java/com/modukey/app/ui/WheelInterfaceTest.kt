@@ -86,6 +86,15 @@ class WheelInterfaceTest {
             assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
     }
+    @Test fun radiusThumbsCanSaveTheSmallestOneDpHoleAndFortyNineDpOuterEdge() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithContentDescription("Inner radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(49f) }
+        rule.runOnIdle { assertEquals(1f to 49f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f)) }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f) == (1f to 49f) } }
+    }
     @Test fun highlightTransitionCanBeChangedAndSavedAsNone() {
         val app = ready(); tab("Wheels")
         rule.onNodeWithContentDescription("Edit wheel").performClick()

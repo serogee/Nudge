@@ -7,9 +7,10 @@ enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
     val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140) {
+    companion object { const val MIN_INNER_RADIUS_DP = 1f }
     fun normalized(): WheelLayoutSettings {
-        val inner = innerRadiusDp?.finite(100f)?.coerceIn(12f, 288f)
-        val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: 12f) + 48f, 336f)
+        val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
+        val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
         return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f),
             innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400))
     }
@@ -109,7 +110,7 @@ object WheelGeometry {
         val side = edge != Edge.BOTTOM
         val maximumOuter = minOf((if (side) screen.height / 2f else screen.width / 2f) - margin,
             (if (side) screen.width else screen.height) - margin * 2f).coerceAtLeast(0f)
-        val cell = minOf((outerDp - innerDp) * d, (maximumOuter - 12f * d).coerceAtLeast(0f) / expansion)
+        val cell = minOf((outerDp - innerDp) * d, (maximumOuter - minOf(innerDp, 12f) * d).coerceAtLeast(0f) / expansion)
         val inner = minOf(innerDp * d, (maximumOuter - cell * expansion).coerceAtLeast(0f))
         val radius = inner + cell / 2f
         val outer = inner + cell * expansion

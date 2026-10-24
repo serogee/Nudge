@@ -16,6 +16,26 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [36])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WheelShapeTest {
+    @Test fun tinyHolesStayHollowWithRoundedWedgesOnEveryEdge() {
+        for (edge in Edge.entries) {
+            val g = WheelGeometry.calculate(Bounds(0f, 0f, 800f, 900f), 4f, PanelLayout(),
+                WheelLayoutSettings(innerRadiusDp = 1f, outerRadiusDp = 81f, expandSelection = false), 6,
+                Bounds(0f, 300f, 16f, 120f), edge)
+            assertTrue(g.count > 0)
+            val bitmap = Bitmap.createBitmap(800, 900, Bitmap.Config.ARGB_8888)
+            try {
+                val canvas = Canvas(bitmap)
+                g.slices().forEach { slice ->
+                    canvas.drawPath(wheelShape(g, slice, 96f).asAndroidPath(), Paint().apply { color = android.graphics.Color.GREEN })
+                }
+                val hole = g.point(0f, g.innerRadius / 2f)
+                assertEquals(0, bitmap.getPixel((hole.x - g.bounds.x).toInt(), (hole.y - g.bounds.y).toInt()))
+                g.slices().forEach { slice ->
+                    assertEquals(android.graphics.Color.GREEN, bitmap.getPixel((slice.point.x - g.bounds.x).toInt(), (slice.point.y - g.bounds.y).toInt()))
+                }
+            } finally { bitmap.recycle() }
+        }
+    }
     @Test fun roundedWedgesKeepConcentricArcsOnEveryEdge() {
         for (edge in Edge.entries) for (selected in listOf(null, 2)) {
             val g = WheelGeometry.calculate(Bounds(0f, 0f, 800f, 900f), 1f, PanelLayout(),

@@ -23,6 +23,25 @@ class WheelPickerTest {
         assertTrue(WheelLayoutSettings(innerRadiusDp = 300f, outerRadiusDp = 100f).radii(56f).let { it.second - it.first >= 48f })
         assertTrue(WheelLayoutSettings(radiusDp = 240f, outerRadiusDp = 60f).radii(56f).let { it.second - it.first >= 48f })
     }
+    @Test fun oneDpInnerRadiusKeepsAHoleAndUsableTargetsAtEveryEdge() {
+        val settings = WheelLayoutSettings(innerRadiusDp = 1f, outerRadiusDp = 49f)
+        assertEquals(1f to 49f, settings.radii(56f))
+        assertEquals(1f, settings.copy(innerRadiusDp = 0f).normalized().innerRadiusDp!!)
+        assertEquals(49f, settings.copy(outerRadiusDp = 0f).normalized().outerRadiusDp!!)
+        for (edge in Edge.entries) for (density in listOf(1f, 3f)) {
+            val g = WheelGeometry.calculate(Bounds(0f, 0f, 800f * density, 900f * density), density,
+                PanelLayout(), settings, 6, Bounds(0f, 300f * density, 16f * density, 120f * density), edge)
+            assertEquals(density, g.innerRadius, .001f)
+            assertEquals(1, g.capacity)
+            val hole = g.point(0f, density / 2f)
+            assertNull(g.tapHit(hole.x, hole.y))
+            for (selected in listOf<Int?>(null, 0)) {
+                val slice = g.slices(selected).single()
+                assertTrue(slice.size >= 48f * density)
+                assertEquals(0, g.tapHit(slice.point.x, slice.point.y, selected))
+            }
+        }
+    }
     @Test fun placementAndOrderingMatchEveryEdgeAndDensity() {
         for (edge in Edge.entries) for (density in listOf(1f, 3f)) {
             val g = geometry(edge, density = density)
