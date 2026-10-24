@@ -10,6 +10,22 @@ import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigurationCodecTest {
+    @Test fun oldIconShapesUseOneCornerControlAndRoundTrip() {
+        for (shape in listOf("CIRCLE", "ROUNDED_SQUARE", "SQUIRCLE")) {
+            val legacy = JSONObject(ConfigurationCodec.encode(AppConfiguration(panels = listOf(SavedPanel())))).put("schema", 25)
+            legacy.getJSONArray("panels").getJSONObject(0).put("shape", shape).put("iconCorner", .3f)
+            val migrated = ConfigurationCodec.decode(legacy.toString())
+            assertEquals(if (shape == "CIRCLE") .5f else .3f, migrated.panels.single().settings.iconCornerFraction)
+            val encoded = ConfigurationCodec.encode(migrated)
+            assertFalse(JSONObject(encoded).getJSONArray("panels").getJSONObject(0).has("shape"))
+            assertEquals(migrated, ConfigurationCodec.decode(encoded))
+            assertEquals(migrated, ConfigurationCodec.decode(ConfigurationCodec.upgrade(legacy.toString())))
+        }
+        for (fraction in listOf(0f, .25f, .5f)) {
+            val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(iconCornerFraction = fraction)))).normalized()
+            assertEquals(config, ConfigurationCodec.decode(ConfigurationCodec.encode(config)))
+        }
+    }
     @Test fun brightnessAppearanceRoundTripsAndLegacyPositionMigratesOnce() {
         val automatic = PanelButton(action = ButtonAction.BRIGHTNESS_DOWN)
         val popup = BrightnessPopupSettings(y = .2f, cornerRadiusDp = 18f, showBackground = false, showAutomaticToggle = false)
@@ -81,7 +97,7 @@ class ConfigurationCodecTest {
             x = .2f, y = .8f, offsetXDp = -22f, offsetYDp = -14f), first.settings.portrait)
         assertEquals(PanelAnimation.SCALE, first.settings.animation)
         assertEquals(PanelAnimation.SCALE, first.settings.closeAnimation)
-        assertEquals(IconShape.SQUIRCLE, first.settings.iconShape)
+        assertEquals(.3f, first.settings.iconCornerFraction)
         assertEquals(OutsideTouch.PASS_THROUGH, first.settings.outsideTouch)
         assertEquals(IconReference(builtIn = BuiltInIcon.CAMERA), first.settings.buttons.first().icon)
         assertTrue(first.settings.buttons.first().showVolumePopup)

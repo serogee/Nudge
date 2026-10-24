@@ -6,7 +6,8 @@ enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 
 data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
-    val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140) {
+    val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140,
+    val autoFit: Boolean = true) {
     companion object { const val MIN_INNER_RADIUS_DP = 1f }
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
@@ -91,7 +92,9 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
     fun hit(x: Float, y: Float, minimum: Float, maximum: Float, selected: Int? = null): Int? {
         if (!x.isFinite() || !y.isFinite()) return null
         val distance = hypot(x - center.x, y - center.y)
-        if (distance < maxOf(minimum, innerRadius) || distance > maximum) return null
+        // Drag picking reaches slightly inside the hollow center. Normal taps still pass innerRadius as their minimum.
+        val dragInner = innerRadius - minOf(innerRadius * .2f, gap * 3f)
+        if (distance < maxOf(minimum, dragInner) || distance > maximum) return null
         val angle = angle(x, y)
         if (angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
         val regions = slices(selected)
@@ -101,6 +104,23 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
 }
 
 object WheelGeometry {
+    internal fun maximumOuterDp(screen: Bounds, density: Float, edge: Edge): Float {
+        val d = density.coerceAtLeast(.01f)
+        val side = edge != Edge.BOTTOM
+        return minOf((if (side) screen.height / 2f else screen.width / 2f) / d - 8f,
+            (if (side) screen.width else screen.height) / d - 16f).coerceAtLeast(0f)
+    }
+    internal fun fitsTargets(inner: Float, cell: Float, expansion: Float, count: Int): Boolean {
+        val candidate = WheelGeometryResult(Bounds(0f, 0f, 0f, 0f), WheelPoint(0f, 0f), Edge.LEFT,
+            inner + cell / 2f, cell, count, count, expansion, 48f, inner, 4f)
+        return (listOf<Int?>(null) + (0 until count).toList()).all { selected ->
+            candidate.slices(selected).all { slice ->
+                val target = maxOf(48f, slice.iconSize)
+                slice.size >= target && (inner + slice.size / 2f) *
+                    sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
+            }
+        }
+    }
     fun calculate(screen: Bounds, density: Float, layout: PanelLayout, settings: WheelLayoutSettings, count: Int, handle: Bounds, edge: Edge): WheelGeometryResult {
         val s = settings.normalized()
         val d = density.coerceAtLeast(.01f)
@@ -108,22 +128,15 @@ object WheelGeometry {
         val expansion = if (s.expandSelection) s.selectedScale else 1f
         val margin = 8f * d
         val side = edge != Edge.BOTTOM
-        val maximumOuter = minOf((if (side) screen.height / 2f else screen.width / 2f) - margin,
-            (if (side) screen.width else screen.height) - margin * 2f).coerceAtLeast(0f)
+        val maximumOuter = maximumOuterDp(screen, d, edge) * d
         val cell = minOf((outerDp - innerDp) * d, (maximumOuter - minOf(innerDp, 12f) * d).coerceAtLeast(0f) / expansion)
         val inner = minOf(innerDp * d, (maximumOuter - cell * expansion).coerceAtLeast(0f))
         val radius = inner + cell / 2f
         val outer = inner + cell * expansion
         // Every normal and expanded wedge must contain a 48 dp circular touch target and its icon.
         val capacity = (6 downTo 1).firstOrNull { n ->
-            val candidate = WheelGeometryResult(screen, WheelPoint(0f, 0f), edge, radius, cell, n, n, expansion, 48f * d, inner, 4f * d)
-            cell >= 48f * d && outer >= inner + cell * expansion && screen.width >= margin * 2f && screen.height >= margin * 2f &&
-                (listOf<Int?>(null) + (0 until n).toList()).all { selected ->
-                    candidate.slices(selected).all { slice ->
-                        val target = maxOf(48f * d, slice.iconSize)
-                        slice.size >= target && (inner + slice.size / 2f) * sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
-                    }
-                }
+            cell >= 48f * d && screen.width >= margin * 2f && screen.height >= margin * 2f &&
+                fitsTargets(inner / d, cell / d, expansion, n)
         } ?: 0
         val width = if (side) outer + margin * 2f else (outer + margin) * 2f
         val height = if (side) (outer + margin) * 2f else outer + margin * 2f

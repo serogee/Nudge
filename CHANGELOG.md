@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.5.3 - 2026-10-24
+
+### Added
+
+- Add **Autofit** beside **Add button** for Wheels. New Wheels enable it by default. Adding or removing buttons fits the active layouts to their screen space. Prefer the smallest inner radius, then **110%** selection size, then the largest outer radius. Selection size can decrease to **100%** when this preserves a smaller inner radius and usable touch targets. (6c26eb6)
+- Save Autofit separately for portrait and landscape overrides. Turning it off retains the fitted sizes. Manual radius, selection-size, or expansion changes turn it off for that orientation. Position, color, corner, and animation changes keep it on. Older Wheels retain their saved sizes with Autofit off until enabled. (6c26eb6)
+
+### Changed
+
+- Replace icon shape choices with **Icon corners** for panels and Wheels. Use **0%** for a square, **100%** for a circle, or an intermediate value for rounded corners. The default is **50%**. Older circles remain circular. Other old shapes retain their corner amount and use rounded squares. (45d1515)
+
+### Fixed
+
+- Let **Drag to pick** highlight up to **12 dp** inside the hollow center, limited to **20%** of its radius. Keep configured selection distances independent. Normal taps still use visible wedges and exclude the hollow center and separator gaps. Preserve hold, quick-release, later-swipe, and release-to-execute behavior. (ecd7124)
+- Keep icon-corner and Autofit help safe for the shared text formatter. Opening appearance controls or Help does not fail on percentage text. (de2b666, 6c26eb6)
+
 ## 0.5.2 - 2026-10-24
 
 ### Added

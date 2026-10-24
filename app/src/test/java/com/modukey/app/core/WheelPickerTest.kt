@@ -232,4 +232,23 @@ class WheelPickerTest {
         val crossed = g.point(-.01f)
         assertEquals(0, g.hit(crossed.x, crossed.y, 32f, 240f, 1))
     }
+    @Test fun dragPickingReachesInsideTheHoleWithoutChangingTapsOrDistanceLimits() {
+        for (edge in Edge.entries) for (density in listOf(1f, 3f)) {
+            val g = geometry(edge, density = density, count = 3)
+            val early = g.point(0f, g.innerRadius - 10f * density)
+            assertEquals(1, g.hit(early.x, early.y, 16f * density, 1000f * density))
+            assertNull(g.tapHit(early.x, early.y))
+            val neutral = g.point(0f, g.innerRadius - 13f * density)
+            assertNull(g.hit(neutral.x, neutral.y, 0f, 1000f * density))
+            assertNull(g.hit(early.x, early.y, g.innerRadius, 1000f * density))
+            assertNull(g.hit(early.x, early.y, 0f, g.innerRadius - 11f * density))
+            val session = WheelPickSession(g, WheelPickSettings(minimumDistanceDp = 16f), density, g.center.x, g.center.y, 0, false)
+            session.move(early.x, early.y, 10)
+            assertEquals(1, session.selected)
+            assertEquals(WheelFinish(WheelFinishKind.PICK, 1), session.finish(early.x, early.y, 20))
+        }
+        val tiny = geometry(radius = 40f, count = 1)
+        val deep = tiny.point(0f, tiny.innerRadius * .7f)
+        assertNull(tiny.hit(deep.x, deep.y, 0f, 500f))
+    }
 }

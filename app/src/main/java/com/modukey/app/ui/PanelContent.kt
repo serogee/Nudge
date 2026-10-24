@@ -8,7 +8,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
@@ -35,6 +34,7 @@ import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 import com.modukey.app.core.*
 import com.modukey.app.platform.SoundState
+import kotlin.math.roundToInt
 
 /** Fixed uses plain rows/columns; no scroll container can expose overflow accidentally. */
 @Composable
@@ -212,11 +212,7 @@ internal class SquircleShape(private val fraction: Float) : Shape {
 }
 
 
-@Composable fun iconShape(panel: PanelConfig): Shape = when (panel.iconShape) {
-    IconShape.CIRCLE -> CircleShape
-    IconShape.ROUNDED_SQUARE -> RoundedCornerShape((panel.iconCornerFraction * 100).toInt())
-    IconShape.SQUIRCLE -> remember(panel.iconCornerFraction) { SquircleShape(panel.iconCornerFraction) }
-}
+fun iconShape(panel: PanelConfig): Shape = RoundedCornerShape((panel.iconCornerFraction * 100).roundToInt())
 
 fun contrastOn(background: Color): Color {
     val dark = Color(0xFF202223)

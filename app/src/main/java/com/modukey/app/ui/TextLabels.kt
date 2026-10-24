@@ -39,7 +39,6 @@ import com.modukey.app.core.*
     SwipeHoldDistanceMode.ANY_DIRECTION -> R.string.any_direction; SwipeHoldDistanceMode.INWARD_ONLY -> R.string.inward_only
     ButtonAction.EMPTY -> R.string.empty_button
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash
-    IconShape.CIRCLE -> R.string.circle; IconShape.ROUNDED_SQUARE -> R.string.rounded_square; IconShape.SQUIRCLE -> R.string.squircle
     PanelAnimation.NONE -> R.string.animation_none; PanelAnimation.FADE -> R.string.animation_fade
     PanelAnimation.SLIDE -> R.string.animation_slide; PanelAnimation.SCALE -> R.string.animation_scale
     IconContainer.DEFAULT -> R.string.container_default; IconContainer.CONTAINER -> R.string.with_container; IconContainer.STANDALONE -> R.string.standalone_icon

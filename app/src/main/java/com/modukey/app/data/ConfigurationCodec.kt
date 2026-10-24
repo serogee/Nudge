@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 25 adds optional Wheel hover colors. */
+/** Schema 27 adds per-orientation Wheel autofit. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 25
+    const val SCHEMA = 27
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -95,13 +95,13 @@ object ConfigurationCodec {
         p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f), it.optBoolean("animationsEnabled", true),
             if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
             if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
-            enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140)) } ?: WheelLayoutSettings())
+            enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140), it.optBoolean("autoFit", false)) } ?: WheelLayoutSettings(autoFit = p.optString("mode") != "WHEEL"))
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
         .put("offsetX", p.offsetXDp).put("offsetY", p.offsetYDp)
         .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale).put("animationsEnabled", p.wheel.animationsEnabled)
-            .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp).put("focusAnimation", p.wheel.focusAnimation.name).put("focusDurationMs", p.wheel.focusDurationMs))
+            .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp).put("focusAnimation", p.wheel.focusAnimation.name).put("focusDurationMs", p.wheel.focusDurationMs).put("autoFit", p.wheel.autoFit))
     private fun wheelPick(p: JSONObject) = WheelPickSettings(p.optBoolean("enabled"), p.float("minimumDistanceDp", 32f),
         p.float("maximumDistanceDp", 240f), p.optBoolean("allowLaterSwipes"), p.optLong("releaseWindowMs", 200))
     private fun wheelPick(p: WheelPickSettings) = JSONObject().put("enabled", p.enabled).put("minimumDistanceDp", p.minimumDistanceDp)
@@ -195,7 +195,7 @@ object ConfigurationCodec {
         buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),
         background = p.optLong("background", 0xFF252A21), opacity = p.float("opacity", .98f), cornerDp = p.float("corner", 24f),
-        iconShape = enumValueOf(p.optString("shape", "ROUNDED_SQUARE")), iconCornerFraction = p.float("iconCorner", .25f), iconPack = p.optString("iconPack"),
+        iconCornerFraction = if (schema < 26 && p.optString("shape") == "CIRCLE") .5f else p.float("iconCorner", .25f), iconPack = p.optString("iconPack"),
         animation = enumValueOf(p.optString("animation", "NONE")), iconBackground = p.optBoolean("iconBackground", true),
         automaticButtonColor = p.optBoolean("automaticButtonColor", true), buttonColor = p.optLong("buttonColor", 0xFF3C3C3E),
         automaticIconColor = p.optBoolean("automaticIconColor", true), iconColor = p.optLong("iconColor", 0xFFFFFFFF),
@@ -211,7 +211,7 @@ object ConfigurationCodec {
             it.optBoolean("useHighlight"), it.optLong("highlight", 0xFFB8D982)) } ?: WheelHoverAppearance())
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
-        .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
+        .put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
         .put("animation", p.animation.name).put("iconBackground", p.iconBackground)
         .put("automaticButtonColor", p.automaticButtonColor).put("buttonColor", p.buttonColor)
         .put("automaticIconColor", p.automaticIconColor).put("iconColor", p.iconColor)

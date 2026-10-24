@@ -106,11 +106,13 @@ Create wheels in **Wheels**, then assign them to handle gestures. Wheels and pan
 
 A Wheel layout shows a hollow semicircle facing inward from its handle. Each button uses a separated wedge container. App icons keep their normal loading and icon-pack support. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
 
-Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable.
+Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, and screen space can reduce this capacity. With **Autofit** on, Add button checks whether fitted sizes can make room. It is unavailable when the screen cannot fit another button or six buttons are saved. Overflow buttons remain saved, editable, and reorderable.
 
-**Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels default to 100 dp inside and 156 dp outside. The shared track covers 1–336 dp, with at least 48 dp between the bounds. The smallest pair is 1 dp inside and 49 dp outside. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
+**Autofit** is beside **Add button** and defaults on for new wheels. Adding or removing a button fits the active layouts to their screen space. It first minimizes the inner radius, then prefers 110% selection size, then maximizes the outer radius. If needed, selection size can decrease to 100% to preserve the smaller inner radius and usable touch targets. Turn Autofit off to retain the fitted sizes. Manual radius or selection-size changes turn it off automatically for that orientation. Position, color, corner, and animation changes keep it on. Older wheels keep their saved sizes with Autofit off until you enable it.
 
-**Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
+**Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels start at 100 dp inside and 156 dp outside before Autofit adjusts them. The shared track covers 1–336 dp, with at least 48 dp between the bounds. The smallest pair is 1 dp inside and 49 dp outside. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
+
+**Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125% for manual sizing. Autofit prefers 110%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
 
 The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on. **Highlight transition** offers **No animation**, **Smooth**, and **Spring**. Smooth defaults to 140 ms and accepts 80–400 ms. The outline, wedge, and icon transition together, and a new selection interrupts the current motion. No animation applies highlight and shape changes immediately. Transitions also work when expansion is off. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
 
@@ -128,7 +130,7 @@ Without **Drag to pick**, the wheel stays open for normal button taps. Enable th
 
 Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
 
-Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. The hollow center, the minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
+Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Drag picking can highlight up to 12 dp inside the hollow center, limited to 20% of its radius. The minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
 
 For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
 
@@ -140,9 +142,11 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 25 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-25 backups.
+New backups use schema 27 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-27 backups.
 
 ## Actions and appearance
+
+**Icon corners** applies to panel and Wheel icons and their button containers. Use 0% for a square, 100% for a circle, or a value between them for rounded corners. The default is 50%. Older circles keep their circular shape. Other old shapes keep their corner amount and use rounded squares.
 
 Panel buttons and direct gestures can open apps or settings, control sound and brightness, lock the screen, open the keyboard chooser, close panels, request a native screenshot, or open notifications and quick settings.
 

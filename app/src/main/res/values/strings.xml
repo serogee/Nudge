@@ -168,9 +168,8 @@
     <string name="no_pack_icons">No static icons found in this pack.</string>
     <string name="pack_unavailable">Saved icon pack is unavailable. Original icons are shown.</string>
     <string name="circle">Circle</string>
-    <string name="rounded_square">Rounded square</string>
-    <string name="squircle">Squircle</string>
     <string name="icon_corners">Icon corners</string>
+    <string name="icon_corners_help">Use 0 percent for square icons or 100 percent for circular icons.</string>
     <string name="backup">Backup</string>
     <string name="export_config">Export configuration</string>
     <string name="import_config">Import configuration</string>
@@ -268,7 +267,6 @@
     <string name="hidden_landscape">Hidden in landscape</string>
     <string name="hidden_locked">Hidden on lock screen</string>
     <string name="hidden_screen_off">Hidden while screen is off</string>
-    <string name="icon_shape">Icon shape</string>
     <string name="decrease">Decrease %1$s</string>
     <string name="increase">Increase %1$s</string>
     <string name="info">Info</string>
@@ -562,6 +560,9 @@
     <string name="wheel_hover_icon_color">Hover icon color</string>
     <string name="wheel_hover_background_color">Hover background color</string>
     <string name="wheel_hover_highlight_color">Hover highlight color</string>
+    <string name="wheel_autofit">Autofit</string>
+    <string name="wheel_autofit_help">Fit sizes when adding or removing buttons. Manual size changes turn Autofit off. Turning it off keeps the fitted sizes.</string>
+    <string name="wheel_autofit_priority">Prefer the smallest inner radius, then 110 percent selection size, then the largest outer radius that fits.</string>
     <string name="wheel_radius">Wheel radii</string>
     <string name="wheel_inner_radius">Inner radius</string>
     <string name="wheel_radius_value">%1$s: %2$d dp</string>
