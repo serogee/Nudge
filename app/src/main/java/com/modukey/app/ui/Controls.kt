@@ -94,8 +94,7 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
                 Text(display, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), style = MaterialTheme.typography.labelMedium)
             }
         }
-        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range,
-            enabled = enabled, modifier = Modifier.semantics { contentDescription = name })
+        DragSlider(listOf(value.coerceIn(range)), range, listOf(name), enabled = enabled, finish = finish) { _, adjusted -> change(adjusted) }
     }
     if (editing && enabled) SliderValueDialog(name, value, range, valueScale, dismiss = { editing = false }) { bounded ->
         if (bounded != value) change(bounded)
