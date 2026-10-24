@@ -149,7 +149,7 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
 }
 
 @Composable
-fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifier, tint: Color = MaterialTheme.colorScheme.onSurface, sizeDp: Int = 48) {
+fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifier, tint: Color = MaterialTheme.colorScheme.onSurface, sizeDp: Int = 48, imageTint: Color? = null) {
     if (button.action == ButtonAction.EMPTY) { Icon(AppIcons.Empty, null, modifier, tint = tint); return }
     button.icon.builtIn?.let { Icon(AppIcons.library(it), null, modifier, tint = tint); return }
     val app = LocalContext.current.applicationContext as NudgeApplication
@@ -158,9 +158,10 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         value = null
         value = app.icons.icon(button, pack, (sizeDp * density).toInt())?.asImageBitmap()
     }
-    if (bitmap != null) Image(bitmap!!, contentDescription = null, modifier = modifier)
+    val imageFilter = imageTint?.let { ColorFilter.tint(it, BlendMode.SrcAtop) }
+    if (bitmap != null) Image(bitmap!!, contentDescription = null, modifier = modifier, colorFilter = imageFilter)
     else when (button.action) {
-        ButtonAction.NUDGE_SETTINGS -> Image(painterResource(R.drawable.ic_modukey), null, modifier)
+        ButtonAction.NUDGE_SETTINGS -> Image(painterResource(R.drawable.ic_modukey), null, modifier, colorFilter = imageFilter)
         ButtonAction.PHONE_SETTINGS -> Icon(Icons.Outlined.Settings, null, modifier, tint = tint)
         ButtonAction.INPUT_METHOD_PICKER -> Icon(AppIcons.Keyboard, null, modifier, tint = tint)
         ButtonAction.CLOSE_PANELS -> Icon(AppIcons.ClosePanels, null, modifier, tint = tint)

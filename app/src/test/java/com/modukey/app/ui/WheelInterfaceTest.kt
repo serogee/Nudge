@@ -97,6 +97,28 @@ class WheelInterfaceTest {
         rule.onNodeWithContentDescription("Save").performClick()
         rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.focusAnimation == WheelFocusAnimation.NONE } }
     }
+    @Test fun hoverColorsCanBeCustomizedIndependentlyAndSavedOrCancelled() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        for (title in listOf("Custom hover icon color", "Custom hover background color", "Custom hover highlight color")) {
+            rule.onNodeWithContentDescription(title).performScrollTo().performClick()
+        }
+        rule.onNodeWithContentDescription("Edit Hover background color").performScrollTo().performClick()
+        rule.onNode(hasSetTextAction() and hasAnyAncestor(isDialog())).performTextReplacement("6BB7E8")
+        rule.onNodeWithText("Done").performClick()
+        rule.runOnIdle {
+            val hover = app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover
+            assertTrue(hover.useIcon); assertTrue(hover.useBackground); assertTrue(hover.useHighlight)
+            assertEquals(0xFF6BB7E8L, hover.background)
+            assertFalse(app.configuration.state.value!!.panel("wheel")!!.settings.wheelHover.useIcon)
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.wheelHover.useIcon } }
+        rule.onNodeWithContentDescription("Change colors on hover").performScrollTo().performClick()
+        rule.runOnIdle { assertFalse(app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover.enabled) }
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover.enabled) }
+    }
     @Test fun wheelPickerOffersDragForSwipesAndExcludesTap() {
         val app = ready(); tab("Handles")
         rule.onNodeWithContentDescription("Edit").performClick()

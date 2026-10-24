@@ -553,6 +553,15 @@
     <string name="select_wheel">Select wheel</string>
     <string name="search_wheels">Search wheels</string>
     <string name="create_wheel_help">Create a wheel in the Wheels tab to assign it here.</string>
+    <string name="wheel_hover_colors">Wheel hover colors</string>
+    <string name="wheel_hover_enabled">Change colors on hover</string>
+    <string name="wheel_hover_help">Hover colors follow the highlighted wheel button. By default, only its background changes slightly. Icons and the highlight keep their colors.</string>
+    <string name="wheel_hover_custom_icon">Custom hover icon color</string>
+    <string name="wheel_hover_custom_background">Custom hover background color</string>
+    <string name="wheel_hover_custom_highlight">Custom hover highlight color</string>
+    <string name="wheel_hover_icon_color">Hover icon color</string>
+    <string name="wheel_hover_background_color">Hover background color</string>
+    <string name="wheel_hover_highlight_color">Hover highlight color</string>
     <string name="wheel_radius">Wheel radii</string>
     <string name="wheel_inner_radius">Inner radius</string>
     <string name="wheel_radius_value">%1$s: %2$d dp</string>

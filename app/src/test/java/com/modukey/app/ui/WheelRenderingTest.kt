@@ -15,7 +15,7 @@ import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
 import org.junit.After
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +30,42 @@ import java.io.File
 class WheelRenderingTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @After fun cleanup() { (rule.activity.application as NudgeApplication).onTerminate() }
+    @Test fun hoverColorsRenderOnOnlyTheSelectedWedgeAndClearOnExit() {
+        val selected = mutableStateOf<Int?>(1)
+        val enabled = mutableStateOf(true)
+        val layout = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(160f, expandSelection = false, animationsEnabled = false))
+        rule.activity.setContent { NudgeTheme {
+            val panel = PanelConfig(buttons = List(3) { PanelButton(action = ButtonAction.PHONE_SETTINGS,
+                icon = IconReference(builtIn = BuiltInIcon.CAMERA)) }, portrait = layout,
+                wheelHover = WheelHoverAppearance(enabled = enabled.value, useIcon = true, icon = 0xFF00FF00,
+                    useBackground = true, background = 0xFF0000FF, useHighlight = true, highlight = 0xFFFF0000))
+            val g = PanelGeometry.calculate(Bounds(0f, 0f, 600f, 600f), 1f, layout, 3, Bounds(0f, 240f, 16f, 120f), Edge.LEFT)
+            Box(Modifier.size(g.bounds.width.dp, g.bounds.height.dp)) { PanelContent(panel, layout, g, wheelSelection = selected.value) }
+        } }
+        fun pixels(): Map<Int, Int> {
+            rule.waitForIdle()
+            return rule.runOnIdle {
+                val view = rule.activity.window.decorView
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                try {
+                    view.draw(Canvas(bitmap))
+                    val data = IntArray(bitmap.width * bitmap.height)
+                    bitmap.getPixels(data, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+                    data.asList().groupingBy { it }.eachCount()
+                } finally { bitmap.recycle() }
+            }
+        }
+        val hovered = pixels()
+        for (color in listOf(android.graphics.Color.GREEN, android.graphics.Color.BLUE, android.graphics.Color.RED)) {
+            assertTrue("Custom hover channel must render", (hovered[color] ?: 0) > 10)
+        }
+        rule.runOnIdle { selected.value = null }
+        val clear = pixels()
+        for (color in listOf(android.graphics.Color.GREEN, android.graphics.Color.BLUE, android.graphics.Color.RED)) assertEquals(0, clear[color] ?: 0)
+        rule.runOnIdle { selected.value = 1; enabled.value = false }
+        val disabled = pixels()
+        for (color in listOf(android.graphics.Color.GREEN, android.graphics.Color.BLUE, android.graphics.Color.RED)) assertEquals(0, disabled[color] ?: 0)
+    }
     @Test fun backgroundCornerRadiusChangesTheRenderedFan() {
         val corner = mutableStateOf(0f)
         val layout = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(200f))

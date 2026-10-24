@@ -43,6 +43,8 @@ import kotlin.math.roundToInt
     val shown = panel.buttons.take(geometry.count)
     val faces = shown.map { buttonPresentation(it, panel, state) }
     val highlight = MaterialTheme.colorScheme.primary
+    val background = Color(panel.background).copy(alpha = panel.opacity)
+    val hover = faces.mapIndexed { index, face -> wheelHoverPalette(face.palette, background, face.container, highlight, panel.wheelHover, weights[index]) }
     val click = if (interactive) Modifier.pointerInput(geometry, shown, selected) {
         detectTapGestures { position ->
             geometry.tapHit(position.x + geometry.bounds.x, position.y + geometry.bounds.y, selected)?.let { index ->
@@ -64,13 +66,12 @@ import kotlin.math.roundToInt
                 } else Modifier), contentAlignment = Alignment.Center) {
                 if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH)
                     ButtonGraphic(button, panel.iconPack, Modifier.size(icon).clip(iconShape(panel)).alpha(panel.iconOpacity),
-                        face.palette.icon, iconRasterDp)
+                        hover[index].icon, iconRasterDp, imageTint = hover[index].imageTint)
             }
         }
     }, modifier = Modifier.fillMaxSize().then(click).drawBehind {
         fun path(slice: WheelSlice) = wheelShape(geometry, slice, panel.cornerDp.dp.toPx())
         fun fill(shape: Path, color: Color) = drawPath(shape, color)
-        val background = Color(panel.background).copy(alpha = panel.opacity)
         if (slices.isEmpty()) {
             val empty = WheelSlice(-PI.toFloat() / 2f, PI.toFloat() / 2f, geometry.center, geometry.cell,
                 geometry.innerRadius, geometry.innerRadius + geometry.cell, geometry.cell * .55f)
@@ -80,10 +81,11 @@ import kotlin.math.roundToInt
             val button = shown[index]
             if (button.action != ButtonAction.EMPTY || button.emptyAppearance != EmptyAppearance.NO_BUTTON) {
                 val shape = path(slice); val face = faces[index]
-                fill(shape, background)
-                if (face.container) fill(shape, face.palette.background)
+                val colors = hover[index]
+                fill(shape, if (face.container) background else colors.background)
+                if (face.container) fill(shape, colors.background)
                 face.palette.outline?.let { drawPath(shape, it, style = Stroke(2.dp.toPx())) }
-                if (weights[index] > 0f) drawPath(shape, highlight.copy(alpha = weights[index].coerceIn(0f, 1f)), style = Stroke(2.dp.toPx()))
+                if (weights[index] > 0f) drawPath(shape, colors.highlight, style = Stroke(2.dp.toPx()))
             }
         }
     }) { children, constraints ->

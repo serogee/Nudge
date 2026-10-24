@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 24 adds selectable Wheel focus transitions. */
+/** Schema 25 adds optional Wheel hover colors. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 24
+    const val SCHEMA = 25
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -204,7 +204,11 @@ object ConfigurationCodec {
         buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
         activeAppearance = p.optJSONObject("activeAppearance")?.let { ActiveButtonAppearance(
             it.optBoolean("useBackground", true), it.optBoolean("useIcon", true), it.optBoolean("automaticBackground", true), it.optLong("background", 0xFF3482FF),
-            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance())
+            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance(),
+        wheelHover = p.optJSONObject("wheelHover")?.let { WheelHoverAppearance(
+            it.optBoolean("enabled", true), it.optBoolean("useIcon"), it.optLong("icon", 0xFFFFFFFF),
+            it.optBoolean("useBackground"), it.optLong("background", 0xFF505052),
+            it.optBoolean("useHighlight"), it.optLong("highlight", 0xFFB8D982)) } ?: WheelHoverAppearance())
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
         .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
@@ -216,5 +220,8 @@ object ConfigurationCodec {
         .put("activeAppearance", JSONObject().put("useBackground", p.activeAppearance.useBackground).put("useIcon", p.activeAppearance.useIcon)
             .put("automaticBackground", p.activeAppearance.automaticBackground).put("background", p.activeAppearance.background)
             .put("automaticIcon", p.activeAppearance.automaticIcon).put("icon", p.activeAppearance.icon))
+        .put("wheelHover", JSONObject().put("enabled", p.wheelHover.enabled).put("useIcon", p.wheelHover.useIcon).put("icon", p.wheelHover.icon)
+            .put("useBackground", p.wheelHover.useBackground).put("background", p.wheelHover.background)
+            .put("useHighlight", p.wheelHover.useHighlight).put("highlight", p.wheelHover.highlight))
         .put("buttons", array(p.buttons.map(::button)))
 }

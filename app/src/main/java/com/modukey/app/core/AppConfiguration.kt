@@ -90,6 +90,7 @@ data class PanelConfig(
     val buttonOpacity: Float = 1f,
     val iconOpacity: Float = 1f,
     val activeAppearance: ActiveButtonAppearance = ActiveButtonAppearance(),
+    val wheelHover: WheelHoverAppearance = WheelHoverAppearance(),
 ) {
     val isWheel get() = portrait.mode == PanelMode.WHEEL || (landscapeOverride && landscape.mode == PanelMode.WHEEL)
     fun layout(landscape: Boolean): PanelLayout {
@@ -107,7 +108,7 @@ data class PanelConfig(
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
         autoCloseMs = autoCloseMs.coerceIn(1_000, 60_000),
-        buttonOpacity = buttonOpacity.valid(1f).coerceIn(0f, 1f), iconOpacity = iconOpacity.valid(1f).coerceIn(0f, 1f), activeAppearance = activeAppearance.normalized())
+        buttonOpacity = buttonOpacity.valid(1f).coerceIn(0f, 1f), iconOpacity = iconOpacity.valid(1f).coerceIn(0f, 1f), activeAppearance = activeAppearance.normalized(), wheelHover = wheelHover.normalized())
 }
 data class HandleConfig(
     val id: String = newId(), val name: String = "", val enabled: Boolean = false,
