@@ -42,6 +42,23 @@ class DragSliderTest {
         slider.performTouchInput { moveBy(Offset(60f, 0f)); up() }
         rule.runOnIdle { assertTrue(value.value > .5f); assertTrue(value.value < .7f); assertEquals(1, finishes) }
     }
+    @Test fun rangeThumbsRequireDirectDragsAndNeverCross() {
+        val values = mutableStateOf(listOf(100f, 200f))
+        rule.activity.setContent { NudgeTheme {
+            DragSlider(values.value, 0f..300f, listOf("inner", "outer"),
+                limits = { if (it == 0) 0f..(values.value[1] - 48f) else (values.value[0] + 48f)..300f }, finish = {}) { i, v ->
+                values.value = values.value.toMutableList().apply { set(i, v) }
+            }
+        } }
+        rule.onRoot().performTouchInput { click(Offset(400f, 24f)) }
+        rule.runOnIdle { assertEquals(listOf(100f, 200f), values.value) }
+        rule.onNodeWithContentDescription("inner").performTouchInput { down(center) }
+        rule.runOnIdle { assertEquals(listOf(100f, 200f), values.value) }
+        rule.onNodeWithContentDescription("inner").performTouchInput { moveBy(Offset(400f, 0f)); up() }
+        rule.runOnIdle { assertEquals(listOf(152f, 200f), values.value) }
+        rule.onNodeWithContentDescription("outer").performTouchInput { swipe(center, center - Offset(400f, 0f)) }
+        rule.runOnIdle { assertEquals(listOf(152f, 200f), values.value) }
+    }
     @Test fun disabledSlidersIgnoreTouchAndRtlThumbsFollowTheDrag() {
         val value = mutableStateOf(.5f)
         val enabled = mutableStateOf(false)

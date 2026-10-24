@@ -44,7 +44,7 @@ class WheelInterfaceTest {
     @Test fun editorsCannotConvertWheelsAndPanelsEvenWithLandscapeOverrides() {
         val app = ready()
         tab("Wheels"); rule.onNodeWithContentDescription("Edit wheel").performClick()
-        rule.onNodeWithText("Wheel radius").performScrollTo()
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo()
         rule.onNodeWithText("Fixed").assertDoesNotExist()
         rule.runOnIdle {
             val vm = ViewModelProvider(rule.activity)[NudgeViewModel::class.java]
@@ -62,27 +62,27 @@ class WheelInterfaceTest {
         val app = ready(); tab("Wheels")
         rule.onNodeWithContentDescription("Edit wheel").performClick()
         rule.onNodeWithText("Add button").performScrollTo().assertIsNotEnabled()
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
         rule.runOnIdle {
-            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
-            assertEquals(128f, app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
+            assertEquals(156f, app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
         }
         rule.onNodeWithContentDescription("Cancel").performClick()
-        rule.runOnIdle { assertEquals(128f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp) }
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
+        rule.runOnIdle { assertEquals(156f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
         rule.onNodeWithContentDescription("Save").performClick()
-        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp == 180f } }
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second == 180f } }
         rule.runOnIdle { assertEquals(9, app.configuration.state.value!!.panel("wheel")!!.settings.buttons.size) }
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(40f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(148f) }
         rule.onNodeWithContentDescription("Wheel animations").performScrollTo().performClick()
         rule.runOnIdle {
-            assertEquals(40f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(148f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
             assertFalse(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
             assertTrue(app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
         rule.onNodeWithContentDescription("Cancel").performClick()
         rule.runOnIdle {
-            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
             assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
     }

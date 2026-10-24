@@ -20,7 +20,7 @@ class WheelConfigurationTest {
     @Test fun wheelLayoutsBindingsAndOverflowRoundTrip() {
         val original = configuration().normalized()
         val encoded = ConfigurationCodec.encode(original)
-        assertEquals(22, JSONObject(encoded).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(encoded).getInt("schema"))
         assertEquals(original, ConfigurationCodec.decode(encoded))
         assertEquals(9, ConfigurationCodec.decode(encoded).panels.single().settings.buttons.size)
     }
@@ -34,7 +34,7 @@ class WheelConfigurationTest {
         assertEquals(PanelMode.FIXED, migrated.panels.single().settings.portrait.mode)
         assertFalse(migrated.panels.single().isWheel)
         assertTrue(migrated.handles.single().bindings.values.none { it.wheelPick.enabled })
-        assertEquals(22, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
     }
     @Test fun compactWheelsAndAnimationChoicesRoundTripAndOldWheelsKeepTheirRadius() {
         val original = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
@@ -46,6 +46,20 @@ class WheelConfigurationTest {
         legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel").remove("animationsEnabled")
         val migrated = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
         assertEquals(200f, migrated.radiusDp); assertTrue(migrated.animationsEnabled)
+    }
+    @Test fun independentRadiiRoundTripAndLegacyWidthsRemainUnchanged() {
+        val wheel = WheelLayoutSettings(innerRadiusDp = 64f, outerRadiusDp = 180f)
+        val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = wheel)))))
+        assertEquals(wheel, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
+        for (size in listOf(48f, 56f, 96f)) {
+            val legacy = JSONObject(ConfigurationCodec.encode(config)).put("schema", 22)
+            val layout = legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait")
+            layout.put("buttonSize", size)
+            layout.put("wheel", JSONObject().put("radiusDp", 200f))
+            val restored = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait
+            assertEquals(200f - size / 2f to 200f + size / 2f, restored.wheel.radii(size))
+        }
     }
     @Test fun importedCopiesRetainSharedLinksAndUseFreshIds() {
         val original = configuration()

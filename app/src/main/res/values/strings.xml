@@ -553,8 +553,10 @@
     <string name="select_wheel">Select wheel</string>
     <string name="search_wheels">Search wheels</string>
     <string name="create_wheel_help">Create a wheel in the Wheels tab to assign it here.</string>
-    <string name="wheel_radius">Wheel radius</string>
-    <string name="wheel_radius_help">Set the distance from the hollow center to the buttons. Small wheels show fewer buttons to keep touch targets usable.</string>
+    <string name="wheel_radius">Wheel radii</string>
+    <string name="wheel_inner_radius">Inner radius</string>
+    <string name="wheel_outer_radius">Outer radius</string>
+    <string name="wheel_radius_help">Drag either point to set the hollow center and outer edge. Press the point first. Small wheels show fewer buttons.</string>
     <string name="wheel_expand">Expand selection</string>
     <string name="wheel_expand_help">Enlarge the highlighted wedge, icon, and selection area. Adjacent wedges shrink. Cross the expanded boundary to change selection.</string>
     <string name="wheel_animations">Wheel animations</string>
