@@ -41,6 +41,23 @@ class WheelInterfaceTest {
         rule.onNodeWithContentDescription("Rename wheel").assertExists()
         rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panels.last().isWheel) }
     }
+    @Test fun editorsCannotConvertWheelsAndPanelsEvenWithLandscapeOverrides() {
+        val app = ready()
+        tab("Wheels"); rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithText("Wheel radius").performScrollTo()
+        rule.onNodeWithText("Fixed").assertDoesNotExist()
+        rule.runOnIdle {
+            val vm = ViewModelProvider(rule.activity)[NudgeViewModel::class.java]
+            vm.editLayout("wheel", false) { it.copy(mode = PanelMode.FIXED) }
+            vm.editPanel("wheel") { it.copy(landscapeOverride = true) }
+            vm.editLayout("wheel", true) { it.copy(mode = PanelMode.SCROLLABLE) }
+            val wheel = app.configuration.preview.value!!.panel("wheel")!!
+            assertEquals(PanelMode.WHEEL, wheel.settings.portrait.mode)
+            assertEquals(PanelMode.WHEEL, wheel.settings.landscape.mode)
+            vm.editLayout("grid", false) { it.copy(mode = PanelMode.WHEEL) }
+            assertFalse(app.configuration.preview.value!!.panel("grid")!!.isWheel)
+        }
+    }
     @Test fun wheelCapacityRetainsOverflowAndDraftSaveAndCancelWork() {
         val app = ready(); tab("Wheels")
         rule.onNodeWithContentDescription("Edit wheel").performClick()

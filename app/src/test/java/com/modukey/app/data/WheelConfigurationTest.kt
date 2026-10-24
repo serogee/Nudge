@@ -66,7 +66,7 @@ class WheelConfigurationTest {
         assertFalse(handle.target(GestureSlot.TAP).wheelPick.enabled)
         assertFalse(handle.target(GestureSlot.TAP).slideToAdjust)
     }
-    @Test fun effectiveRoutingPreservesStoredBindingsAndRestoresThemInGridOrientation() {
+    @Test fun effectiveRoutingPreservesStoredBindingsAndKeepsWheelsInBothOrientations() {
         val original = configuration()
         val target = original.handles.single().target(GestureSlot.SWIPE_1).copy(wheelPick = WheelPickSettings(enabled = true))
         val handle = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME,
@@ -75,7 +75,8 @@ class WheelConfigurationTest {
         assertTrue(effective.target(GestureSlot.SWIPE_2).isNone)
         assertTrue(effective.target(GestureSlot.SWIPE_HOLD).isNone)
         assertFalse(handle.target(GestureSlot.SWIPE_2).isNone)
-        GestureSlot.entries.forEach { assertEquals(handle.target(it), handle.effectiveGestures(original, true).target(it)) }
+        assertTrue(handle.effectiveGestures(original, true).target(GestureSlot.SWIPE_2).isNone)
+        assertEquals(PanelMode.WHEEL, original.normalized().panels.single().settings.landscape.mode)
         val allowed = handle.copy(bindings = handle.bindings + (GestureSlot.SWIPE_1 to target.copy(wheelPick = target.wheelPick.copy(allowLaterSwipes = true))))
         assertEquals(GestureTarget.VOLUME, allowed.effectiveGestures(original, false).target(GestureSlot.SWIPE_2))
         assertTrue(allowed.effectiveGestures(original, false).target(GestureSlot.SWIPE_HOLD).isNone)

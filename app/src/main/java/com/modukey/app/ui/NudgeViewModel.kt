@@ -66,7 +66,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun editHandle(id: String, change: (HandleConfig) -> HandleConfig) = app.configuration.editHandle(id, change)
     fun editTrigger(id: String, change: (TriggerSettings) -> TriggerSettings) = editHandle(id) { it.copy(trigger = change(it.trigger)) }
     fun editSavedPanel(id: String, change: (SavedPanel) -> SavedPanel) = app.configuration.editPanel(id, change)
-    fun editPanel(id: String, change: (PanelConfig) -> PanelConfig) = editSavedPanel(id) { it.copy(settings = change(it.settings)) }
+    fun editPanel(id: String, change: (PanelConfig) -> PanelConfig) = editSavedPanel(id) { it.copy(settings = change(it.settings).retainKind(it.settings)) }
     fun editLayout(id: String, landscape: Boolean, change: (PanelLayout) -> PanelLayout) = editPanel(id) { p ->
         if (landscape && p.landscapeOverride) p.copy(landscape = change(p.landscape)) else p.copy(portrait = change(p.portrait))
     }

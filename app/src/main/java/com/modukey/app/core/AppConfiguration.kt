@@ -91,8 +91,18 @@ data class PanelConfig(
     val iconOpacity: Float = 1f,
     val activeAppearance: ActiveButtonAppearance = ActiveButtonAppearance(),
 ) {
-    fun layout(landscape: Boolean) = if (landscape && landscapeOverride) this.landscape else portrait
-    fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized(), landscape = landscape.normalized(),
+    val isWheel get() = portrait.mode == PanelMode.WHEEL || (landscapeOverride && landscape.mode == PanelMode.WHEEL)
+    fun layout(landscape: Boolean): PanelLayout {
+        val layout = if (landscape && landscapeOverride) this.landscape else portrait
+        return if (isWheel) layout.copy(mode = PanelMode.WHEEL) else layout
+    }
+    /** Editing appearance or orientation cannot convert a wheel into a panel, or the reverse. */
+    fun retainKind(original: PanelConfig): PanelConfig = if (original.isWheel) copy(
+        portrait = portrait.copy(mode = PanelMode.WHEEL), landscape = landscape.copy(mode = PanelMode.WHEEL)) else copy(
+        portrait = portrait.copy(mode = portrait.mode.takeUnless { it == PanelMode.WHEEL } ?: original.portrait.mode),
+        landscape = landscape.copy(mode = landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: original.landscape.mode))
+    fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
+        landscape = landscape.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
         opacity = opacity.valid(0.98f).coerceIn(0f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,
@@ -119,7 +129,7 @@ data class HandleConfig(
 }
 
 data class SavedPanel(val id: String = newId(), val name: String = "", val settings: PanelConfig = PanelConfig()) {
-    val isWheel get() = settings.portrait.mode == PanelMode.WHEEL || (settings.landscapeOverride && settings.landscape.mode == PanelMode.WHEEL)
+    val isWheel get() = settings.isWheel
     fun normalized() = copy(name = name.take(80), settings = settings.normalized())
     fun duplicate() = copy(id = newId(), settings = settings.copy(buttons = settings.buttons.map { it.copy(id = newId()) }))
 }

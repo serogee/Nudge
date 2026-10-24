@@ -67,7 +67,7 @@ import kotlin.math.roundToInt
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
     Section(R.string.layout) {
-        OptionRow(t(R.string.layout), PanelMode.entries, l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
+        if (!entry.isWheel) OptionRow(t(R.string.layout), listOf(PanelMode.FIXED, PanelMode.SCROLLABLE), l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
         DependentSettings(R.string.layout) {
             if (l.mode == PanelMode.FIXED) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
