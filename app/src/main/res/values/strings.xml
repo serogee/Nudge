@@ -564,7 +564,7 @@
     <string name="wheel_animations_help">Smoothly expand and shrink wedges and icons. Turn this off to disable Wheel motion. Selection changes apply immediately.</string>
     <string name="wheel_focus_animation">Highlight transition</string>
     <string name="wheel_focus_duration">Transition duration</string>
-    <string name="wheel_focus_animation_help">Choose how highlights, wedges, and icons change selection. None applies the new selection immediately.</string>
+    <string name="wheel_focus_animation_help">Choose how highlights, wedges, and icons change selection. No animation applies the new selection immediately.</string>
     <string name="animation_smooth">Smooth</string>
     <string name="animation_spring">Spring</string>
     <string name="wheel_selected_size">Selected size</string>
@@ -579,7 +579,7 @@
     <string name="wheel_release_window">Quick-release window</string>
     <string name="wheel_release_help">Time starts when the wheel opens. Release before it ends to close without running an action and keep the next swipe.</string>
     <string name="wheel_hold_help">The wheel opens when the hold time ends. The saved execution setting remains unchanged.</string>
-    <string name="wheel_orientation_help">Drag picking applies only to Wheel layouts. Other layouts open as normal panels.</string>
+    <string name="wheel_orientation_help">Wheels stay separate from panels in both orientations. Landscape settings can change their size and position.</string>
     <string name="continuous_swipe_hold_conflict">A continuous swipe disables Swipe and hold. Its assignment remains saved.</string>
     <string name="wheel_later_disabled">A drag wheel disables later swipe stages unless Allow later swipes is on. Their assignments remain saved.</string>
     <string name="wheel_help_title">Wheel help</string>

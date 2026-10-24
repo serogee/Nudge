@@ -34,6 +34,8 @@ Handle and panel editors keep a draft. The top **Save** applies it; **Cancel** r
 
 The **Visual Preview (Non-interactive)** switch shows an editing guide on the phone. Mini previews and phone guides do not run actions or capture touches. Normal handle activation resumes when editing ends.
 
+Press a settings slider's thumb, then drag to adjust. Tapping or swiping elsewhere on the track does not change the value. Dragging back from a limit responds immediately.
+
 Tap a slider's percentage or dp readout to enter a number. **Save** or keyboard **Done** applies it within the slider's limits. **Cancel** keeps the value. Enter 50 for 50%. Disabled controls cannot be edited. A reset icon restores that setting's default.
 
 Chevrons mark additional options. Dependent controls appear below their parent, grouped by a left line. Action-picker gear badges mark action-specific options. Their backgrounds use 75% opacity; the gear stays fully opaque.
@@ -100,17 +102,17 @@ A confirmed change to another app closes the panel. Native volume popups and unr
 
 ## Wheels
 
-Create wheels in **Wheels**, then assign them to handle gestures. Wheels share panel actions, icons, colors, placement, and editing controls.
+Create wheels in **Wheels**, then assign them to handle gestures. Wheels and panels stay separate and cannot be converted into each other. They share actions, icons, colors, and placement controls.
 
 A Wheel layout shows a hollow semicircle facing inward from its handle. Each button uses a separated wedge container. App icons keep their normal loading and icon-pack support. Side handles order buttons from top to bottom. Bottom handles order them from left to right.
 
-Each wheel shows **up to six buttons**. Radius, button size, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable. Changing an existing panel to Wheel does not delete its extra buttons.
+Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, and screen space can reduce this capacity. Add button is unavailable at capacity. Overflow buttons remain saved, editable, and reorderable.
 
-**Wheel radius** accepts 40–240 dp and defaults to 128 dp. Small wheels show fewer buttons so each normal touch target stays at least 48 dp. Large button sizes and screen limits can constrain the available radius.
+**Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels default to 100 dp inside and 156 dp outside. The range is 12–336 dp, with at least 48 dp between the bounds. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
 
 **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
 
-The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on and smoothly moves the visible wedges and icons to their new shapes. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
+The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on. **Highlight transition** offers **No animation**, **Smooth**, and **Spring**. Smooth defaults to 140 ms and accepts 80–400 ms. The outline, wedge, and icon transition together, and a new selection interrupts the current motion. No animation applies highlight and shape changes immediately. Transitions also work when expansion is off. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
 
 ### Drag to pick
 
@@ -126,11 +128,11 @@ For Hold and Swipe and hold, the wheel opens when the hold time ends. Their save
 
 When Allow later swipes is on, **Quick-release window** accepts 100–1,000 ms and defaults to 200 ms. Time starts when the wheel opens. Release before the deadline to close without running an action and preserve the next configured stage. The existing Swipe sequence timeout starts from that release. At or after the deadline, fresh movement is required before highlighting. A confirmed pick or later cancellation resets the sequence.
 
-Landscape overrides retain their own layout and Wheel settings. If an orientation uses a grid layout, its assignment opens as a normal panel. Its saved drag settings remain available for Wheel layouts. A saved item with a Wheel layout in either active orientation appears in Wheels.
+Landscape overrides retain their own Wheel dimensions and placement. A wheel stays a wheel in both orientations. Panels offer only Fixed and Scrollable layouts. Imported items that used a Wheel in either active orientation remain in Wheels, with both orientations using Wheel layouts.
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 22 and retain compact Wheel sizes, animation choices, drag settings, shared links, and overflow buttons. Schema-21 wheels keep their saved radius and enable focus animation by default. Nudge 0.5.0 and earlier cannot import schema-22 backups. Older backups remain importable.
+New backups use schema 24 and retain both Wheel radii, highlight transitions, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-24 backups.
 
 ## Actions and appearance
 
@@ -158,7 +160,7 @@ Home shortcuts using This handle or Other handles require a selected handle. The
 
 ## Brightness controls
 
-Home contains brightness popup placement, size, timeout, appearance, animation, and touch settings. **Jump to touch** uses the touched position. **Slide to adjust** preserves the initial value, then follows movement relative to the track height.
+Home contains brightness popup placement, size, timeout, appearance, and animation settings. The custom brightness popup always adjusts by swipe travel from its current level. Stationary taps do not change brightness. Imported Jump to touch settings use swipe adjustment too. Android controls its own native volume popup behavior.
 
 The custom popup approximates MIUI styling. It cannot read Xiaomi's private volume popup bounds, so select the volume side and adjust brightness placement on your phone.
 
