@@ -1,10 +1,5 @@
 package com.modukey.app.ui
 
-import android.animation.ValueAnimator
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -20,13 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -47,16 +38,13 @@ import kotlin.math.roundToInt
     val density = LocalDensity.current
     val latestAction by rememberUpdatedState(onAction)
     val iconRasterDp = with(density) { (geometry.cell * geometry.expansion * .55f).toDp().value.roundToInt().coerceAtLeast(1) }
-    val animate = layout.wheel.animationsEnabled && geometry.expansion > 1f && ValueAnimator.areAnimatorsEnabled()
-    val weights = List(geometry.count) { index ->
-        val weight by animateFloatAsState(if (index == selected) 1f else 0f,
-            animationSpec = if (animate) tween(140, easing = FastOutSlowInEasing) else snap(), label = "wheel-focus-$index")
-        weight
-    }
+    val weights = wheelFocusWeights(layout.wheel, geometry.count, selected)
     val slices = geometry.slices(weights)
     val shown = panel.buttons.take(geometry.count)
     val faces = shown.map { buttonPresentation(it, panel, state) }
     val highlight = MaterialTheme.colorScheme.primary
+    val background = Color(panel.background).copy(alpha = panel.opacity)
+    val hover = faces.mapIndexed { index, face -> wheelHoverPalette(face.palette, background, face.container, highlight, panel.wheelHover, weights[index]) }
     val click = if (interactive) Modifier.pointerInput(geometry, shown, selected) {
         detectTapGestures { position ->
             geometry.tapHit(position.x + geometry.bounds.x, position.y + geometry.bounds.y, selected)?.let { index ->
@@ -78,32 +66,12 @@ import kotlin.math.roundToInt
                 } else Modifier), contentAlignment = Alignment.Center) {
                 if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH)
                     ButtonGraphic(button, panel.iconPack, Modifier.size(icon).clip(iconShape(panel)).alpha(panel.iconOpacity),
-                        face.palette.icon, iconRasterDp)
+                        hover[index].icon, iconRasterDp, imageTint = hover[index].imageTint)
             }
         }
     }, modifier = Modifier.fillMaxSize().then(click).drawBehind {
-        fun path(slice: WheelSlice) = Path().apply {
-            val inset = geometry.angularGap(slice) / 2f
-            val first = (slice.start + inset) * 180f / PI.toFloat()
-            val sweep = (slice.end - slice.start - inset * 2f) * 180f / PI.toFloat()
-            val start = when (geometry.edge) { Edge.LEFT -> first; Edge.RIGHT -> 180f - first; Edge.BOTTOM -> first - 90f }
-            val direction = if (geometry.edge == Edge.RIGHT) -1f else 1f
-            val cx = geometry.center.x - geometry.bounds.x; val cy = geometry.center.y - geometry.bounds.y
-            fun rect(radius: Float) = Rect(cx - radius, cy - radius, cx + radius, cy + radius)
-            arcTo(rect(slice.outerRadius), start, sweep * direction, true)
-            val end = geometry.point(slice.end - inset, slice.innerRadius)
-            lineTo(end.x - geometry.bounds.x, end.y - geometry.bounds.y)
-            arcTo(rect(slice.innerRadius), start + sweep * direction, -sweep * direction, false)
-            close()
-        }
-        fun fill(shape: Path, color: Color) = drawIntoCanvas { canvas ->
-            val paint = Paint().apply {
-                this.color = color
-                if (panel.cornerDp > 0f) pathEffect = PathEffect.cornerPathEffect(panel.cornerDp.dp.toPx())
-            }
-            canvas.drawPath(shape, paint)
-        }
-        val background = Color(panel.background).copy(alpha = panel.opacity)
+        fun path(slice: WheelSlice) = wheelShape(geometry, slice, panel.cornerDp.dp.toPx())
+        fun fill(shape: Path, color: Color) = drawPath(shape, color)
         if (slices.isEmpty()) {
             val empty = WheelSlice(-PI.toFloat() / 2f, PI.toFloat() / 2f, geometry.center, geometry.cell,
                 geometry.innerRadius, geometry.innerRadius + geometry.cell, geometry.cell * .55f)
@@ -113,10 +81,11 @@ import kotlin.math.roundToInt
             val button = shown[index]
             if (button.action != ButtonAction.EMPTY || button.emptyAppearance != EmptyAppearance.NO_BUTTON) {
                 val shape = path(slice); val face = faces[index]
-                fill(shape, background)
-                if (face.container) fill(shape, face.palette.background)
+                val colors = hover[index]
+                fill(shape, if (face.container) background else colors.background)
+                if (face.container) fill(shape, colors.background)
                 face.palette.outline?.let { drawPath(shape, it, style = Stroke(2.dp.toPx())) }
-                if (index == selected) drawPath(shape, highlight, style = Stroke(2.dp.toPx()))
+                if (weights[index] > 0f) drawPath(shape, colors.highlight, style = Stroke(2.dp.toPx()))
             }
         }
     }) { children, constraints ->

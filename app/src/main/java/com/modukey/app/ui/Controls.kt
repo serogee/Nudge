@@ -94,8 +94,7 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
                 Text(display, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f), style = MaterialTheme.typography.labelMedium)
             }
         }
-        Slider(value = value.coerceIn(range), onValueChange = change, onValueChangeFinished = finish, valueRange = range,
-            enabled = enabled, modifier = Modifier.semantics { contentDescription = name })
+        DragSlider(listOf(value.coerceIn(range)), range, listOf(name), enabled = enabled, finish = finish) { _, adjusted -> change(adjusted) }
     }
     if (editing && enabled) SliderValueDialog(name, value, range, valueScale, dismiss = { editing = false }) { bounded ->
         if (bounded != value) change(bounded)
@@ -160,7 +159,7 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
     val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),
         listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L),
         listOf(0xFF202122L))
-    AlertDialog(onDismissRequest = { selecting = false }, title = { Text(label) },
+    AlertDialog(modifier = Modifier.width(320.dp), onDismissRequest = { selecting = false }, title = { Text(label) },
         text = { Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
                 label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,

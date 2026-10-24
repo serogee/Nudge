@@ -240,9 +240,10 @@ internal class BrightnessTrackView(context: Context, private val change: (Float)
     private val back = if (Build.VERSION.SDK_INT >= 33) android.window.OnBackInvokedCallback { dismiss() } else null
     init { isFocusableInTouchMode = true; importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES; contentDescription = context.getString(R.string.brightness_slider) }
     fun configure(s: BrightnessPopupSettings, editing: Boolean, fraction: Float) {
-        if (dragging && (settings.touchBehavior != s.touchBehavior || preview != editing)) cancelInput()
-        val dirty = settings != s || preview != editing || (!dragging && level != fraction)
-        settings = s; preview = editing; isEnabled = !editing
+        val normalized = s.normalized()
+        if (dragging && (settings != normalized || preview != editing)) cancelInput()
+        val dirty = settings != normalized || preview != editing || (!dragging && level != fraction)
+        settings = normalized; preview = editing; isEnabled = !editing
         if (!dragging) level = fraction
         if (dirty) invalidate()
     }

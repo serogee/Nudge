@@ -41,33 +41,92 @@ class WheelInterfaceTest {
         rule.onNodeWithContentDescription("Rename wheel").assertExists()
         rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panels.last().isWheel) }
     }
+    @Test fun editorsCannotConvertWheelsAndPanelsEvenWithLandscapeOverrides() {
+        val app = ready()
+        tab("Wheels"); rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo()
+        rule.onNodeWithText("Fixed").assertDoesNotExist()
+        rule.runOnIdle {
+            val vm = ViewModelProvider(rule.activity)[NudgeViewModel::class.java]
+            vm.editLayout("wheel", false) { it.copy(mode = PanelMode.FIXED) }
+            vm.editPanel("wheel") { it.copy(landscapeOverride = true) }
+            vm.editLayout("wheel", true) { it.copy(mode = PanelMode.SCROLLABLE) }
+            val wheel = app.configuration.preview.value!!.panel("wheel")!!
+            assertEquals(PanelMode.WHEEL, wheel.settings.portrait.mode)
+            assertEquals(PanelMode.WHEEL, wheel.settings.landscape.mode)
+            vm.editLayout("grid", false) { it.copy(mode = PanelMode.WHEEL) }
+            assertFalse(app.configuration.preview.value!!.panel("grid")!!.isWheel)
+        }
+    }
     @Test fun wheelCapacityRetainsOverflowAndDraftSaveAndCancelWork() {
         val app = ready(); tab("Wheels")
         rule.onNodeWithContentDescription("Edit wheel").performClick()
         rule.onNodeWithText("Add button").performScrollTo().assertIsNotEnabled()
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
         rule.runOnIdle {
-            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
-            assertEquals(128f, app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
+            assertEquals(156f, app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
         }
         rule.onNodeWithContentDescription("Cancel").performClick()
-        rule.runOnIdle { assertEquals(128f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp) }
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
+        rule.runOnIdle { assertEquals(156f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
         rule.onNodeWithContentDescription("Save").performClick()
-        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp == 180f } }
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second == 180f } }
         rule.runOnIdle { assertEquals(9, app.configuration.state.value!!.panel("wheel")!!.settings.buttons.size) }
-        rule.onNodeWithContentDescription("Wheel radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(40f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(148f) }
         rule.onNodeWithContentDescription("Wheel animations").performScrollTo().performClick()
         rule.runOnIdle {
-            assertEquals(40f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(148f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
             assertFalse(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
             assertTrue(app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
         rule.onNodeWithContentDescription("Cancel").performClick()
         rule.runOnIdle {
-            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radiusDp)
+            assertEquals(180f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second)
             assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.animationsEnabled)
         }
+    }
+    @Test fun radiusThumbsCanSaveTheSmallestOneDpHoleAndFortyNineDpOuterEdge() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithContentDescription("Inner radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
+        rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(49f) }
+        rule.runOnIdle { assertEquals(1f to 49f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f)) }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f) == (1f to 49f) } }
+    }
+    @Test fun highlightTransitionCanBeChangedAndSavedAsNone() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        rule.onNodeWithText("Smooth").performScrollTo().performClick()
+        rule.onNodeWithText("Spring").performClick()
+        rule.runOnIdle { assertEquals(WheelFocusAnimation.SPRING, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.focusAnimation) }
+        rule.onNodeWithText("Spring").performClick()
+        rule.onNode(hasText("No animation") and hasAnyAncestor(isPopup())).performClick()
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.focusAnimation == WheelFocusAnimation.NONE } }
+    }
+    @Test fun hoverColorsCanBeCustomizedIndependentlyAndSavedOrCancelled() {
+        val app = ready(); tab("Wheels")
+        rule.onNodeWithContentDescription("Edit wheel").performClick()
+        for (title in listOf("Custom hover icon color", "Custom hover background color", "Custom hover highlight color")) {
+            rule.onNodeWithContentDescription(title).performScrollTo().performClick()
+        }
+        rule.onNodeWithContentDescription("Edit Hover background color").performScrollTo().performClick()
+        rule.onNode(hasSetTextAction() and hasAnyAncestor(isDialog())).performTextReplacement("6BB7E8")
+        rule.onNodeWithText("Done").performClick()
+        rule.runOnIdle {
+            val hover = app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover
+            assertTrue(hover.useIcon); assertTrue(hover.useBackground); assertTrue(hover.useHighlight)
+            assertEquals(0xFF6BB7E8L, hover.background)
+            assertFalse(app.configuration.state.value!!.panel("wheel")!!.settings.wheelHover.useIcon)
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.wheelHover.useIcon } }
+        rule.onNodeWithContentDescription("Change colors on hover").performScrollTo().performClick()
+        rule.runOnIdle { assertFalse(app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover.enabled) }
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.runOnIdle { assertTrue(app.configuration.preview.value!!.panel("wheel")!!.settings.wheelHover.enabled) }
     }
     @Test fun wheelPickerOffersDragForSwipesAndExcludesTap() {
         val app = ready(); tab("Handles")

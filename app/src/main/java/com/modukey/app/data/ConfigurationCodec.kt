@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 22 adds compact Wheel radii and optional focus animation. */
+/** Schema 25 adds optional Wheel hover colors. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 22
+    const val SCHEMA = 25
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -92,12 +92,16 @@ object ConfigurationCodec {
     private fun layout(p: JSONObject, schema: Int) = PanelLayout(enumValueOf(p.optString("mode", "FIXED")), enumValueOf(p.optString("direction", "VERTICAL")),
         p.optInt("crossCount", 1), p.optInt("maximumLines", 5), p.float("extent", .6f), p.float("buttonSize", 56f),
         p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it },
-        p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f), it.optBoolean("animationsEnabled", true)) } ?: WheelLayoutSettings())
+        p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f), it.optBoolean("animationsEnabled", true),
+            if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
+            if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
+            enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140)) } ?: WheelLayoutSettings())
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
         .put("offsetX", p.offsetXDp).put("offsetY", p.offsetYDp)
-        .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale).put("animationsEnabled", p.wheel.animationsEnabled))
+        .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale).put("animationsEnabled", p.wheel.animationsEnabled)
+            .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp).put("focusAnimation", p.wheel.focusAnimation.name).put("focusDurationMs", p.wheel.focusDurationMs))
     private fun wheelPick(p: JSONObject) = WheelPickSettings(p.optBoolean("enabled"), p.float("minimumDistanceDp", 32f),
         p.float("maximumDistanceDp", 240f), p.optBoolean("allowLaterSwipes"), p.optLong("releaseWindowMs", 200))
     private fun wheelPick(p: WheelPickSettings) = JSONObject().put("enabled", p.enabled).put("minimumDistanceDp", p.minimumDistanceDp)
@@ -163,7 +167,7 @@ object ConfigurationCodec {
         backgroundOpacity = p.float("backgroundOpacity", 1f), trackOpacity = p.float("trackOpacity", 1f), fillOpacity = p.float("fillOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
         timeoutMs = p.optLong("timeoutMs", 3_000), cornerRadiusDp = p.float("cornerRadiusDp", 32f),
         showBackground = p.optBoolean("showBackground", true), showAutomaticToggle = p.optBoolean("showAutomaticToggle", true),
-        touchBehavior = enumValueOf(p.optString("touchBehavior", "JUMP_TO_TOUCH")),
+        touchBehavior = enumValueOf(p.optString("touchBehavior", "SLIDE_TO_ADJUST")),
         animation = enumValueOf(p.optString("animation", "NONE")), closeAnimation = enumValueOf(p.optString("closeAnimation", "NONE")))
     private fun brightness(p: BrightnessPopupSettings) = JSONObject().put("side", p.side.name).put("volumeSide", p.volumeSide.name)
         .put("width", p.widthDp).put("height", p.heightDp).put("x", p.x).put("y", p.y)
@@ -200,7 +204,11 @@ object ConfigurationCodec {
         buttonOpacity = p.float("buttonOpacity", 1f), iconOpacity = p.float("iconOpacity", 1f),
         activeAppearance = p.optJSONObject("activeAppearance")?.let { ActiveButtonAppearance(
             it.optBoolean("useBackground", true), it.optBoolean("useIcon", true), it.optBoolean("automaticBackground", true), it.optLong("background", 0xFF3482FF),
-            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance())
+            it.optBoolean("automaticIcon", true), it.optLong("icon", 0xFFFFFFFF)) } ?: ActiveButtonAppearance(),
+        wheelHover = p.optJSONObject("wheelHover")?.let { WheelHoverAppearance(
+            it.optBoolean("enabled", true), it.optBoolean("useIcon"), it.optLong("icon", 0xFFFFFFFF),
+            it.optBoolean("useBackground"), it.optLong("background", 0xFF505052),
+            it.optBoolean("useHighlight"), it.optLong("highlight", 0xFFB8D982)) } ?: WheelHoverAppearance())
     private fun panel(p: PanelConfig): JSONObject = JSONObject().put("portrait", layout(p.portrait)).put("landscape", layout(p.landscape)).put("landscapeOverride", p.landscapeOverride)
         .put("outside", p.outsideTouch.name).put("background", p.background).put("opacity", p.opacity).put("corner", p.cornerDp)
         .put("shape", p.iconShape.name).put("iconCorner", p.iconCornerFraction).put("iconPack", p.iconPack)
@@ -212,5 +220,8 @@ object ConfigurationCodec {
         .put("activeAppearance", JSONObject().put("useBackground", p.activeAppearance.useBackground).put("useIcon", p.activeAppearance.useIcon)
             .put("automaticBackground", p.activeAppearance.automaticBackground).put("background", p.activeAppearance.background)
             .put("automaticIcon", p.activeAppearance.automaticIcon).put("icon", p.activeAppearance.icon))
+        .put("wheelHover", JSONObject().put("enabled", p.wheelHover.enabled).put("useIcon", p.wheelHover.useIcon).put("icon", p.wheelHover.icon)
+            .put("useBackground", p.wheelHover.useBackground).put("background", p.wheelHover.background)
+            .put("useHighlight", p.wheelHover.useHighlight).put("highlight", p.wheelHover.highlight))
         .put("buttons", array(p.buttons.map(::button)))
 }

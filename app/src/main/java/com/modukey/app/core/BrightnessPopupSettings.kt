@@ -16,7 +16,7 @@ data class BrightnessPopupSettings(
     val fillOpacity: Float = 1f, val iconOpacity: Float = 1f,
     val timeoutMs: Long = 3_000,
     val cornerRadiusDp: Float = 32f, val showBackground: Boolean = true, val showAutomaticToggle: Boolean = true,
-    val touchBehavior: BrightnessTouchBehavior = BrightnessTouchBehavior.JUMP_TO_TOUCH,
+    val touchBehavior: BrightnessTouchBehavior = BrightnessTouchBehavior.SLIDE_TO_ADJUST,
     val animation: PanelAnimation = PanelAnimation.NONE,
     val closeAnimation: PanelAnimation = PanelAnimation.NONE,
 ) {

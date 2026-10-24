@@ -20,7 +20,7 @@ class WheelConfigurationTest {
     @Test fun wheelLayoutsBindingsAndOverflowRoundTrip() {
         val original = configuration().normalized()
         val encoded = ConfigurationCodec.encode(original)
-        assertEquals(22, JSONObject(encoded).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(encoded).getInt("schema"))
         assertEquals(original, ConfigurationCodec.decode(encoded))
         assertEquals(9, ConfigurationCodec.decode(encoded).panels.single().settings.buttons.size)
     }
@@ -34,7 +34,7 @@ class WheelConfigurationTest {
         assertEquals(PanelMode.FIXED, migrated.panels.single().settings.portrait.mode)
         assertFalse(migrated.panels.single().isWheel)
         assertTrue(migrated.handles.single().bindings.values.none { it.wheelPick.enabled })
-        assertEquals(22, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
+        assertEquals(ConfigurationCodec.SCHEMA, JSONObject(ConfigurationCodec.upgrade(json.toString())).getInt("schema"))
     }
     @Test fun compactWheelsAndAnimationChoicesRoundTripAndOldWheelsKeepTheirRadius() {
         val original = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
@@ -46,6 +46,49 @@ class WheelConfigurationTest {
         legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel").remove("animationsEnabled")
         val migrated = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
         assertEquals(200f, migrated.radiusDp); assertTrue(migrated.animationsEnabled)
+    }
+    @Test fun focusTransitionChoicesPersistAndLegacyDocumentsUseSmoothMotion() {
+        for (animation in WheelFocusAnimation.entries) {
+            val wheel = WheelLayoutSettings(focusAnimation = animation, focusDurationMs = 280)
+            val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+                portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = wheel)))))
+            assertEquals(wheel, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
+            val legacy = JSONObject(ConfigurationCodec.encode(config)).put("schema", 23)
+            val saved = legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel")
+            saved.remove("focusAnimation"); saved.remove("focusDurationMs")
+            val restored = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait.wheel
+            assertEquals(WheelFocusAnimation.SMOOTH, restored.focusAnimation); assertEquals(140, restored.focusDurationMs)
+        }
+    }
+    @Test fun independentRadiiRoundTripAndLegacyWidthsRemainUnchanged() {
+        val wheel = WheelLayoutSettings(innerRadiusDp = 64f, outerRadiusDp = 180f)
+        val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = wheel)))))
+        assertEquals(wheel, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
+        for (size in listOf(48f, 56f, 96f)) {
+            val legacy = JSONObject(ConfigurationCodec.encode(config)).put("schema", 22)
+            val layout = legacy.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait")
+            layout.put("buttonSize", size)
+            layout.put("wheel", JSONObject().put("radiusDp", 200f))
+            val restored = ConfigurationCodec.decode(legacy.toString()).panels.single().settings.portrait
+            assertEquals(200f - size / 2f to 200f + size / 2f, restored.wheel.radii(size))
+        }
+    }
+    @Test fun oneDpInnerRadiusSurvivesBackupsWithoutChangingLegacyDefaults() {
+        val settings = WheelLayoutSettings(innerRadiusDp = 1f, outerRadiusDp = 49f)
+        val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = settings)))))
+        assertEquals(settings, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
+        assertEquals(100f to 156f, WheelLayoutSettings().radii(56f))
+        assertEquals(12f to 68f, WheelLayoutSettings(40f).radii(56f))
+    }
+    @Test fun inactiveLegacyWheelModesCannotConvertAPanelWhenEnablingLandscape() {
+        val oldPanel = PanelConfig(landscape = PanelLayout(mode = PanelMode.WHEEL))
+        assertFalse(oldPanel.isWheel)
+        val normalized = oldPanel.normalized()
+        assertEquals(PanelMode.FIXED, normalized.landscape.mode)
+        val edited = oldPanel.copy(landscapeOverride = true).retainKind(oldPanel)
+        assertFalse(edited.isWheel)
     }
     @Test fun importedCopiesRetainSharedLinksAndUseFreshIds() {
         val original = configuration()
@@ -66,7 +109,7 @@ class WheelConfigurationTest {
         assertFalse(handle.target(GestureSlot.TAP).wheelPick.enabled)
         assertFalse(handle.target(GestureSlot.TAP).slideToAdjust)
     }
-    @Test fun effectiveRoutingPreservesStoredBindingsAndRestoresThemInGridOrientation() {
+    @Test fun effectiveRoutingPreservesStoredBindingsAndKeepsWheelsInBothOrientations() {
         val original = configuration()
         val target = original.handles.single().target(GestureSlot.SWIPE_1).copy(wheelPick = WheelPickSettings(enabled = true))
         val handle = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME,
@@ -75,7 +118,8 @@ class WheelConfigurationTest {
         assertTrue(effective.target(GestureSlot.SWIPE_2).isNone)
         assertTrue(effective.target(GestureSlot.SWIPE_HOLD).isNone)
         assertFalse(handle.target(GestureSlot.SWIPE_2).isNone)
-        GestureSlot.entries.forEach { assertEquals(handle.target(it), handle.effectiveGestures(original, true).target(it)) }
+        assertTrue(handle.effectiveGestures(original, true).target(GestureSlot.SWIPE_2).isNone)
+        assertEquals(PanelMode.WHEEL, original.normalized().panels.single().settings.landscape.mode)
         val allowed = handle.copy(bindings = handle.bindings + (GestureSlot.SWIPE_1 to target.copy(wheelPick = target.wheelPick.copy(allowLaterSwipes = true))))
         assertEquals(GestureTarget.VOLUME, allowed.effectiveGestures(original, false).target(GestureSlot.SWIPE_2))
         assertTrue(allowed.effectiveGestures(original, false).target(GestureSlot.SWIPE_HOLD).isNone)

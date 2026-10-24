@@ -97,7 +97,8 @@ try {
 } finally {
     # Delete only this freshly created fixture inside the workspace, using one shell end to end.
     $resolvedFixture = (Resolve-Path -LiteralPath $fixture).Path
-    $workspacePrefix = [IO.Path]::GetFullPath($repoRoot).TrimEnd('\') + '\'
+    $separator = [IO.Path]::DirectorySeparatorChar
+    $workspacePrefix = [IO.Path]::GetFullPath($repoRoot).TrimEnd($separator) + $separator
     if (!$resolvedFixture.StartsWith($workspacePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Refusing to remove a fixture outside the workspace.' }
     Remove-Item -LiteralPath $resolvedFixture -Recurse -Force
 }

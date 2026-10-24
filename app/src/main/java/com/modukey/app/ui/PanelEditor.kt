@@ -67,7 +67,7 @@ import kotlin.math.roundToInt
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
     }
     Section(R.string.layout) {
-        OptionRow(t(R.string.layout), PanelMode.entries, l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
+        if (!entry.isWheel) OptionRow(t(R.string.layout), listOf(PanelMode.FIXED, PanelMode.SCROLLABLE), l.mode, defaults.mode) { value -> layout { it.copy(mode = value) } }
         DependentSettings(R.string.layout) {
             if (l.mode == PanelMode.FIXED) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
@@ -79,7 +79,9 @@ import kotlin.math.roundToInt
             }
         }
         if (l.mode == PanelMode.WHEEL) {
-            SettingSlider(R.string.wheel_radius, l.wheel.radiusDp, 40f..240f, t(R.string.dp_value, l.wheel.radiusDp.roundToInt()), default = 128f) { value -> layout { it.copy(wheel = it.wheel.copy(radiusDp = value)) } }
+            WheelRadiusControl(l.wheel, l.buttonSizeDp) { inner, outer ->
+                layout { it.copy(wheel = it.wheel.copy(innerRadiusDp = inner, outerRadiusDp = outer)) }
+            }
             Help(R.string.wheel_radius_help)
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
@@ -88,13 +90,23 @@ import kotlin.math.roundToInt
             Toggle(R.string.wheel_animations, R.string.wheel_animations_help, l.wheel.animationsEnabled, default = true) { value ->
                 layout { it.copy(wheel = it.wheel.copy(animationsEnabled = value)) }
             }
+            if (l.wheel.animationsEnabled) DependentSettings(R.string.wheel_animations) {
+                OptionRow(t(R.string.wheel_focus_animation), WheelFocusAnimation.entries, l.wheel.focusAnimation, WheelFocusAnimation.SMOOTH) { value ->
+                    layout { it.copy(wheel = it.wheel.copy(focusAnimation = value)) }
+                }
+                if (l.wheel.focusAnimation == WheelFocusAnimation.SMOOTH) SettingSlider(R.string.wheel_focus_duration,
+                    l.wheel.focusDurationMs.toFloat(), 80f..400f, t(R.string.ms_value, l.wheel.focusDurationMs), default = 140f) { value ->
+                    layout { it.copy(wheel = it.wheel.copy(focusDurationMs = value.roundToInt())) }
+                }
+                Help(R.string.wheel_focus_animation_help)
+            }
         } else {
             OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
             DependentSettings(R.string.direction) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.columns else R.string.rows, l.crossCount, 1, 12, 1) { value -> layout { it.copy(crossCount = value) } }
             }
         }
-        SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
+        if (l.mode != PanelMode.WHEEL) SettingSlider(R.string.button_size, l.buttonSizeDp, 48f..96f, t(R.string.dp_value, l.buttonSizeDp.roundToInt()), default = 56f) { value -> layout { it.copy(buttonSizeDp = value) } }
         if (l.mode != PanelMode.WHEEL && g.crossCount < l.crossCount) Notice(t(R.string.panel_screen_limit, g.crossCount))
     }
     Section(R.string.position) {
@@ -149,6 +161,7 @@ import kotlin.math.roundToInt
             ColorPicker(p.iconColor, title = R.string.icon_color, default = panelDefaults.iconColor) { value -> vm.editPanel(entry.id) { it.copy(iconColor = value) } }
         }
         PercentSlider(R.string.icon_opacity, p.iconOpacity, default = 1f) { value -> vm.editPanel(entry.id) { it.copy(iconOpacity = value) } }
+        if (entry.isWheel) WheelHoverControls(p.wheelHover) { value -> vm.editPanel(entry.id) { it.copy(wheelHover = value) } }
         ActiveButtonControls(p) { value -> vm.editPanel(entry.id) { it.copy(activeAppearance = value) } }
         SettingTitle(t(R.string.icon_pack), reset = if (p.iconPack.isNotBlank()) ({ vm.editPanel(entry.id) { it.copy(iconPack = "") } }) else null)
         OutlinedButton(onClick = { vm.loadPacks(); packPicker = true }, modifier = Modifier.fillMaxWidth()) {

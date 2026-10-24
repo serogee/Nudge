@@ -24,13 +24,13 @@ if (!$Version) {
 }
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must have the form 0.1.2.' }
 $releaseTag = "v$Version"
-$tags = @(Read-Git @('tag', '--list', 'v*') | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' })
+$tags = @(Read-Git @('tag', '--list') | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' })
 $released = $releaseTag -in $tags
 if ($released -and $Write) { throw "Release $releaseTag already exists. Increase the version; do not replace its changelog." }
 if (!$ToRef) { $ToRef = if ($released) { $releaseTag } else { 'HEAD' } }
 $target = (Read-Git @('rev-parse', '--verify', '--end-of-options', "$ToRef^{commit}")) -join ''
 if (!$FromTag) {
-    $reachable = @(Read-Git @('tag', '--merged', $target, '--list', 'v*'))
+    $reachable = @(Read-Git @('tag', '--merged', $target, '--list'))
     $FromTag = $tags | Where-Object { $_ -in $reachable -and [version]$_.Substring(1) -lt [version]$Version } |
         Sort-Object { [version]$_.Substring(1) } -Descending | Select-Object -First 1
 }

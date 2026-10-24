@@ -70,7 +70,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 ### Custom panels and actions
 
 - Create reusable panels and open the same panel from several handles.
-- Create hollow semicircular wheels in the Wheels tab, with up to six wedge buttons. Use compact sizes, animated focus, or Drag to pick.
+- Create hollow semicircular wheels in the Wheels tab, with up to six wedge buttons. Set both radii on one track, choose a highlight transition, or use Drag to pick. Wheels stay separate from panels.
 - Choose fixed or scrollable layouts, vertical or horizontal direction, placement, animations, and outside-touch behavior.
 - Add app shortcuts, volume and sound controls, brightness controls, Lock screen, Input Method, Screenshot, and native panel actions.
 - Customize colors, opacity, button containers, built-in icons, and supported installed icon packs.
@@ -88,7 +88,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 ### Editing, shortcuts, and backups
 
 - Preview placement with non-interactive guides. Save or cancel handle and panel edits.
-- Tap percentage and dp readouts to enter exact slider values within their allowed limits.
+- Drag slider thumbs to adjust settings. Track taps do not seek. Tap percentage and dp readouts to enter exact values.
 - Pin configured actions to the Home screen through your launcher.
 - Export and import JSON backups, including handles, panels, gesture bindings, and shortcut definitions.
 - Check for updates when requested. Download an APK and review Android's installation prompt.

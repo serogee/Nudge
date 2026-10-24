@@ -2,9 +2,24 @@ package com.modukey.app.core
 
 import kotlin.math.*
 
+enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
+
 data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
-    val animationsEnabled: Boolean = true) {
-    fun normalized() = copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f))
+    val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
+    val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140) {
+    companion object { const val MIN_INNER_RADIUS_DP = 1f }
+    fun normalized(): WheelLayoutSettings {
+        val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
+        val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
+        return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f),
+            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400))
+    }
+    /** Missing bounds retain the old center-radius and button-size geometry on import. */
+    fun radii(buttonSizeDp: Float): Pair<Float, Float> {
+        val s = normalized()
+        val inner = (s.innerRadiusDp ?: maxOf(12f, s.radiusDp - buttonSizeDp / 2f)).coerceAtMost((s.outerRadiusDp ?: 336f) - 48f)
+        return inner to (s.outerRadiusDp ?: (inner + buttonSizeDp))
+    }
 }
 
 data class WheelPickSettings(val enabled: Boolean = false, val minimumDistanceDp: Float = 32f, val maximumDistanceDp: Float = 240f,
@@ -89,19 +104,20 @@ object WheelGeometry {
     fun calculate(screen: Bounds, density: Float, layout: PanelLayout, settings: WheelLayoutSettings, count: Int, handle: Bounds, edge: Edge): WheelGeometryResult {
         val s = settings.normalized()
         val d = density.coerceAtLeast(.01f)
-        val cell = layout.normalized().buttonSizeDp * d
+        val (innerDp, outerDp) = s.radii(layout.normalized().buttonSizeDp)
         val expansion = if (s.expandSelection) s.selectedScale else 1f
         val margin = 8f * d
         val side = edge != Edge.BOTTOM
         val maximumOuter = minOf((if (side) screen.height / 2f else screen.width / 2f) - margin,
             (if (side) screen.width else screen.height) - margin * 2f).coerceAtLeast(0f)
-        val radius = minOf(maxOf(s.radiusDp * d, 12f * d + cell / 2f), maximumOuter - cell * (expansion - .5f)).coerceAtLeast(0f)
-        val inner = maxOf(12f * d, radius - cell / 2f)
-        val outer = (inner + cell * expansion).coerceAtMost(maximumOuter)
+        val cell = minOf((outerDp - innerDp) * d, (maximumOuter - minOf(innerDp, 12f) * d).coerceAtLeast(0f) / expansion)
+        val inner = minOf(innerDp * d, (maximumOuter - cell * expansion).coerceAtLeast(0f))
+        val radius = inner + cell / 2f
+        val outer = inner + cell * expansion
         // Every normal and expanded wedge must contain a 48 dp circular touch target and its icon.
         val capacity = (6 downTo 1).firstOrNull { n ->
             val candidate = WheelGeometryResult(screen, WheelPoint(0f, 0f), edge, radius, cell, n, n, expansion, 48f * d, inner, 4f * d)
-            outer >= inner + cell * expansion && screen.width >= margin * 2f && screen.height >= margin * 2f &&
+            cell >= 48f * d && outer >= inner + cell * expansion && screen.width >= margin * 2f && screen.height >= margin * 2f &&
                 (listOf<Int?>(null) + (0 until n).toList()).all { selected ->
                     candidate.slices(selected).all { slice ->
                         val target = maxOf(48f * d, slice.iconSize)
