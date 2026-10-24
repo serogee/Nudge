@@ -100,9 +100,9 @@ data class PanelConfig(
     fun retainKind(original: PanelConfig): PanelConfig = if (original.isWheel) copy(
         portrait = portrait.copy(mode = PanelMode.WHEEL), landscape = landscape.copy(mode = PanelMode.WHEEL)) else copy(
         portrait = portrait.copy(mode = portrait.mode.takeUnless { it == PanelMode.WHEEL } ?: original.portrait.mode),
-        landscape = landscape.copy(mode = landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: original.landscape.mode))
+        landscape = landscape.copy(mode = landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: original.landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: PanelMode.FIXED))
     fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
-        landscape = landscape.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
+        landscape = landscape.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else if (it.mode == PanelMode.WHEEL) it.copy(mode = portrait.mode) else it },
         opacity = opacity.valid(0.98f).coerceIn(0f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
         buttonColor = buttonColor or 0xFF000000, iconColor = iconColor or 0xFF000000,

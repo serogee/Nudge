@@ -74,6 +74,14 @@ class WheelConfigurationTest {
             assertEquals(200f - size / 2f to 200f + size / 2f, restored.wheel.radii(size))
         }
     }
+    @Test fun inactiveLegacyWheelModesCannotConvertAPanelWhenEnablingLandscape() {
+        val oldPanel = PanelConfig(landscape = PanelLayout(mode = PanelMode.WHEEL))
+        assertFalse(oldPanel.isWheel)
+        val normalized = oldPanel.normalized()
+        assertEquals(PanelMode.FIXED, normalized.landscape.mode)
+        val edited = oldPanel.copy(landscapeOverride = true).retainKind(oldPanel)
+        assertFalse(edited.isWheel)
+    }
     @Test fun importedCopiesRetainSharedLinksAndUseFreshIds() {
         val original = configuration()
         val copies = AppConfiguration(handles = emptyList()).addCopies(original)
