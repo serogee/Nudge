@@ -159,7 +159,7 @@ fun optionText(context: android.content.Context, value: Any): String = context.g
     val palettes = listOf(listOf(0xFFB8D982L,0xFF6BB7E8L,0xFFE3A0CFL,0xFFF1BA70L,0xFFFFFFFFL,0xFF252A21L),
         listOf(0xFF202223L,0xFF6F6F6FL,0xFF9D9F9FL,0xFF3C3C3EL,0xFF3482FFL,0xFFE8E8E8L),
         listOf(0xFF202122L))
-    AlertDialog(onDismissRequest = { selecting = false }, title = { Text(label) },
+    AlertDialog(modifier = Modifier.width(320.dp), onDismissRequest = { selecting = false }, title = { Text(label) },
         text = { Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(value = hex, onValueChange = { hex = it.removePrefix("#").take(6); if (hex.matches(Regex("[0-9a-fA-F]{6}"))) change(0xFF000000 or hex.toLong(16)) },
                 label = { Text(t(R.string.hex_color)) }, prefix = { Text("#") }, singleLine = true,
