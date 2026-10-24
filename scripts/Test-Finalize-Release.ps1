@@ -89,7 +89,8 @@ if ($CreateTag) {
     Write-Output "Passed $checks release finalization checks."
 } finally {
     $resolved = (Resolve-Path -LiteralPath $fixture).Path
-    $prefix = [IO.Path]::GetFullPath((Join-Path $repoRoot '.local')).TrimEnd('\') + '\'
+    $separator = [IO.Path]::DirectorySeparatorChar
+    $prefix = [IO.Path]::GetFullPath((Join-Path $repoRoot '.local')).TrimEnd($separator) + $separator
     if (!$resolved.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Refusing to delete a fixture outside .local.' }
     Remove-Item -LiteralPath $resolved -Recurse -Force
 }

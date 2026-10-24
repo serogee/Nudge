@@ -23,7 +23,7 @@ try {
     $tagAlreadyExists = $false
     $previousReleaseName = $null
     $previousReleaseCode = 0
-    $tags = @(& git -c $gitTrust tag --list 'v*')
+    $tags = @(& git -c $gitTrust tag --list)
     if ($LASTEXITCODE -ne 0) { throw 'Could not read release tags.' }
     foreach ($tag in $tags) {
         if ($tag -notmatch '^v\d+\.\d+\.\d+$') { continue }
