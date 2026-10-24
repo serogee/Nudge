@@ -133,7 +133,7 @@ class BrightnessControllerTest {
             assertEquals(preset == BrightnessPreset.MAXIMUM, app.brightness.status().maximum); assertFalse(app.brightness.status().minimum)
         }
     }
-    @Test fun unchangedEndpointSliderInputRefreshesTheOpenPanelState() {
+    @Test fun endpointTapsStayStillAndSwipeInputRefreshesTheOpenPanelState() {
         Writes.allowed = true; set(100, false)
         val activity = Robolectric.buildActivity(Activity::class.java).setup()
         val context = activity.get()
@@ -149,6 +149,11 @@ class BrightnessControllerTest {
             view.layout(0, 0, 64, 240)
             for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
                 MotionEvent.obtain(0, 10, action, 30f, 0f, 0).let { view.onTouchEvent(it); it.recycle() }
+            }
+            assertEquals(255, level())
+            assertTrue("A stationary tap must not submit a brightness change", states.isEmpty())
+            for ((action, y) in listOf(MotionEvent.ACTION_DOWN to 30f, MotionEvent.ACTION_MOVE to 0f, MotionEvent.ACTION_UP to 0f)) {
+                MotionEvent.obtain(0, 10, action, 30f, y, 0).let { view.onTouchEvent(it); it.recycle() }
             }
             assertEquals(255, level())
             assertTrue(states.last().maximum); assertFalse(states.last().minimum)
