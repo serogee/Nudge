@@ -2,18 +2,6 @@
 
 ## Unreleased
 
-### Added
-
-- Add a **Wheel hitbox** dropdown below Wheel radii: **Automatic**, **Use Button Size**, and **Manual**. Preserve current picking by default. Manual provides independent inner and outer radii on a thumb-only track with numeric entry. Retain choices per orientation without changing normal taps, visible size, or Autofit.
-
-### Changed
-
-- Default manual Wheel highlight size, missing values, and reset to **110%**. Preserve explicit saved sizes. Autofit continues to prefer 110%.
-
-### Compatibility
-
-- Save schema 30 backups with per-orientation hitbox modes and manual radii. Older backups retain Automatic picking and their existing gesture distances.
-
 ## 0.5.4 - 2026-10-25
 
 ### Added
@@ -21,6 +9,7 @@
 - Add **Adapt icon size** for Wheels, enabled by default. Fit complete artwork within the rounded wedge, with padding from both arcs and separator gaps. Turn adaptation off to set a preferred **Icon size** from **12–128 dp**, defaulting to **32 dp**. Retain the manual value when adaptation is enabled again. Available space can reduce the displayed size. (28013f1)
 - Add **Icon position** from **0–100%**. Zero is the nearest safe inner position, 100 is the nearest safe outer position, and the default **50%** keeps the icon at the middle of the band. Endpoints retain room for visible artwork. Recalculate available size throughout highlight transitions. Save choices separately for portrait and landscape. Icon edits preserve Wheel Autofit. (28013f1)
 - Add **Nudge accessibility** on Home and a **Toggle accessibility** action for buttons, direct gestures, and launcher shortcuts. Turning on opens Android settings; enable **Nudge handles** there. Turning off disables the connected handles service and closes its overlays. If enabled but disconnected, open settings for manual recovery. The launcher toggle works without a connected service. Preserve unlock, saved-ID, and changed-shortcut checks. (6b8592e)
+- Add **Wheel hitbox** directly below **Wheel radii** in Layout. **Automatic** preserves current gesture distances and the inward margin. **Use Button Size** follows each logical button's inner and outer radii, including highlight expansion. **Manual** uses independent **0–600 dp** radii, with at least **8 dp** between them, on a thumb-only two-point slider with numeric entry. Manual defaults are **32 dp** inside and **240 dp** outside. Retain manual bounds when switching modes, save choices per orientation, and preserve visible radii and Autofit. These modes apply to Drag to pick; normal taps stay unchanged. (cea6e86)
 
 ### Fixed
 
@@ -28,16 +17,21 @@
 - Show cached artwork immediately when button views reopen. Preload saved app and icon-pack references, reuse stable image sizes, and retain a bounded local disk cache for later app starts. Refresh artwork after app or icon-pack updates. Missing or cleared caches load normally; missing resources keep safe fallbacks. (93c5847)
 - Register protected package updates with the platform receiver API on older Android versions and private receiver flags on Android 13 and later. Verify startup, caching, and launcher actions on Android 12 and 16. (b903045)
 
+### Changed
+
+- Default manual **Selected size**, numeric fallback, and reset to **110%**. Autofit continues to prefer 110%. Preserve explicit saved sizes, including older 125% choices. (7056e2a)
+
 ### Maintenance
 
 - Update setup instructions and the user guide for icon sizing, safe positions, accessibility controls, and local artwork caching. (cd3c65a)
 - Process main-thread launcher callbacks while the interface test waits for shortcut support. Preserve the timeout and pinning assertions. (ae4543f)
+- Document hitbox modes, manual limits, per-orientation choices, and the 110% default. (577b450)
 
 ### Compatibility and validation
 
-- Save schema 29 backups and preserve older imports with adaptive, centered Wheel icons. Nudge 0.5.3 and earlier cannot import this format.
-- Retain saved configuration, independent touch targets, Wheel Autofit, other accessibility services, and shortcut unlock checks.
-- Pass 843 unit tests across 128 classes, debug lint with 0 errors and 17 warnings, and the 0.5.4-debug / code 20 build. Pass all 39 release-tool checks.
+- Save schema 30 backups and preserve older imports with adaptive, centered Wheel icons and Automatic hitboxes. Nudge 0.5.3 and earlier cannot import this format.
+- Retain saved configuration, normal taps, independent touch targets, Wheel Autofit, other accessibility services, and shortcut unlock checks.
+- Pass 859 unit tests across 131 classes, debug lint with 0 errors and 17 warnings, and the 0.5.4-debug / code 20 build. Pass all 39 release-tool checks.
 - Physical-device checks, signed assembly, signer comparison, and installation over 0.5.3 remain pending. See the reviewed 0.5.4 release notes.
 
 ## 0.5.3 - 2026-10-24
