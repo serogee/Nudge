@@ -2,19 +2,31 @@
 
 ## Unreleased
 
+## 0.5.4 - 2026-10-25
+
 ### Added
 
-- Adapt Wheel icon size by default, or choose a preferred size from 12–128 dp. Position icons from the nearest safe inner position to the nearest safe outer position. Keep a centered default, separate orientation choices, and independent touch targets and Wheel Autofit.
-- Add a Home accessibility switch and a Toggle accessibility action for buttons, gestures, and launcher shortcuts. Open Android settings while disconnected and disable the connected Nudge handles service directly. Preserve settings, other services, and shortcut unlock checks.
+- Add **Adapt icon size** for Wheels, enabled by default. Fit complete artwork within the rounded wedge, with padding from both arcs and separator gaps. Turn adaptation off to set a preferred **Icon size** from **12–128 dp**, defaulting to **32 dp**. Retain the manual value when adaptation is enabled again. Available space can reduce the displayed size. (28013f1)
+- Add **Icon position** from **0–100%**. Zero is the nearest safe inner position, 100 is the nearest safe outer position, and the default **50%** keeps the icon at the middle of the band. Endpoints retain room for visible artwork. Recalculate available size throughout highlight transitions. Save choices separately for portrait and landscape. Icon edits preserve Wheel Autofit. (28013f1)
+- Add **Nudge accessibility** on Home and a **Toggle accessibility** action for buttons, direct gestures, and launcher shortcuts. Turning on opens Android settings; enable **Nudge handles** there. Turning off disables the connected handles service and closes its overlays. If enabled but disconnected, open settings for manual recovery. The launcher toggle works without a connected service. Preserve unlock, saved-ID, and changed-shortcut checks. (6b8592e)
 
 ### Fixed
 
-- Fit complete Wheel artwork inside rounded wedge outlines throughout highlight transitions. Remove circular parent clipping from square and rounded-square icons.
-- Show cached button artwork immediately, preload saved icon references, reuse stable image sizes, and keep a bounded local disk cache. Refresh artwork after package updates, including Android 12.
+- Remove circular parent clipping from Wheel artwork. Square and rounded-square icons retain their selected corners. Keep icon artwork separate from the minimum **48 dp** touch targets. Wheel capacity depends on usable touch targets rather than oversized artwork. (28013f1)
+- Show cached artwork immediately when button views reopen. Preload saved app and icon-pack references, reuse stable image sizes, and retain a bounded local disk cache for later app starts. Refresh artwork after app or icon-pack updates. Missing or cleared caches load normally; missing resources keep safe fallbacks. (93c5847)
+- Register protected package updates with the platform receiver API on older Android versions and private receiver flags on Android 13 and later. Verify startup, caching, and launcher actions on Android 12 and 16. (b903045)
 
-### Compatibility
+### Maintenance
 
-- Save schema 29 backups. Import older backups with adaptive, centered Wheel icons while preserving stored wheel sizes. Earlier builds cannot import the new backup format. Device checks remain pending.
+- Update setup instructions and the user guide for icon sizing, safe positions, accessibility controls, and local artwork caching. (cd3c65a)
+- Process main-thread launcher callbacks while the interface test waits for shortcut support. Preserve the timeout and pinning assertions. (ae4543f)
+
+### Compatibility and validation
+
+- Save schema 29 backups and preserve older imports with adaptive, centered Wheel icons. Nudge 0.5.3 and earlier cannot import this format.
+- Retain saved configuration, independent touch targets, Wheel Autofit, other accessibility services, and shortcut unlock checks.
+- Pass 843 unit tests across 128 classes, debug lint with 0 errors and 17 warnings, and the 0.5.4-debug / code 20 build. Pass all 39 release-tool checks.
+- Physical-device checks, signed assembly, signer comparison, and installation over 0.5.3 remain pending. See the reviewed 0.5.4 release notes.
 
 ## 0.5.3 - 2026-10-24
 

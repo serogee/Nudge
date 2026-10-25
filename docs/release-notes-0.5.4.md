@@ -1,0 +1,40 @@
+# Nudge 0.5.4
+
+## Added
+
+- Add **Adapt icon size** for Wheels, enabled by default. Fit complete artwork within the rounded wedge, with padding from both arcs and separator gaps. Turn adaptation off to set a preferred **Icon size** from **12–128 dp**, defaulting to **32 dp**. Retain the manual value when adaptation is enabled again. Available space can reduce the displayed size. (28013f1)
+- Add **Icon position** from **0–100%**. Zero is the nearest safe inner position, 100 is the nearest safe outer position, and the default **50%** keeps the icon at the middle of the band. Endpoints retain room for visible artwork. Recalculate available size throughout highlight transitions. Save choices separately for portrait and landscape. Icon edits preserve Wheel Autofit. (28013f1)
+- Add **Nudge accessibility** on Home and a **Toggle accessibility** action for buttons, direct gestures, and launcher shortcuts. Turning on opens Android settings; enable **Nudge handles** there. Turning off disables the connected handles service and closes its overlays. If enabled but disconnected, open settings for manual recovery. The launcher toggle works without a connected service. Preserve unlock, saved-ID, and changed-shortcut checks. (6b8592e)
+
+## Fixed
+
+- Remove circular parent clipping from Wheel artwork. Square and rounded-square icons retain their selected corners. Keep icon artwork separate from the minimum **48 dp** touch targets. Wheel capacity depends on usable touch targets rather than oversized artwork. (28013f1)
+- Show cached artwork immediately when button views reopen. Preload saved app and icon-pack references, reuse stable image sizes, and retain a bounded local disk cache for later app starts. Refresh artwork after app or icon-pack updates. Missing or cleared caches load normally; missing resources keep safe fallbacks. (93c5847)
+- Register protected package updates with the platform receiver API on older Android versions and private receiver flags on Android 13 and later. Verify startup, caching, and launcher actions on Android 12 and 16. (b903045)
+
+## Maintenance
+
+- Update setup instructions and the user guide for icon sizing, safe positions, accessibility controls, and local artwork caching. (cd3c65a)
+- Process main-thread launcher callbacks while the interface test waits for shortcut support. Preserve the timeout and pinning assertions. (ae4543f)
+
+## Compatibility and known limits
+
+- Backups use **schema 29**. Retain per-orientation icon choices, Wheel radii, Autofit, transitions, hover colors, action references, shared links, and overflow buttons. Older backups remain importable. Missing icon settings use adaptation on, a centered position, and a saved manual size of 32 dp. Preserve older Wheel sizes. Nudge 0.5.3 and earlier cannot import schema-29 backups.
+- Wheels retain up to **six buttons** and minimum **48 dp** touch targets. Screen space and touch geometry can reduce capacity. Icon size and position do not change selection regions. Preferred manual icon sizes can be limited, and narrow positions can produce small artwork. Highlight growth remains subject to the available space.
+- Disabling Nudge handles retains saved configuration and the **Enable Gestures** choice. It does not disable other accessibility services or the separate brightness calibration service. Android requires manual approval to enable accessibility. Enabling through a switch or shortcut does not grant permission automatically.
+- Icon caches remain in app storage and can be evicted by Android. JSON backups retain references rather than image files. Launcher shortcut icons remain static until pinned again.
+- Physical-device checks remain pending for icon clipping and readability at extreme radii, transitions, touch ownership, left/right/bottom handles, orientation changes, accessibility disable/re-enable, disconnected launcher toggles, package updates, and a signed installation over **0.5.3**. Automated checks do not establish these results.
+
+## Automated preparation checks
+
+- Passed **843 unit tests across 128 classes**, with no failures, errors, or skipped cases. The complete final run passed after correcting the launcher interface test's main-thread synchronization. Coverage includes rounded wedge bounds throughout transitions, full square artwork, manual preferences, orientation persistence, older imports, cache restart and invalidation, Home state, disconnected shortcuts, and service cleanup.
+- Debug lint passed with **0 errors and 17 warnings**. Built and checked **0.5.4-debug, code 20**, application ID `com.modukey.app.debug`, minimum SDK 31, and target SDK 36.
+- Release tools passed **29 changelog integration checks** and **10 isolated release finalization checks**. These checks build and tag only disposable fixtures.
+- Reviewed the generated notes against the implemented behavior. All covered Unreleased entries are included here. Preserve published changelog entries, prior version notes, release artifacts, and tags.
+- Final signed assembly, signer comparison, and device checks remain pending. No signed 0.5.4 APK or v0.5.4 tag is created on this feature branch. The finalizer repeats unit tests, full lint, and signed release assembly after the GitHub merge.
+
+## Release baseline
+
+- Previous stable release: [v0.5.3](https://github.com/serogee/Nudge/releases/tag/v0.5.3), **code 19**, published at **2026-10-24T15:52:34Z**. GitHub releases/latest and the published build metadata identify commit `bd88a9f1960952ebddd66b9f576f19ef8155f212`.
+- This preparation uses **version 0.5.4, code 20**. Notes were generated with `-FromTag v0.5.3`, then reviewed. Version 0.5.4 is not yet published.
+- Build the final signed APK and create v0.5.4 from clean merged main. Follow the [development and release guide](development.md#build-and-tag-after-the-github-merge), retain the existing signing identity, and verify the signed update and changed features on a device before publication.
