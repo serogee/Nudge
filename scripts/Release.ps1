@@ -58,7 +58,8 @@ try {
     $apksigner = Join-Path $sdkRoot 'build-tools/36.0.0/apksigner.bat'
     if (!(Test-Path -LiteralPath $apksigner)) { throw 'Install Android build-tools 36.0.0 for signature verification.' }
     & (Join-Path $PSScriptRoot 'Test-Changelog.ps1')
-    & .\gradlew.bat :app:testDebugUnitTest :app:lint :app:assembleRelease --console=plain
+    # Recompile tests after schema changes and avoid replacing the Windows problems report.
+    & .\gradlew.bat clean :app:testDebugUnitTest :app:lint :app:assembleRelease --console=plain --no-build-cache --no-problems-report '-Pkotlin.incremental=false'
     if ($LASTEXITCODE -ne 0) { throw 'Release checks or build failed; nothing was distributed.' }
     $apk = Join-Path $repoRoot 'app/build/outputs/apk/release/app-release.apk'
     if (!(Test-Path -LiteralPath $apk)) { throw 'Signed APK was not generated. Verify the signing configuration.' }
