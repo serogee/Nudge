@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added
+
+- Add **Item gap** from **0–24 dp**, defaulting to **4 dp**. Keep shared Wheel edges parallel throughout the band and highlight transitions. Save gaps per orientation in **schema 31** backups and use 4 dp for older imports.
+- Briefly highlight the manual Wheel hitbox in the editor and live accessibility preview. Refresh the two-second reference after dragging, numeric entry, or reset. Keep the reference above the Wheel without receiving input, and clear it when editing ends or is cancelled.
+
+### Changed
+
+- Make Autofit choose the smallest overall outer radius that fits all buttons and their **48 dp** touch targets. Keep the inner radius at least **32 dp**, allowing a larger hole to reduce the outside size. Prefer **110%** highlighting and reduce toward 100% only when screen space requires it. New unfitted Wheels start at **32/88 dp**.
+- Default and reset **Icon position** to **55%**, and apply 55% when Autofit recalculates. Preserve explicit imported positions until edited or fitted again.
+- With Autofit on, Automatic hitboxes start at **32 dp** and follow each current logical outer edge, including highlighting. A larger fitted visual hole does not push selection outward. With Autofit off, retain saved gesture distances and the inward margin.
+- Copy the previous mode's effective unhighlighted bounds when entering Manual hitbox mode. Use the selected preview handle's distances where applicable. Keep manual radii independent during highlighting and preserve visual sizes, Autofit, and stored gesture settings.
+
+### Fixed
+
+- Keep outer Wheel corner rounding independent from the limited inner arc. Preserve concentric boundaries and normal tap gaps as the hole becomes smaller.
+
 ## 0.5.4 - 2026-10-25
 
 ### Added

@@ -45,6 +45,7 @@ import com.modukey.app.updates.*
         Help(R.string.wheel_autofit_help)
         Help(R.string.wheel_autofit_priority)
         Help(R.string.wheel_radius_help)
+        Help(R.string.wheel_gap_help)
         Help(R.string.wheel_expand_help)
         Help(R.string.wheel_animations_help)
         Help(R.string.wheel_drag_help)
