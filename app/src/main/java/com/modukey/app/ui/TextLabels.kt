@@ -17,6 +17,9 @@ import com.modukey.app.core.*
     GestureSlot.SWIPE_HOLD -> R.string.swipe_hold; GestureSlot.TAP -> R.string.tap; GestureSlot.HOLD -> R.string.hold
     WheelFocusAnimation.NONE -> R.string.animation_none; WheelFocusAnimation.SMOOTH -> R.string.animation_smooth
     WheelFocusAnimation.SPRING -> R.string.animation_spring
+    WheelHitboxMode.AUTOMATIC -> R.string.wheel_hitbox_automatic
+    WheelHitboxMode.BUTTON_SIZE -> R.string.wheel_hitbox_button
+    WheelHitboxMode.MANUAL -> R.string.wheel_hitbox_manual
     PanelMode.FIXED -> R.string.fixed; PanelMode.SCROLLABLE -> R.string.scrollable; PanelMode.WHEEL -> R.string.wheel
     PanelDirection.VERTICAL -> R.string.vertical; PanelDirection.HORIZONTAL -> R.string.horizontal
     OutsideTouch.BLOCK -> R.string.outside_block; OutsideTouch.PASS_THROUGH -> R.string.outside_pass; OutsideTouch.KEEP_OPEN -> R.string.outside_keep

@@ -582,6 +582,17 @@
     <string name="animation_smooth">Smooth</string>
     <string name="animation_spring">Spring</string>
     <string name="wheel_selected_size">Selected size</string>
+    <string name="wheel_hitbox">Wheel hitbox</string>
+    <string name="wheel_hitbox_automatic">Automatic</string>
+    <string name="wheel_hitbox_button">Use Button Size</string>
+    <string name="wheel_hitbox_manual">Manual</string>
+    <string name="wheel_hitbox_radii">Hitbox radii</string>
+    <string name="wheel_hitbox_inner">Inner hitbox radius</string>
+    <string name="wheel_hitbox_outer">Outer hitbox radius</string>
+    <string name="wheel_hitbox_automatic_help">Keep the current Drag to pick distances and inward selection margin. Normal taps use the visible buttons.</string>
+    <string name="wheel_hitbox_button_help">Use each button\'s inner and outer radii for Drag to pick, including highlight expansion. Normal taps stay unchanged.</string>
+    <string name="wheel_hitbox_manual_help">Set independent Drag to pick radii from zero to 600 dp. Keep at least 8 dp between them. Normal taps stay unchanged.</string>
+    <string name="wheel_hitbox_gesture_help">Selection distances apply to Automatic hitboxes. Other modes use the hitbox settings in the wheel\'s Layout section.</string>
     <string name="wheel_adapt_icon_size">Adapt icon size</string>
     <string name="wheel_adapt_icon_size_help">Size icons from the wheel radii. Keep the whole icon inside its wedge at the selected position.</string>
     <string name="wheel_icon_size">Icon size</string>

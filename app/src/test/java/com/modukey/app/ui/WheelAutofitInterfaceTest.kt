@@ -39,6 +39,23 @@ class WheelAutofitInterfaceTest {
         rule.onNodeWithContentDescription("Reset Selected size").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale); assertFalse(settings(id).portrait.wheel.autoFit) }
     }
+    @Test fun manualHitboxEditsPreserveVisualRadiiAutofitAndOtherOrientation() {
+        val id = start()
+        val original = rule.runOnIdle { settings(id).portrait.wheel }
+        rule.onNodeWithText("Automatic").performScrollTo().performClick()
+        rule.onNodeWithText("Manual").performClick()
+        rule.onNodeWithContentDescription("Inner hitbox radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
+        rule.onNodeWithContentDescription("Outer hitbox radius").performSemanticsAction(SemanticsActions.SetProgress) { it(420f) }
+        rule.runOnIdle {
+            val current = settings(id)
+            assertEquals(original.radii(56f), current.portrait.wheel.radii(56f))
+            assertTrue(current.portrait.wheel.autoFit)
+            assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 0f, 420f), current.portrait.wheel.hitbox)
+            assertEquals(WheelHitboxMode.AUTOMATIC, current.landscape.wheel.hitbox.mode)
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel(id)!!.settings.portrait.wheel.hitbox.mode == WheelHitboxMode.MANUAL } }
+    }
     @Test fun addButtonsFitsUpToSixAndDisablingRetainsTheFittedValues() {
         val id = start()
         rule.onNodeWithContentDescription("Autofit").assertIsOn()

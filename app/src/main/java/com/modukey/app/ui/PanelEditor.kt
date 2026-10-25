@@ -109,6 +109,7 @@ import kotlin.math.roundToInt
             }
             Help(R.string.wheel_autofit_priority)
             Help(R.string.wheel_radius_help)
+            WheelHitboxControls(l.wheel.hitbox) { change -> layout { it.copy(wheel = it.wheel.copy(hitbox = change(it.wheel.hitbox))) } }
             WheelIconControls(l.wheel) { value -> layout { it.copy(wheel = value) } }
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {

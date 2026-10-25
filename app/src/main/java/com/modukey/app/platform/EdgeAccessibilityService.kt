@@ -267,7 +267,8 @@ class EdgeAccessibilityService : AccessibilityService() {
         val bounds = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, original.trigger, space.landscape)
         val geometry = PanelGeometry.calculate(space.usable, space.density, panel.settings.layout(space.landscape), panel.settings.buttons.size,
             bounds, original.trigger.placement(space.landscape).edge).wheel ?: return false
-        val driver = WheelPickSession(geometry, target.wheelPick, space.density, view.touchX, view.touchY, SystemClock.uptimeMillis(), slot.ordinal < 3)
+        val driver = WheelPickSession(geometry, target.wheelPick, space.density, view.touchX, view.touchY, SystemClock.uptimeMillis(), slot.ordinal < 3,
+            panel.settings.layout(space.landscape).wheel.hitbox)
         val binding = WheelBinding(original, slot, target, stage, panel, driver)
         val captured = view.captureInteraction({ x, y, moving ->
             if (moving && wheelBinding === binding) {

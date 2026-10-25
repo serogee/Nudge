@@ -39,7 +39,8 @@ class WheelGestureRuntimeTest {
     }
     private data class Fixture(val service: EdgeAccessibilityService, val view: HandleTriggerView, val host: Host,
         val dismiss: (PanelDismissReason) -> Unit)
-    private fun fixture(allowLater: Boolean = false, slot: GestureSlot = GestureSlot.SWIPE_1, drag: Boolean = true): Fixture {
+    private fun fixture(allowLater: Boolean = false, slot: GestureSlot = GestureSlot.SWIPE_1, drag: Boolean = true,
+        hitbox: WheelHitboxSettings = WheelHitboxSettings()): Fixture {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create(); destroy = { controller.destroy() }
         val service = controller.get()
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
@@ -47,7 +48,7 @@ class WheelGestureRuntimeTest {
         shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
         await { app.configuration.state.value != null }
         val panel = SavedPanel(id = "wheel", settings = PanelConfig(buttons = listOf(PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY)),
-            portrait = PanelLayout(mode = PanelMode.WHEEL), autoCloseEnabled = true, autoCloseMs = 1000))
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(hitbox = hitbox)), autoCloseEnabled = true, autoCloseMs = 1000))
         val target = GestureTarget.panel(panel.id).copy(wheelPick = WheelPickSettings(drag, allowLaterSwipes = allowLater))
         val handle = HandleConfig(id = "handle", enabled = true, trigger = TriggerSettings(portrait = Placement(Edge.LEFT), landscapeEnabled = true),
             bindings = mapOf(slot to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME))
@@ -82,6 +83,31 @@ class WheelGestureRuntimeTest {
         touch(f.view, MotionEvent.ACTION_UP, p.x, p.y); idle()
         assertTrue(app.configuration.state.value!!.handle("handle")!!.indicatorHidden)
         assertEquals(0, stage(f))
+    }
+    @Test fun manualHitboxesCanPickInsideTheVisibleHole() {
+        val f = fixture(hitbox = WheelHitboxSettings(WheelHitboxMode.MANUAL, 16f, 80f)); open(f)
+        val g = f.host.spec!!.geometry.wheel!!
+        val p = g.point(0f, 40f)
+        assertNull(g.tapHit(p.x, p.y))
+        touch(f.view, MotionEvent.ACTION_MOVE, p.x, p.y); idle()
+        assertEquals(0, f.host.spec!!.wheelSelection)
+        touch(f.view, MotionEvent.ACTION_UP, p.x, p.y); idle()
+        assertTrue(app.configuration.state.value!!.handle("handle")!!.indicatorHidden)
+        assertNull(f.host.spec)
+    }
+    @Test fun buttonSizeRejectsTheInnerMarginAndRechecksOuterBoundsOnRelease() {
+        val f = fixture(hitbox = WheelHitboxSettings(WheelHitboxMode.BUTTON_SIZE)); open(f)
+        val g = f.host.spec!!.geometry.wheel!!
+        val near = g.point(0f, g.innerRadius - 1f)
+        touch(f.view, MotionEvent.ACTION_MOVE, near.x, near.y); idle()
+        assertNull(f.host.spec!!.wheelSelection)
+        val p = g.slices().single().point
+        touch(f.view, MotionEvent.ACTION_MOVE, p.x, p.y); idle()
+        assertEquals(0, f.host.spec!!.wheelSelection)
+        val far = g.point(0f, g.slices(0).single().outerRadius + 1f)
+        touch(f.view, MotionEvent.ACTION_UP, far.x, far.y); idle()
+        assertFalse(app.configuration.state.value!!.handle("handle")!!.indicatorHidden)
+        assertNull(f.host.spec)
     }
     @Test fun earlyReleasePreservesNextStageAndTheSequenceTimeout() {
         val f = fixture(allowLater = true); open(f)
