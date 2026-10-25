@@ -131,6 +131,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             }, ContextCompat.RECEIVER_NOT_EXPORTED)
             registered = true
             app.shortcuts.bind(this, ::runShortcut)
+            app.accessibility.bind(this) { disableSelf(); stopSession() }
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
@@ -266,7 +267,8 @@ class EdgeAccessibilityService : AccessibilityService() {
         val bounds = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, original.trigger, space.landscape)
         val geometry = PanelGeometry.calculate(space.usable, space.density, panel.settings.layout(space.landscape), panel.settings.buttons.size,
             bounds, original.trigger.placement(space.landscape).edge).wheel ?: return false
-        val driver = WheelPickSession(geometry, target.wheelPick, space.density, view.touchX, view.touchY, SystemClock.uptimeMillis(), slot.ordinal < 3)
+        val driver = WheelPickSession(geometry, target.wheelPick, space.density, view.touchX, view.touchY, SystemClock.uptimeMillis(), slot.ordinal < 3,
+            panel.settings.layout(space.landscape).wheel.hitbox)
         val binding = WheelBinding(original, slot, target, stage, panel, driver)
         val captured = view.captureInteraction({ x, y, moving ->
             if (moving && wheelBinding === binding) {
@@ -557,6 +559,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         raiseHandles = false
         sliderGuideHost?.hide(); sliderGuideHost = null
         app.shortcuts.unbind(this)
+        app.accessibility.unbind(this)
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
         systemPanels?.cancel(); systemPanels = null

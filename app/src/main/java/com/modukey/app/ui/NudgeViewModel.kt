@@ -163,6 +163,10 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         accessibilityEnabled.value = AccessibilityPermission.enabled(app)
         policyAccess.value = app.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted
     }
+    fun setAccessibility(enabled: Boolean) {
+        if (!app.accessibility.setEnabled(enabled)) tell(R.string.action_failed)
+        refreshPermissions()
+    }
     fun checkForUpdates() = updateChecker.check(configuration.value?.includePrereleases ?: false)
     fun downloadApk(release: PublishedRelease) { release.apkUrl?.let { downloadController.download(ApkTarget(release.tag, it)) } }
     fun retryApkDownload() = downloadController.retry()

@@ -154,9 +154,11 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
     button.icon.builtIn?.let { Icon(AppIcons.library(it), null, modifier, tint = tint); return }
     val app = LocalContext.current.applicationContext as NudgeApplication
     val density = LocalDensity.current.density
-    val bitmap by produceState<ImageBitmap?>(null, button.action, button.appPackage, button.appActivity, button.icon, pack, density, sizeDp) {
-        value = null
-        value = app.icons.icon(button, pack, (sizeDp * density).toInt())?.asImageBitmap()
+    val pixels = (sizeDp * density).toInt()
+    val bitmap by key(button.action, button.appPackage, button.appActivity, button.icon, pack, pixels) {
+        produceState(app.icons.cached(button, pack, pixels)?.asImageBitmap()) {
+            value = app.icons.icon(button, pack, pixels)?.asImageBitmap()
+        }
     }
     val imageFilter = imageTint?.let { ColorFilter.tint(it, BlendMode.SrcAtop) }
     if (bitmap != null) Image(bitmap!!, contentDescription = null, modifier = modifier, colorFilter = imageFilter)
@@ -169,6 +171,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.BRIGHTNESS_MAXIMUM -> Icon(AppIcons.BrightnessMaximum, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_MINIMUM -> Icon(AppIcons.BrightnessMinimum, null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLES -> Icon(AppIcons.Handle, null, modifier, tint = tint)
+        ButtonAction.TOGGLE_ACCESSIBILITY -> Icon(ButtonVectors.action(button.action), null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLE_VISIBILITY -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
         ButtonAction.TOGGLE_AND_HIDE_HANDLES -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
         ButtonAction.NOTIFICATIONS -> Icon(AppIcons.Notifications, null, modifier, tint = tint)

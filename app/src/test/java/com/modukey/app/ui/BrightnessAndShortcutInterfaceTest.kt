@@ -128,7 +128,7 @@ class BrightnessAndShortcutInterfaceTest {
             val current by app.configuration.state.collectAsStateWithLifecycle()
             NudgeTheme { HomeShortcutsSection(checkNotNull(current), vm) }
         }
-        rule.waitUntil(10_000) { vm.shortcutSupported.value == true }
+        rule.waitUntil(10_000) { rule.runOnIdle { vm.shortcutSupported.value == true } }
         rule.onNodeWithText("Add shortcut").performClick()
         rule.onNodeWithText("Volume up").performClick()
         rule.onNodeWithText("Save").performClick()

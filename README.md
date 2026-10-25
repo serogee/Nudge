@@ -33,7 +33,7 @@ This README describes the current source. Check each release's notes for the fea
 ## 🚀 1. Quick start
 
 1. Download and install the APK from [GitHub Releases](https://github.com/serogee/Nudge/releases).
-2. Open Nudge. On Home, select **Open Accessibility** and enable **Nudge handles**.
+2. Open Nudge. Turn on **Nudge accessibility** on Home, then enable **Nudge handles** in Android settings.
 3. Enable a handle in **Handles**, then turn on **Enable Gestures** on Home.
 4. Swipe inward from the handle to open the native volume popup.
 
@@ -74,6 +74,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 - Choose fixed or scrollable layouts, vertical or horizontal direction, placement, animations, and outside-touch behavior.
 - Add app shortcuts, volume and sound controls, brightness controls, Lock screen, Input Method, Screenshot, and native panel actions.
 - Customize colors, opacity, button containers, built-in icons, and supported installed icon packs.
+- Fit Wheel icons automatically, or choose their preferred size and position between the inner and outer edges.
 - Set panel-wide active background and icon colors for supported toggle actions.
 - Pause handles, hide their visible bars, or configure separate toggle and hide groups.
 
@@ -90,6 +91,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 - Preview placement with non-interactive guides. Save or cancel handle and panel edits.
 - Drag slider thumbs to adjust settings. Track taps do not seek. Tap percentage and dp readouts to enter exact values.
 - Pin configured actions to the Home screen through your launcher.
+- Use the Home accessibility switch or a Toggle accessibility shortcut to open setup or disable Nudge handles.
 - Export and import JSON backups, including handles, panels, gesture bindings, and shortcut definitions.
 - Check for updates when requested. Download an APK and review Android's installation prompt.
 

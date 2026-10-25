@@ -23,6 +23,11 @@ object ButtonVectors {
     private val vibrate = icon("Vibrate") { moveTo(8f,4f); lineTo(16f,4f); lineTo(16f,20f); lineTo(8f,20f); close(); moveTo(4f,8f); lineTo(3f,12f); lineTo(4f,16f); moveTo(20f,8f); lineTo(21f,12f); lineTo(20f,16f) }
     private val dnd = icon("Do Not Disturb") { moveTo(21f,12f); curveTo(21f,24f,3f,24f,3f,12f); curveTo(3f,0f,21f,0f,21f,12f); moveTo(7f,12f); lineTo(17f,12f) }
     private val lock = icon("Lock") { moveTo(5f,10f); lineTo(19f,10f); lineTo(19f,21f); lineTo(5f,21f); close(); moveTo(8f,10f); lineTo(8f,7f); curveTo(8f,0f,16f,0f,16f,7f); lineTo(16f,10f); moveTo(12f,14f); lineTo(12f,17f) }
+    private val accessibility = icon("Accessibility") {
+        moveTo(14f,4f); curveTo(14f,6.7f,10f,6.7f,10f,4f); curveTo(10f,1.3f,14f,1.3f,14f,4f)
+        moveTo(4f,8f); lineTo(12f,10f); lineTo(20f,8f)
+        moveTo(12f,10f); lineTo(12f,15f); lineTo(8f,22f); moveTo(12f,15f); lineTo(16f,22f)
+    }
     fun action(action: ButtonAction): ImageVector = when (action) {
         ButtonAction.PHONE_SETTINGS -> Icons.Outlined.Settings
         ButtonAction.NUDGE_SETTINGS -> AppIcons.Nudge
@@ -34,6 +39,7 @@ object ButtonVectors {
         ButtonAction.BRIGHTNESS_UP -> AppIcons.BrightnessUp; ButtonAction.BRIGHTNESS_DOWN -> AppIcons.BrightnessDown
         ButtonAction.BRIGHTNESS_AUTOMATIC -> AppIcons.BrightnessAutomatic
         ButtonAction.TOGGLE_HANDLES -> AppIcons.Handle; ButtonAction.OPEN_APP -> AppIcons.Apps; ButtonAction.EMPTY -> AppIcons.Empty
+        ButtonAction.TOGGLE_ACCESSIBILITY -> accessibility
         ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES -> AppIcons.HandleVisibility
     }
 }

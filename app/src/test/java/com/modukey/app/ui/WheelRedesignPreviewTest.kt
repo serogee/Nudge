@@ -60,7 +60,7 @@ class WheelRedesignPreviewTest {
                 Text("Hollow center · separated wedges · up to six actions", color = Color(0xFFC2CCB8))
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Sample("Normal · 160 dp radius", 160f, 6)
-                    Sample("Focused · selected size 125%", 160f, 6, 2)
+                    Sample("Focused · selected size 110%", 160f, 6, 2)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Sample("Minimum · 40 dp radius", 40f, 1)

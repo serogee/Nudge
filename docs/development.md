@@ -122,4 +122,29 @@ Open an existing GitHub draft for that tag or create a release using the existin
 
 For a stable release, leave pre-release off and set it as latest. Publish only after verifying the attachments. Confirm publication before using that tag as a future changelog baseline.
 
+You can use GitHub CLI instead of the release editor. Run `gh auth status` first. After pushing the finalizer's tag, create a draft with all four exported files:
+
+```powershell
+$assetRoot = "releases/$releaseVersion"
+gh release create "v$releaseVersion" `
+  --verify-tag `
+  --draft `
+  --title "Nudge $releaseVersion" `
+  --notes-file "$assetRoot/Nudge-$releaseVersion-notes.md" `
+  "$assetRoot/Nudge-$releaseVersion.apk" `
+  "$assetRoot/Nudge-$releaseVersion.apk.sha256" `
+  "$assetRoot/Nudge-$releaseVersion.json" `
+  "$assetRoot/Nudge-$releaseVersion-notes.md"
+gh release view "v$releaseVersion" --web
+```
+
+This creates an unpublished draft. Review the APK, checksum, metadata, notes, and upgrade results before publishing. When ready, publish it as the latest stable release:
+
+```powershell
+gh release edit "v$releaseVersion" --draft=false --latest
+gh release view "v$releaseVersion" --web
+```
+
+Do not create the tag manually or rerun changelog generation after finalization. The finalizer creates the tag and exports the committed, reviewed notes. To enable automatic signer comparison without a connected device, retain the previous published APK at `releases/<previous-version>/Nudge-<previous-version>.apk` before running the finalizer.
+
 Do not move existing release tags or replace published notes to describe a source correction. Prepare a new version with a higher version code.

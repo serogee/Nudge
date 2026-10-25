@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -30,16 +29,19 @@ import androidx.compose.ui.unit.dp
 import com.modukey.app.core.*
 import com.modukey.app.platform.SoundState
 import kotlin.math.PI
-import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable internal fun WheelContent(panel: PanelConfig, layout: PanelLayout, geometry: WheelGeometryResult, state: SoundState,
     interactive: Boolean, selected: Int?, onAction: (PanelButton) -> Unit) {
     val density = LocalDensity.current
     val latestAction by rememberUpdatedState(onAction)
-    val iconRasterDp = with(density) { (geometry.cell * geometry.expansion * .55f).toDp().value.roundToInt().coerceAtLeast(1) }
+    val iconRasterDp = if (layout.wheel.adaptIconSize) with(density) {
+        (geometry.cell * geometry.expansion * .55f).toDp().value.roundToInt().coerceAtLeast(1)
+    } else (layout.wheel.iconSizeDp * geometry.expansion).roundToInt().coerceAtLeast(1)
     val weights = wheelFocusWeights(layout.wheel, geometry.count, selected)
     val slices = geometry.slices(weights)
+    val outlines = slices.map { wheelShape(geometry, it, with(density) { panel.cornerDp.dp.toPx() }) }
+    val icons = slices.mapIndexed { index, slice -> wheelIconLayout(geometry, slice, layout.wheel, outlines[index], density.density) }
     val shown = panel.buttons.take(geometry.count)
     val faces = shown.map { buttonPresentation(it, panel, state) }
     val highlight = MaterialTheme.colorScheme.primary
@@ -56,16 +58,17 @@ import kotlin.math.roundToInt
     Layout(content = {
         shown.forEachIndexed { index, button ->
             val face = faces[index]
-            val icon = with(density) { slices[index].iconSize.toDp() }
+            // Keep the circular touch target separate from the artwork and its chosen corner shape.
             Box(Modifier.clip(CircleShape)
                 .then(if (interactive && button.action != ButtonAction.EMPTY) Modifier.rejectDraggedClick()
                     .clickable(role = Role.Button, onClickLabel = face.title) { latestAction(button) } else Modifier)
                 .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics {
                     contentDescription = face.description
                     if (face.toggle) this.selected = face.active
-                } else Modifier), contentAlignment = Alignment.Center) {
+                } else Modifier))
+            Box(contentAlignment = Alignment.Center) {
                 if (button.action != ButtonAction.EMPTY || button.emptyAppearance == EmptyAppearance.SLASH)
-                    ButtonGraphic(button, panel.iconPack, Modifier.size(icon).clip(iconShape(panel)).alpha(panel.iconOpacity),
+                    ButtonGraphic(button, panel.iconPack, Modifier.fillMaxSize().clip(iconShape(panel)).alpha(panel.iconOpacity),
                         hover[index].icon, iconRasterDp, imageTint = hover[index].imageTint)
             }
         }
@@ -80,7 +83,7 @@ import kotlin.math.roundToInt
         slices.forEachIndexed { index, slice ->
             val button = shown[index]
             if (button.action != ButtonAction.EMPTY || button.emptyAppearance != EmptyAppearance.NO_BUTTON) {
-                val shape = path(slice); val face = faces[index]
+                val shape = outlines[index]; val face = faces[index]
                 val colors = hover[index]
                 fill(shape, if (face.container) background else colors.background)
                 if (face.container) fill(shape, colors.background)
@@ -90,12 +93,13 @@ import kotlin.math.roundToInt
         }
     }) { children, constraints ->
         val measured = children.mapIndexed { index, child ->
-            val target = max(geometry.minimumCell, slices[index].iconSize).roundToInt().coerceAtLeast(1)
-            child.measure(Constraints.fixed(target, target))
+            val size = if (index % 2 == 0) geometry.minimumCell else icons[index / 2].size
+            val pixels = size.roundToInt().coerceAtLeast(1)
+            child.measure(Constraints.fixed(pixels, pixels))
         }
         layout(constraints.maxWidth, constraints.maxHeight) {
             measured.forEachIndexed { index, child ->
-                val p = slices[index].point
+                val p = if (index % 2 == 0) slices[index / 2].point else icons[index / 2].point
                 child.place((p.x - geometry.bounds.x - child.width / 2f).roundToInt(),
                     (p.y - geometry.bounds.y - child.height / 2f).roundToInt())
             }

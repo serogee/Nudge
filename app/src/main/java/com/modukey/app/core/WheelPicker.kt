@@ -4,16 +4,18 @@ import kotlin.math.*
 
 enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 
-data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
+data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = DEFAULT_SELECTED_SCALE,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
     val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140,
-    val autoFit: Boolean = true) {
-    companion object { const val MIN_INNER_RADIUS_DP = 1f }
+    val autoFit: Boolean = true, val adaptIconSize: Boolean = true, val iconSizeDp: Float = 32f,
+    val iconPosition: Float = .5f, val hitbox: WheelHitboxSettings = WheelHitboxSettings()) {
+    companion object { const val MIN_INNER_RADIUS_DP = 1f; const val DEFAULT_SELECTED_SCALE = 1.1f }
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
         val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
-        return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f),
-            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400))
+        return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(DEFAULT_SELECTED_SCALE).coerceIn(1f, 1.5f),
+            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400),
+            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(.5f).coerceIn(0f, 1f), hitbox = hitbox.normalized())
     }
     /** Missing bounds retain the old center-radius and button-size geometry on import. */
     fun radii(buttonSizeDp: Float): Pair<Float, Float> {
@@ -95,8 +97,11 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
         // Drag picking reaches slightly inside the hollow center. Normal taps still pass innerRadius as their minimum.
         val dragInner = innerRadius - minOf(innerRadius * .2f, gap * 3f)
         if (distance < maxOf(minimum, dragInner) || distance > maximum) return null
+        return angularHit(x, y, selected)
+    }
+    internal fun angularHit(x: Float, y: Float, selected: Int?): Int? {
         val angle = angle(x, y)
-        if (angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
+        if (!angle.isFinite() || angle < -PI.toFloat() / 2f || angle > PI.toFloat() / 2f) return null
         val regions = slices(selected)
         if (selected != null && selected in regions.indices && angle >= regions[selected].start && angle <= regions[selected].end) return selected
         return regions.indexOfFirst { angle >= it.start && angle <= it.end }.takeIf { it >= 0 }
@@ -115,7 +120,7 @@ object WheelGeometry {
             inner + cell / 2f, cell, count, count, expansion, 48f, inner, 4f)
         return (listOf<Int?>(null) + (0 until count).toList()).all { selected ->
             candidate.slices(selected).all { slice ->
-                val target = maxOf(48f, slice.iconSize)
+                val target = 48f
                 slice.size >= target && (inner + slice.size / 2f) *
                     sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
             }
@@ -133,7 +138,7 @@ object WheelGeometry {
         val inner = minOf(innerDp * d, (maximumOuter - cell * expansion).coerceAtLeast(0f))
         val radius = inner + cell / 2f
         val outer = inner + cell * expansion
-        // Every normal and expanded wedge must contain a 48 dp circular touch target and its icon.
+        // Capacity depends on 48 dp touch targets. Artwork is fitted separately without changing selection.
         val capacity = (6 downTo 1).firstOrNull { n ->
             cell >= 48f * d && screen.width >= margin * 2f && screen.height >= margin * 2f &&
                 fitsTargets(inner / d, cell / d, expansion, n)
@@ -163,8 +168,9 @@ data class WheelFinish(val kind: WheelFinishKind, val index: Int? = null)
 
 /** One touch owns one picker. Release may clear a highlight, but cannot create one. */
 class WheelPickSession(val geometry: WheelGeometryResult, settings: WheelPickSettings, private val density: Float,
-    startX: Float, startY: Float, now: Long, allowQuickRelease: Boolean) {
+    startX: Float, startY: Float, now: Long, allowQuickRelease: Boolean, hitbox: WheelHitboxSettings = WheelHitboxSettings()) {
     private val settings = settings.normalized()
+    private val hitbox = hitbox.normalized()
     val deadline: Long? = if (allowQuickRelease && this.settings.allowLaterSwipes) now + this.settings.releaseWindowMs else null
     private var anchor = WheelPoint(startX, startY)
     private var latest = anchor
@@ -182,14 +188,14 @@ class WheelPickSession(val geometry: WheelGeometryResult, settings: WheelPickSet
         if (!armed) return
         if (!moved && hypot(x - anchor.x, y - anchor.y) <= 8f * density) return
         moved = true
-        selected = geometry.hit(x, y, settings.minimumDistanceDp * density, settings.maximumDistanceDp * density, selected)
+        selected = geometry.pickHit(x, y, settings, density, hitbox, selected)
     }
     fun finish(x: Float, y: Float, now: Long, cancelled: Boolean = false): WheelFinish {
         if (!active) return WheelFinish(WheelFinishKind.CANCEL)
         active = false
         if (cancelled) return WheelFinish(WheelFinishKind.CANCEL)
         if (deadline != null && now < deadline) return WheelFinish(WheelFinishKind.NEXT_SWIPE)
-        val pick = selected?.takeIf { geometry.hit(x, y, settings.minimumDistanceDp * density, settings.maximumDistanceDp * density, it) == it }
+        val pick = selected?.takeIf { geometry.pickHit(x, y, settings, density, hitbox, it) == it }
         return if (pick != null) WheelFinish(WheelFinishKind.PICK, pick) else WheelFinish(WheelFinishKind.CANCEL)
     }
 }

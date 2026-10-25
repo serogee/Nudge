@@ -78,13 +78,19 @@ import kotlin.math.roundToInt
                     }
                     if (draft.wheelPick.enabled) DependentSettings(R.string.wheel_drag) {
                         val pick = draft.wheelPick
-                        SettingSlider(R.string.wheel_minimum_distance, pick.minimumDistanceDp, 16f..160f, t(R.string.dp_value, pick.minimumDistanceDp.roundToInt()), default = 32f) {
-                            draft = draft.copy(wheelPick = pick.copy(minimumDistanceDp = it).normalized())
+                        val wheel = requireNotNull(config.panel(draft.panelId)).settings
+                        val automatic = wheel.portrait.wheel.hitbox.mode == WheelHitboxMode.AUTOMATIC ||
+                            (wheel.landscapeOverride && wheel.landscape.wheel.hitbox.mode == WheelHitboxMode.AUTOMATIC)
+                        if (automatic) {
+                            SettingSlider(R.string.wheel_minimum_distance, pick.minimumDistanceDp, 16f..160f, t(R.string.dp_value, pick.minimumDistanceDp.roundToInt()), default = 32f) {
+                                draft = draft.copy(wheelPick = pick.copy(minimumDistanceDp = it).normalized())
+                            }
+                            SettingSlider(R.string.wheel_maximum_distance, pick.maximumDistanceDp, maxOf(48f, pick.minimumDistanceDp + 8f)..600f, t(R.string.dp_value, pick.maximumDistanceDp.roundToInt()), default = 240f) {
+                                draft = draft.copy(wheelPick = pick.copy(maximumDistanceDp = it).normalized())
+                            }
+                            Help(R.string.wheel_distance_help)
                         }
-                        SettingSlider(R.string.wheel_maximum_distance, pick.maximumDistanceDp, maxOf(48f, pick.minimumDistanceDp + 8f)..600f, t(R.string.dp_value, pick.maximumDistanceDp.roundToInt()), default = 240f) {
-                            draft = draft.copy(wheelPick = pick.copy(maximumDistanceDp = it).normalized())
-                        }
-                        Help(R.string.wheel_distance_help)
+                        Help(R.string.wheel_hitbox_gesture_help)
                         if (slot.ordinal < 3) {
                             Toggle(R.string.wheel_allow_later, R.string.wheel_allow_later_help, pick.allowLaterSwipes, default = false, optionsExpanded = pick.allowLaterSwipes) {
                                 draft = draft.copy(wheelPick = pick.copy(allowLaterSwipes = it))

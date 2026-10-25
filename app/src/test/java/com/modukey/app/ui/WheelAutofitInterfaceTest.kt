@@ -31,6 +31,31 @@ class WheelAutofitInterfaceTest {
         return rule.runOnIdle { app.configuration.preview.value!!.panels.last().id }
     }
     private fun settings(id: String) = app.configuration.preview.value!!.panel(id)!!.settings
+    @Test fun manualSelectedSizeStartsAndResetsAt110Percent() {
+        val id = start()
+        rule.onNodeWithContentDescription("Selected size").performScrollTo()
+        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale) }
+        rule.onNodeWithContentDescription("Selected size").performSemanticsAction(SemanticsActions.SetProgress) { it(1.4f) }
+        rule.onNodeWithContentDescription("Reset Selected size").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale); assertFalse(settings(id).portrait.wheel.autoFit) }
+    }
+    @Test fun manualHitboxEditsPreserveVisualRadiiAutofitAndOtherOrientation() {
+        val id = start()
+        val original = rule.runOnIdle { settings(id).portrait.wheel }
+        rule.onNodeWithText("Automatic").performScrollTo().performClick()
+        rule.onNodeWithText("Manual").performClick()
+        rule.onNodeWithContentDescription("Inner hitbox radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
+        rule.onNodeWithContentDescription("Outer hitbox radius").performSemanticsAction(SemanticsActions.SetProgress) { it(420f) }
+        rule.runOnIdle {
+            val current = settings(id)
+            assertEquals(original.radii(56f), current.portrait.wheel.radii(56f))
+            assertTrue(current.portrait.wheel.autoFit)
+            assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 0f, 420f), current.portrait.wheel.hitbox)
+            assertEquals(WheelHitboxMode.AUTOMATIC, current.landscape.wheel.hitbox.mode)
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel(id)!!.settings.portrait.wheel.hitbox.mode == WheelHitboxMode.MANUAL } }
+    }
     @Test fun addButtonsFitsUpToSixAndDisablingRetainsTheFittedValues() {
         val id = start()
         rule.onNodeWithContentDescription("Autofit").assertIsOn()
