@@ -33,7 +33,7 @@
 
 ## Automated preparation checks
 
-- Passed **859 unit tests across 131 classes**, with no failures, errors, or skipped cases. The complete final run passed after correcting the launcher interface test's main-thread synchronization. Coverage includes rounded wedge bounds throughout transitions, full square artwork, manual preferences, orientation persistence, older imports, cache restart and invalidation, Home state, disconnected shortcuts, service cleanup, all hitbox modes, independent manual radii, release validation, editor persistence, and the 110% default/reset.
+- Passed **859 unit tests across 131 classes**, with no failures, errors, or skipped cases, for feature commit `cea6e867d5bbce7b369ac1958f6f3a69b1cb79f4`. Later preparation commits change documentation only. The complete final run passed after correcting the launcher interface test's main-thread synchronization. Coverage includes rounded wedge bounds throughout transitions, full square artwork, manual preferences, orientation persistence, older imports, cache restart and invalidation, Home state, disconnected shortcuts, service cleanup, all hitbox modes, independent manual radii, release validation, editor persistence, and the 110% default/reset.
 - Debug lint passed with **0 errors and 17 warnings**. Built and checked **0.5.4-debug, code 20**, application ID `com.modukey.app.debug`, minimum SDK 31, and target SDK 36.
 - Release tools passed **29 changelog integration checks** and **10 isolated release finalization checks**. These checks build and tag only disposable fixtures.
 - Reviewed the generated notes against the implemented behavior. All covered Unreleased entries are included here. Preserve published changelog entries, prior version notes, release artifacts, and tags.
@@ -41,6 +41,7 @@
 
 ## Release baseline
 
-- Previous stable release: [v0.5.3](https://github.com/serogee/Nudge/releases/tag/v0.5.3), **code 19**, published at **2026-10-24T15:52:34Z**. GitHub releases/latest and the published build metadata identify commit `bd88a9f1960952ebddd66b9f576f19ef8155f212`.
+- Previous stable release: [v0.5.3](https://github.com/serogee/Nudge/releases/tag/v0.5.3), **code 19**, published at **2026-10-24T15:52:34Z**. Rechecked GitHub releases/latest and the published build metadata on **2026-10-25**. They identify commit `bd88a9f1960952ebddd66b9f576f19ef8155f212`, which matches the release tag and main.
+- The published 0.5.3 metadata records signing certificate SHA-256 `abbf8d31940893e0dacf8280be866b89106ec09dbd89417503a7853ce515eabc`. Retain that signing identity for the 0.5.4 update. This records the prior signer; the new APK comparison remains pending.
 - This preparation uses **version 0.5.4, code 20**. Notes were generated with `-FromTag v0.5.3`, then reviewed. Version 0.5.4 is not yet published.
 - Build the final signed APK and create v0.5.4 from clean merged main. Follow the [development and release guide](development.md#build-and-tag-after-the-github-merge), retain the existing signing identity, and verify the signed update and changed features on a device before publication.
