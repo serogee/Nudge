@@ -61,7 +61,7 @@ class WheelAutofitTest {
         val edits: List<(PanelLayout) -> PanelLayout> = listOf(
             { it.copy(buttonSizeDp = 64f) }, { it.copy(wheel = it.wheel.copy(radiusDp = 140f)) },
             { it.copy(wheel = it.wheel.copy(innerRadiusDp = 20f)) }, { it.copy(wheel = it.wheel.copy(outerRadiusDp = 180f)) },
-            { it.copy(wheel = it.wheel.copy(expandSelection = false)) }, { it.copy(wheel = it.wheel.copy(selectedScale = 1.1f)) })
+            { it.copy(wheel = it.wheel.copy(expandSelection = false)) }, { it.copy(wheel = it.wheel.copy(selectedScale = 1.2f)) })
         edits.forEach { assertFalse(layout.editSize(it).wheel.autoFit) }
         assertTrue(layout.editSize { it }.wheel.autoFit)
         assertTrue(layout.editSize { it.copy(x = .8f, offsetYDp = 12f) }.wheel.autoFit)

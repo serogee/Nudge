@@ -112,7 +112,7 @@ import kotlin.math.roundToInt
             WheelIconControls(l.wheel) { value -> layout { it.copy(wheel = value) } }
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
-                SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = 1.25f, valueScale = 100f) { value -> layout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
+                SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = WheelLayoutSettings.DEFAULT_SELECTED_SCALE, valueScale = 100f) { value -> layout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
             }
             Toggle(R.string.wheel_animations, R.string.wheel_animations_help, l.wheel.animationsEnabled, default = true) { value ->
                 layout { it.copy(wheel = it.wheel.copy(animationsEnabled = value)) }

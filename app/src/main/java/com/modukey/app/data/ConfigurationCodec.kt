@@ -92,7 +92,7 @@ object ConfigurationCodec {
     private fun layout(p: JSONObject, schema: Int) = PanelLayout(enumValueOf(p.optString("mode", "FIXED")), enumValueOf(p.optString("direction", "VERTICAL")),
         p.optInt("crossCount", 1), p.optInt("maximumLines", 5), p.float("extent", .6f), p.float("buttonSize", 56f),
         p.optBoolean("follow", true), p.float("x", .5f), p.float("y", .5f), p.float("offsetX", 0f), p.float("offsetY", 0f).let { if (schema < 4 && it != 0f) -it else it },
-        p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", 1.25f), it.optBoolean("animationsEnabled", true),
+        p.optJSONObject("wheel")?.let { WheelLayoutSettings(it.float("radiusDp", 128f), it.optBoolean("expandSelection", true), it.float("selectedScale", WheelLayoutSettings.DEFAULT_SELECTED_SCALE), it.optBoolean("animationsEnabled", true),
             if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
             if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
             enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140), it.optBoolean("autoFit", false),

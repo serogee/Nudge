@@ -31,6 +31,14 @@ class WheelAutofitInterfaceTest {
         return rule.runOnIdle { app.configuration.preview.value!!.panels.last().id }
     }
     private fun settings(id: String) = app.configuration.preview.value!!.panel(id)!!.settings
+    @Test fun manualSelectedSizeStartsAndResetsAt110Percent() {
+        val id = start()
+        rule.onNodeWithContentDescription("Selected size").performScrollTo()
+        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale) }
+        rule.onNodeWithContentDescription("Selected size").performSemanticsAction(SemanticsActions.SetProgress) { it(1.4f) }
+        rule.onNodeWithContentDescription("Reset Selected size").performScrollTo().performClick()
+        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale); assertFalse(settings(id).portrait.wheel.autoFit) }
+    }
     @Test fun addButtonsFitsUpToSixAndDisablingRetainsTheFittedValues() {
         val id = start()
         rule.onNodeWithContentDescription("Autofit").assertIsOn()

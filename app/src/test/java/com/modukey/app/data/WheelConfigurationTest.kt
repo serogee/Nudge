@@ -9,6 +9,16 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class WheelConfigurationTest {
+    @Test fun selectedSizeDefaultsTo110PercentAndPreservesExplicitValues() {
+        assertEquals(1.1f, WheelLayoutSettings().selectedScale)
+        assertEquals(1.1f, WheelLayoutSettings(selectedScale = Float.NaN).normalized().selectedScale)
+        val layout = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(selectedScale = 1.25f, autoFit = false))
+        val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(portrait = layout))))
+        val json = JSONObject(ConfigurationCodec.encode(config))
+        assertEquals(1.25f, ConfigurationCodec.decode(json.toString()).panels.single().settings.portrait.wheel.selectedScale)
+        json.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel").remove("selectedScale")
+        assertEquals(1.1f, ConfigurationCodec.decode(json.toString()).panels.single().settings.portrait.wheel.selectedScale)
+    }
     @Test fun autofitChoicesPersistAndOlderWheelsRetainTheirSizesWithAutofitOff() {
         assertTrue(WheelLayoutSettings().autoFit)
         for (enabled in listOf(true, false)) {
