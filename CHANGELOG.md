@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+
+- Adapt Wheel icon size by default, or choose a preferred size from 12–128 dp. Position icons from the nearest safe inner position to the nearest safe outer position. Keep a centered default, separate orientation choices, and independent touch targets and Wheel Autofit.
+- Add a Home accessibility switch and a Toggle accessibility action for buttons, gestures, and launcher shortcuts. Open Android settings while disconnected and disable the connected Nudge handles service directly. Preserve settings, other services, and shortcut unlock checks.
+
+### Fixed
+
+- Fit complete Wheel artwork inside rounded wedge outlines throughout highlight transitions. Remove circular parent clipping from square and rounded-square icons.
+- Show cached button artwork immediately, preload saved icon references, reuse stable image sizes, and keep a bounded local disk cache. Refresh artwork after package updates, including Android 12.
+
+### Compatibility
+
+- Save schema 29 backups. Import older backups with adaptive, centered Wheel icons while preserving stored wheel sizes. Earlier builds cannot import the new backup format. Device checks remain pending.
+
 ## 0.5.3 - 2026-10-24
 
 ### Added

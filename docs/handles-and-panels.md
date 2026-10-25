@@ -5,7 +5,7 @@ This guide describes the current source. For features in a published APK, use it
 ## Setup and troubleshooting
 
 1. Install Nudge and open Home.
-2. Select **Open Accessibility**. Enable **Nudge handles** under Accessibility → Downloaded apps.
+2. Turn on **Nudge accessibility**. Enable **Nudge handles** under Accessibility → Downloaded apps.
 3. If Android blocks access, open Nudge's App info → ⋮ → **Allow restricted settings**, then try again.
 4. Enable a handle in **Handles** and **Enable Gestures** on Home.
 5. Use **Test volume popup**. Then try the handle from another app.
@@ -13,6 +13,8 @@ This guide describes the current source. For features in a published APK, use it
 On MIUI or HyperOS, menu names vary. Enable **Background autostart** if needed. If the service still disconnects, try **Battery saver → No restrictions** or lock Nudge in Recents where supported. Nudge cannot verify these vendor settings. Force-stop and revoked accessibility access require manual recovery. Unlock the phone once after a restart.
 
 Brightness actions need **Modify system settings** access. Some sound actions need **Do Not Disturb** access. Nudge does not require root, device administrator, or the separate **Display over other apps** permission.
+
+The **Nudge accessibility** switch on Home reflects the actual permission or live service connection. Turning it on opens Android settings; enable **Nudge handles** there. Turning it off disables the connected handles service and closes its overlays. It retains your settings and **Enable Gestures** choice. If Android lists the service as enabled but it is disconnected, turning it off opens settings for manual recovery. The separate brightness calibration service and other apps' services are unchanged.
 
 **Notifications** and **Control panel** use Android's native accessibility actions. Redmi Note 12 / HyperOS 1.0 was reported to open notifications for both requests. The old style combines notifications and quick settings. The new style has a separate Control center with brightness and volume sliders. On the connected Redmi, native shell requests opened these as distinct panels. This does not verify the app's accessibility routing. Nudge retains Xiaomi opening guidance and does not inject a top-right swipe.
 
@@ -112,6 +114,12 @@ Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, a
 
 **Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels start at 100 dp inside and 156 dp outside before Autofit adjusts them. The shared track covers 1–336 dp, with at least 48 dp between the bounds. The smallest pair is 1 dp inside and 49 dp outside. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
 
+**Adapt icon size** defaults on. It sizes artwork from the wheel band and fits the whole square within the rounded wedge, including separator gaps and padding. Icons stay separate from their touch targets. A small icon does not reduce the 48 dp touch target or Wheel capacity.
+
+Turn Adapt icon size off to show **Icon size**, a preferred size from **12–128 dp**, defaulting to **32 dp**. Available space can reduce the rendered size. Turning adaptation on retains your manual value. Highlight expansion can grow icons while keeping them inside the wedge.
+
+**Icon position** is available in both modes and defaults to **50%**, the middle of the band. Zero percent is the nearest safe inner position; 100% is the nearest safe outer position. The endpoints keep room for visible artwork. Automatic sizing responds to the available width and depth as icons move. Very narrow areas can produce small icons. These controls use thumb dragging and numeric entry. They preserve Wheel Autofit and retain separate portrait and landscape values.
+
 **Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 125% for manual sizing. Autofit prefers 110%. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
 
 The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on. **Highlight transition** offers **No animation**, **Smooth**, and **Spring**. Smooth defaults to 140 ms and accepts 80–400 ms. The outline, wedge, and icon transition together, and a new selection interrupts the current motion. No animation applies highlight and shape changes immediately. Transitions also work when expansion is off. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
@@ -142,7 +150,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 27 and retain both Wheel radii, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-27 backups.
+New backups use schema 29 and retain both Wheel radii, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing icon settings use adaptation on and a centered position. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-29 backups.
 
 ## Actions and appearance
 
@@ -153,6 +161,8 @@ Panel buttons and direct gestures can open apps or settings, control sound and b
 The **Input Method** action opens Android's keyboard chooser. You select the keyboard. **Screenshot** asks Android to capture and save the screen; Nudge does not read the image. Visible handles may appear in screenshots.
 
 Choose built-in icons, installed app icons, or supported icon packs. Missing apps or packs retain their references and use fallback icons. Standalone buttons omit the container. Empty buttons reserve a layout cell.
+
+Saved app and icon-pack artwork is preloaded and cached locally. Reopening a button uses available artwork immediately while its package version is checked. A bounded disk cache supports later app starts. App or icon-pack updates refresh the cached artwork. Android can clear this cache, so the first load can still take time. Backups retain icon references rather than image files.
 
 **Active background** and **Active icon** colors are shared panel appearance settings for supported toggles. Each supports automatic or selected colors. Existing opacity settings still apply. Image icons retain their artwork; standalone icons use an outline for the active background effect.
 
@@ -218,7 +228,7 @@ On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automati
 
 In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
 
-Shortcuts require the connected Nudge handles service but can run with Enable Gestures off. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
+Most shortcuts require the connected Nudge handles service but can run with Enable Gestures off. **Toggle accessibility** also works while disconnected: it opens Android accessibility settings to enable or recover Nudge handles. While connected, it disables the handles service and closes its overlays. A locked phone must be unlocked before a launcher shortcut runs. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
 
 Backups retain shortcut definitions. Import does not grant permissions or pin icons.
 
