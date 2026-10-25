@@ -568,6 +568,8 @@
     <string name="wheel_autofit_help">Fit sizes when adding or removing buttons. Manual size changes turn Autofit off. Turning it off keeps the fitted sizes.</string>
     <string name="wheel_autofit_priority">Prefer the smallest inner radius, then 110 percent selection size, then the largest outer radius that fits.</string>
     <string name="wheel_radius">Wheel radii</string>
+    <string name="wheel_gap">Item gap</string>
+    <string name="wheel_gap_help">Set a constant gap from zero to 24 dp. Autofit keeps room for usable touch targets.</string>
     <string name="wheel_inner_radius">Inner radius</string>
     <string name="wheel_radius_value">%1$s: %2$d dp</string>
     <string name="wheel_outer_radius">Outer radius</string>

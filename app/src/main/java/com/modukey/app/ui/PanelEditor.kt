@@ -109,6 +109,14 @@ import kotlin.math.roundToInt
             }
             Help(R.string.wheel_autofit_priority)
             Help(R.string.wheel_radius_help)
+            SettingSlider(R.string.wheel_gap, l.wheel.gapDp, 0f..24f, t(R.string.dp_value, l.wheel.gapDp.roundToInt()), default = 4f) { value ->
+                vm.editPanel(entry.id) { current ->
+                    val changed = current.layout(landscape).let { it.copy(wheel = it.wheel.copy(gapDp = value)) }
+                    if (landscape && current.landscapeOverride) current.copy(landscape = fitted(changed, true, current.buttons.size))
+                    else current.copy(portrait = fitted(changed, false, current.buttons.size))
+                }
+            }
+            Help(R.string.wheel_gap_help)
             WheelHitboxControls(l.wheel.hitbox) { change -> layout { it.copy(wheel = it.wheel.copy(hitbox = change(it.wheel.hitbox))) } }
             WheelIconControls(l.wheel) { value -> layout { it.copy(wheel = value) } }
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }

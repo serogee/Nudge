@@ -16,11 +16,11 @@ object WheelAutofit {
             for (band in 335 downTo 48) {
                 var high = floor(minOf(288f, 336f - band, maximum - band * scale,
                     best?.innerRadiusDp ?: 288f)).toInt()
-                if (high < 1 || !WheelGeometry.fitsTargets(high.toFloat(), band.toFloat(), scale, wanted)) continue
+                if (high < 1 || !WheelGeometry.fitsTargets(high.toFloat(), band.toFloat(), scale, wanted, settings.normalized().gapDp)) continue
                 var low = 1
                 while (low < high) {
                     val middle = (low + high) / 2
-                    if (WheelGeometry.fitsTargets(middle.toFloat(), band.toFloat(), scale, wanted)) high = middle
+                    if (WheelGeometry.fitsTargets(middle.toFloat(), band.toFloat(), scale, wanted, settings.normalized().gapDp)) high = middle
                     else low = middle + 1
                 }
                 val inner = low.toFloat()
