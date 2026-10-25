@@ -16,7 +16,7 @@ class WheelAutofitTest {
             assertTrue(g.bounds.x + g.bounds.width <= screen.x + screen.width + .001f)
             assertTrue(g.bounds.y + g.bounds.height <= screen.y + screen.height + .001f)
             for (selected in 0 until count) g.slices(selected).forEach { slice ->
-                val target = maxOf(48f * density, slice.iconSize)
+                val target = 48f * density
                 assertTrue(slice.size >= target)
                 assertTrue((g.innerRadius + slice.size / 2) * kotlin.math.sin(
                     (slice.end - slice.start - g.angularGap(slice)) / 2) + .001f >= target / 2)
@@ -31,7 +31,7 @@ class WheelAutofitTest {
         assertEquals(336f, one.outerRadiusDp!!)
         val six = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, 1f, 6, Edge.LEFT))
         val inner = six.innerRadiusDp!!
-        for (band in 48..335) for (percent in 100..110) {
+        if (inner > WheelLayoutSettings.MIN_INNER_RADIUS_DP) for (band in 48..335) for (percent in 100..110) {
             val candidate = six.copy(innerRadiusDp = inner - 1f, outerRadiusDp = inner - 1f + band,
                 selectedScale = percent / 100f)
             if (candidate.outerRadiusDp!! > 336f) continue

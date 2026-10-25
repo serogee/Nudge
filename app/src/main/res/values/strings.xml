@@ -578,6 +578,12 @@
     <string name="animation_smooth">Smooth</string>
     <string name="animation_spring">Spring</string>
     <string name="wheel_selected_size">Selected size</string>
+    <string name="wheel_adapt_icon_size">Adapt icon size</string>
+    <string name="wheel_adapt_icon_size_help">Size icons from the wheel radii. Keep the whole icon inside its wedge at the selected position.</string>
+    <string name="wheel_icon_size">Icon size</string>
+    <string name="wheel_icon_size_help">Set the preferred size. Available space can reduce it. Highlighted icons can grow within their wedge.</string>
+    <string name="wheel_icon_position">Icon position</string>
+    <string name="wheel_icon_position_help">Move icons between safe inner and outer positions. Zero percent is nearest the center. The default is 50 percent.</string>
     <string name="wheel_capacity">Button capacity: %1$d. The maximum is six. Other buttons remain saved.</string>
     <string name="wheel_drag">Drag to pick</string>
     <string name="wheel_drag_help">Keep touching. Move again to highlight a button. Release to run it and close the wheel.</string>

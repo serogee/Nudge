@@ -7,13 +7,15 @@ enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = 1.25f,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
     val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140,
-    val autoFit: Boolean = true) {
+    val autoFit: Boolean = true, val adaptIconSize: Boolean = true, val iconSizeDp: Float = 32f,
+    val iconPosition: Float = .5f) {
     companion object { const val MIN_INNER_RADIUS_DP = 1f }
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
         val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
         return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(1.25f).coerceIn(1f, 1.5f),
-            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400))
+            innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400),
+            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(.5f).coerceIn(0f, 1f))
     }
     /** Missing bounds retain the old center-radius and button-size geometry on import. */
     fun radii(buttonSizeDp: Float): Pair<Float, Float> {
@@ -115,7 +117,7 @@ object WheelGeometry {
             inner + cell / 2f, cell, count, count, expansion, 48f, inner, 4f)
         return (listOf<Int?>(null) + (0 until count).toList()).all { selected ->
             candidate.slices(selected).all { slice ->
-                val target = maxOf(48f, slice.iconSize)
+                val target = 48f
                 slice.size >= target && (inner + slice.size / 2f) *
                     sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
             }
@@ -133,7 +135,7 @@ object WheelGeometry {
         val inner = minOf(innerDp * d, (maximumOuter - cell * expansion).coerceAtLeast(0f))
         val radius = inner + cell / 2f
         val outer = inner + cell * expansion
-        // Every normal and expanded wedge must contain a 48 dp circular touch target and its icon.
+        // Capacity depends on 48 dp touch targets. Artwork is fitted separately without changing selection.
         val capacity = (6 downTo 1).firstOrNull { n ->
             cell >= 48f * d && screen.width >= margin * 2f && screen.height >= margin * 2f &&
                 fitsTargets(inner / d, cell / d, expansion, n)

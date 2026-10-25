@@ -119,7 +119,7 @@ class WheelPickerTest {
             for (selected in listOf<Int?>(null) + (0 until g.count).toList()) {
                 val slices = g.slices(selected)
                 slices.forEach { slice ->
-                    val target = maxOf(48f, slice.iconSize)
+                    val target = 48f
                     assertTrue(slice.size >= target)
                     val distanceToSide = (slice.innerRadius + slice.size / 2f) *
                         kotlin.math.sin((slice.end - slice.start - g.angularGap(slice)) / 2f)
