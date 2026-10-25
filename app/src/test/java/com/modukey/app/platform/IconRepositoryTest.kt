@@ -9,9 +9,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 36])
 class IconRepositoryTest {
     @Test fun `manual static resources are cached and missing packs fall back safely`()=runTest {
         val context=ApplicationProvider.getApplicationContext<Context>()

@@ -4,11 +4,11 @@ import android.app.Application
 import android.media.AudioManager
 import android.app.KeyguardManager
 import android.os.PowerManager
+import android.os.Build
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
@@ -70,10 +70,12 @@ class NudgeApplication : Application() {
         super.onCreate()
         diagnostics.record("Application started")
         scope.launch { diagnostics.inspectExits() }
-        ContextCompat.registerReceiver(this, packageReceiver, IntentFilter().apply {
+        val packages = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_CHANGED)
             addAction(Intent.ACTION_PACKAGE_REPLACED); addDataScheme("package")
-        }, ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(packageReceiver, packages, Context.RECEIVER_NOT_EXPORTED)
+        else @Suppress("DEPRECATION") registerReceiver(packageReceiver, packages)
         scope.launch { configuration.state.filterNotNull().collectLatest { icons.preload(it) } }
     }
 
