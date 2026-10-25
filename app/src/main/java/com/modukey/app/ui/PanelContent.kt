@@ -154,9 +154,11 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
     button.icon.builtIn?.let { Icon(AppIcons.library(it), null, modifier, tint = tint); return }
     val app = LocalContext.current.applicationContext as NudgeApplication
     val density = LocalDensity.current.density
-    val bitmap by produceState<ImageBitmap?>(null, button.action, button.appPackage, button.appActivity, button.icon, pack, density, sizeDp) {
-        value = null
-        value = app.icons.icon(button, pack, (sizeDp * density).toInt())?.asImageBitmap()
+    val pixels = (sizeDp * density).toInt()
+    val bitmap by key(button.action, button.appPackage, button.appActivity, button.icon, pack, pixels) {
+        produceState(app.icons.cached(button, pack, pixels)?.asImageBitmap()) {
+            value = app.icons.icon(button, pack, pixels)?.asImageBitmap()
+        }
     }
     val imageFilter = imageTint?.let { ColorFilter.tint(it, BlendMode.SrcAtop) }
     if (bitmap != null) Image(bitmap!!, contentDescription = null, modifier = modifier, colorFilter = imageFilter)

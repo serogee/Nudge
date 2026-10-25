@@ -4,6 +4,11 @@ import android.app.Application
 import android.media.AudioManager
 import android.app.KeyguardManager
 import android.os.PowerManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.preferencesDataStore
 import com.modukey.app.data.IndicatorFractionMigration
 import com.modukey.app.data.IndicatorThicknessDpMigration
@@ -24,6 +29,8 @@ import com.modukey.app.platform.ServiceStatusStore
 import com.modukey.app.platform.AutomaticBrightnessCalibration
 import com.modukey.app.platform.ControllerCalibrationAccess
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 
 private val Application.preferences by preferencesDataStore("trigger_settings", produceMigrations = {
     listOf(IndicatorFractionMigration(), IndicatorThicknessDpMigration())
@@ -49,6 +56,11 @@ class NudgeApplication : Application() {
         getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
     }, keepServiceEnabled = { calibrationOptions.keepServiceEnabled.value }, diagnostic = { diagnostics.record(it) }) }
     val icons by lazy { IconRepository(this) }
+    private val packageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent?.data?.schemeSpecificPart?.let(icons::invalidate)
+        }
+    }
     val unlocks = UnlockRequests()
     val diagnostics by lazy { LocalDiagnostics(this, scope) }
     val status = ServiceStatusStore()
@@ -58,11 +70,17 @@ class NudgeApplication : Application() {
         super.onCreate()
         diagnostics.record("Application started")
         scope.launch { diagnostics.inspectExits() }
+        ContextCompat.registerReceiver(this, packageReceiver, IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED); addDataScheme("package")
+        }, ContextCompat.RECEIVER_NOT_EXPORTED)
+        scope.launch { configuration.state.filterNotNull().collectLatest { icons.preload(it) } }
     }
 
     override fun onTerminate() {
         // Used by emulated application lifecycles; Android ends a real process without this callback.
         scope.cancel()
+        runCatching { unregisterReceiver(packageReceiver) }
         automaticCalibration.close()
         brightness.close()
         super.onTerminate()
