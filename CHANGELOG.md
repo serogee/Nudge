@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+
+- Add a **Wheel hitbox** dropdown below Wheel radii: **Automatic**, **Use Button Size**, and **Manual**. Preserve current picking by default. Manual provides independent inner and outer radii on a thumb-only track with numeric entry. Retain choices per orientation without changing normal taps, visible size, or Autofit.
+
+### Changed
+
+- Default manual Wheel highlight size, missing values, and reset to **110%**. Preserve explicit saved sizes. Autofit continues to prefer 110%.
+
+### Compatibility
+
+- Save schema 30 backups with per-orientation hitbox modes and manual radii. Older backups retain Automatic picking and their existing gesture distances.
+
 ## 0.5.4 - 2026-10-25
 
 ### Added

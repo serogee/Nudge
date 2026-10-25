@@ -114,6 +114,14 @@ Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, a
 
 **Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels start at 100 dp inside and 156 dp outside before Autofit adjusts them. The shared track covers 1–336 dp, with at least 48 dp between the bounds. The smallest pair is 1 dp inside and 49 dp outside. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
 
+**Wheel hitbox** is directly below Wheel radii in **Layout**. It controls **Drag to pick** and retains separate portrait and landscape choices. Normal taps continue to use the visible buttons.
+
+- **Automatic** is the default and keeps the current behavior. Use the gesture's minimum and maximum selection distances and the limited inward margin.
+- **Use Button Size** follows each logical button's inner and outer radii, including highlight expansion. It has no extra inward margin. Gesture distance limits are not applied.
+- **Manual** uses its own inner and outer hitbox radii. Drag either point on the shared track, or tap its readout for numeric entry. The track covers **0–600 dp**, with at least **8 dp** between radii. Manual defaults are **32 dp** inside and **240 dp** outside. These bounds can extend into the hole or beyond the visible wheel. The exact center has no direction and does not select a button.
+
+Switching modes retains manual radii and gesture distance limits. Manual radial bounds stay fixed during highlighting; angular selection regions still expand as configured. Hitbox edits preserve visible radii and Autofit. Automatic distance controls remain available in the gesture editor when either active orientation uses Automatic.
+
 **Adapt icon size** defaults on. It sizes artwork from the wheel band and fits the whole square within the rounded wedge, including separator gaps and padding. Icons stay separate from their touch targets. A small icon does not reduce the 48 dp touch target or Wheel capacity.
 
 Turn Adapt icon size off to show **Icon size**, a preferred size from **12–128 dp**, defaulting to **32 dp**. Available space can reduce the rendered size. Turning adaptation on retains your manual value. Highlight expansion can grow icons while keeping them inside the wedge.
@@ -138,7 +146,7 @@ Without **Drag to pick**, the wheel stays open for normal button taps. Enable th
 
 Keep touching after the wheel opens. Move more than 8 dp to highlight a button. Release to run that button and close the wheel. Release with nothing highlighted to close without running an action. The release position must still be inside the highlighted selection area.
 
-Distances start at the visible wheel center. **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Drag picking can highlight up to 12 dp inside the hollow center, limited to 20% of its radius. The minimum-distance area, space behind the fan, and distances beyond the maximum do not highlight actions. Move back into range to select again. Normal taps use the visible wedges and exclude the center and separator gaps.
+Distances start at the visible wheel center. With **Automatic** hitboxes, **Minimum selection distance** accepts 16–160 dp and defaults to 32 dp. **Maximum selection distance** accepts 48–600 dp and defaults to 240 dp. The maximum must exceed the minimum. Automatic picking can highlight up to 12 dp inside the hollow center, limited to 20% of its radius. **Use Button Size** and **Manual** use the wheel's Layout hitbox settings instead. Space behind the fan and distances outside the chosen bounds do not highlight actions. Move back into range to select again. Release is checked against the same bounds. Normal taps use the visible wedges and exclude the center and separator gaps.
 
 For Hold and Swipe and hold, the wheel opens when the hold time ends. Their saved execution preferences remain unchanged. A drag wheel on an ordinary swipe disables Swipe and hold while retaining its assignment.
 
@@ -150,7 +158,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use schema 29 and retain both Wheel radii, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch. Missing icon settings use adaptation on and a centered position. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-29 backups.
+New backups use schema 30 and retain both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved size and animation switch, with Automatic hitboxes. Missing icon settings use adaptation on and a centered position. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-30 backups.
 
 ## Actions and appearance
 
