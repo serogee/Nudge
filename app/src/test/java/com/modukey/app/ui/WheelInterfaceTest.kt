@@ -25,7 +25,8 @@ class WheelInterfaceTest {
     private fun ready(): NudgeApplication {
         val app = rule.activity.application as NudgeApplication
         rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.preview.value != null } }
-        val wheel = SavedPanel(id = "wheel", name = "Tools", settings = PanelConfig(buttons = List(9) { PanelButton() }, portrait = PanelLayout(mode = PanelMode.WHEEL)))
+        val wheel = SavedPanel(id = "wheel", name = "Tools", settings = PanelConfig(buttons = List(9) { PanelButton() },
+            portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(innerRadiusDp = 100f, outerRadiusDp = 156f))))
         val target = GestureTarget.panel(wheel.id)
         rule.runOnIdle { app.configuration.update { AppConfiguration(panels = listOf(SavedPanel(id = "grid", name = "Grid"), wheel),
             handles = listOf(HandleConfig(id = "h", bindings = mapOf(GestureSlot.SWIPE_1 to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME, GestureSlot.TAP to target)))) } }

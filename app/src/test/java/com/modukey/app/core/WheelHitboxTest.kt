@@ -4,8 +4,34 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WheelHitboxTest {
+    @Test fun fittedAutomaticBoundsKeepThirtyTwoDpInsideAndFollowEachOuterEdge() {
+        for (edge in Edge.entries) for (d in listOf(1f, 3f)) {
+            val screen = Bounds(0f, 0f, 1000f * d, 1000f * d)
+            val settings = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, d, 6, edge))
+            val g = WheelGeometry.calculate(screen, d, PanelLayout(), settings, 6, screen, edge)
+            val pick = WheelPickSettings(minimumDistanceDp = 16f, maximumDistanceDp = 600f)
+            val normal = g.slices()[2]
+            val angle = (normal.start + normal.end) / 2f
+            val insideHole = g.point(angle, 40f * d)
+            assertEquals(2, g.pickHit(insideHole.x, insideHole.y, pick, d, WheelHitboxSettings(), null))
+            assertNull(g.tapHit(insideHole.x, insideHole.y))
+            for (selected in listOf<Int?>(null, 2)) {
+                val edgeRadius = g.slices(selected)[2].outerRadius
+                val bounds = g.hitboxRadii(pick, d, WheelHitboxSettings(), selected, 2)
+                assertEquals(32f * d, bounds.first, .001f)
+                assertEquals(edgeRadius, bounds.second, .001f)
+                for (radius in listOf(31f * d, edgeRadius + d)) {
+                    val p = g.point(angle, radius)
+                    assertNull(g.pickHit(p.x, p.y, pick, d, WheelHitboxSettings(), selected))
+                }
+                val p = g.point(angle, edgeRadius - .01f * d)
+                assertEquals(2, g.pickHit(p.x, p.y, pick, d, WheelHitboxSettings(), selected))
+            }
+        }
+    }
+
     private fun geometry(edge: Edge, density: Float) = WheelGeometry.calculate(Bounds(10f, 20f, 800f * density, 900f * density),
-        density, PanelLayout(), WheelLayoutSettings(innerRadiusDp = 100f, outerRadiusDp = 156f, selectedScale = 1.3f),
+        density, PanelLayout(), WheelLayoutSettings(innerRadiusDp = 100f, outerRadiusDp = 156f, selectedScale = 1.3f, autoFit = false),
         3, Bounds(10f, 300f, 16f, 120f), edge)
     @Test fun automaticKeepsTheExistingDistancesAndInwardMargin() {
         val pick = WheelPickSettings(minimumDistanceDp = 32f, maximumDistanceDp = 240f)

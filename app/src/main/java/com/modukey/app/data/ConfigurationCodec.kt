@@ -96,7 +96,7 @@ object ConfigurationCodec {
             if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
             if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
             enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140), it.optBoolean("autoFit", false),
-            it.optBoolean("adaptIconSize", true), it.float("iconSizeDp", 32f), it.float("iconPosition", .5f),
+            it.optBoolean("adaptIconSize", true), it.float("iconSizeDp", 32f), it.float("iconPosition", WheelLayoutSettings.DEFAULT_ICON_POSITION),
             it.optJSONObject("hitbox")?.let { h -> WheelHitboxSettings(enumValueOf(h.optString("mode", "AUTOMATIC")),
                 h.float("innerRadiusDp", 32f), h.float("outerRadiusDp", 240f)) } ?: WheelHitboxSettings(),
             it.float("gapDp", 4f)) } ?: WheelLayoutSettings(autoFit = p.optString("mode") != "WHEEL"))

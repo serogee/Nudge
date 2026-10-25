@@ -4,18 +4,23 @@ import kotlin.math.*
 
 enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 
-data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = DEFAULT_SELECTED_SCALE,
+data class WheelLayoutSettings(val radiusDp: Float = 60f, val expandSelection: Boolean = true, val selectedScale: Float = DEFAULT_SELECTED_SCALE,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
     val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140,
     val autoFit: Boolean = true, val adaptIconSize: Boolean = true, val iconSizeDp: Float = 32f,
-    val iconPosition: Float = .5f, val hitbox: WheelHitboxSettings = WheelHitboxSettings(), val gapDp: Float = 4f) {
-    companion object { const val MIN_INNER_RADIUS_DP = 1f; const val DEFAULT_SELECTED_SCALE = 1.1f }
+    val iconPosition: Float = DEFAULT_ICON_POSITION, val hitbox: WheelHitboxSettings = WheelHitboxSettings(), val gapDp: Float = 4f) {
+    companion object {
+        const val MIN_INNER_RADIUS_DP = 1f
+        const val MIN_AUTOFIT_INNER_RADIUS_DP = 32f
+        const val DEFAULT_SELECTED_SCALE = 1.1f
+        const val DEFAULT_ICON_POSITION = .55f
+    }
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
         val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
-        return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(DEFAULT_SELECTED_SCALE).coerceIn(1f, 1.5f),
+        return copy(radiusDp = radiusDp.finite(60f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(DEFAULT_SELECTED_SCALE).coerceIn(1f, 1.5f),
             innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400),
-            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(.5f).coerceIn(0f, 1f), hitbox = hitbox.normalized(),
+            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(DEFAULT_ICON_POSITION).coerceIn(0f, 1f), hitbox = hitbox.normalized(),
             gapDp = gapDp.finite(4f).coerceIn(0f, 24f))
     }
     /** Missing bounds retain the old center-radius and button-size geometry on import. */
@@ -42,7 +47,7 @@ data class WheelSlice(val start: Float, val end: Float, val point: WheelPoint, v
 /** Angles increase from top to bottom on side handles and left to right on bottom handles. */
 data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val edge: Edge, val radius: Float,
     val cell: Float, val capacity: Int, val count: Int, val expansion: Float, val minimumCell: Float,
-    val innerRadius: Float = (radius - cell / 2f).coerceAtLeast(0f), val gap: Float = 4f) {
+    val innerRadius: Float = (radius - cell / 2f).coerceAtLeast(0f), val gap: Float = 4f, val autoFit: Boolean = false) {
     val outerRadius get() = innerRadius + cell * expansion
     fun point(angle: Float, distance: Float = radius): WheelPoint = when (edge) {
         Edge.LEFT -> WheelPoint(center.x + cos(angle) * distance, center.y + sin(angle) * distance)
@@ -179,7 +184,7 @@ object WheelGeometry {
         val renderedInner = inner.coerceAtMost(outer)
         val renderedCell = if (capacity == 0) ((outer - renderedInner) / expansion).coerceAtLeast(0f) else cell
         return WheelGeometryResult(bounds, WheelPoint(x + localX.coerceAtMost(bounds.width), y + localY.coerceAtMost(bounds.height)),
-            edge, radius, renderedCell, capacity, count.coerceIn(0, capacity), expansion, 48f * d, renderedInner, s.gapDp * d)
+            edge, radius, renderedCell, capacity, count.coerceIn(0, capacity), expansion, 48f * d, renderedInner, s.gapDp * d, s.autoFit)
     }
 }
 

@@ -11,6 +11,8 @@ class WheelAutofitTest {
             val g = WheelGeometry.calculate(screen, density, PanelLayout(), settings, count, screen, edge)
             assertEquals("$edge $density $count $settings", count, g.count)
             assertEquals(settings.innerRadiusDp!! * density, g.innerRadius, .001f)
+            assertTrue(settings.innerRadiusDp!! >= 32f)
+            assertEquals(.55f, settings.iconPosition)
             assertTrue(g.expansion in 1f..1.1f)
             assertTrue(g.bounds.x >= screen.x && g.bounds.y >= screen.y)
             assertTrue(g.bounds.x + g.bounds.width <= screen.x + screen.width + .001f)
@@ -23,28 +25,24 @@ class WheelAutofitTest {
             }
         }
     }
-    @Test fun smallestInnerRadiusWinsBeforeExpansionAndOuterRadius() {
+    @Test fun smallestOverallOuterRadiusWinsAndKeepsThePreferredHighlight() {
         val screen = Bounds(0f, 0f, 800f, 900f)
         val one = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, 1f, 1, Edge.LEFT))
-        assertEquals(1f, one.innerRadiusDp!!)
+        assertEquals(32f, one.innerRadiusDp!!)
         assertEquals(1.1f, one.selectedScale)
-        assertEquals(336f, one.outerRadiusDp!!)
+        assertEquals(80f, one.outerRadiusDp!!)
         val six = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, 1f, 6, Edge.LEFT))
-        val inner = six.innerRadiusDp!!
-        if (inner > WheelLayoutSettings.MIN_INNER_RADIUS_DP) for (band in 48..335) for (percent in 100..110) {
-            val candidate = six.copy(innerRadiusDp = inner - 1f, outerRadiusDp = inner - 1f + band,
-                selectedScale = percent / 100f)
-            if (candidate.outerRadiusDp!! > 336f) continue
-            val g = WheelGeometry.calculate(screen, 1f, PanelLayout(), candidate, 6, screen, Edge.LEFT)
-            assertTrue("A smaller inner radius must not fit: $candidate", g.count < 6)
-        }
-        for (percent in ((six.selectedScale * 100).toInt() + 1)..110) for (outer in (inner.toInt() + 48)..336) {
-            val candidate = six.copy(selectedScale = percent / 100f, outerRadiusDp = outer.toFloat())
-            assertTrue(WheelGeometry.calculate(screen, 1f, PanelLayout(), candidate, 6, screen, Edge.LEFT).count < 6)
-        }
-        for (outer in (six.outerRadiusDp!!.toInt() + 1)..336) {
-            val candidate = six.copy(outerRadiusDp = outer.toFloat())
-            assertTrue(WheelGeometry.calculate(screen, 1f, PanelLayout(), candidate, 6, screen, Edge.LEFT).count < 6)
+        assertEquals(88f, six.innerRadiusDp!!)
+        assertEquals(136f, six.outerRadiusDp!!)
+        for (gap in listOf(0f, 4f, 24f)) for (count in 1..6) {
+            val fitted = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(gapDp = gap, iconPosition = .2f), screen, 1f, count, Edge.LEFT))
+            assertEquals(1.1f, fitted.selectedScale)
+            assertEquals(.55f, fitted.iconPosition)
+            val smallerOuter = fitted.outerRadiusDp!! - 1f
+            for (inner in 32..(smallerOuter.toInt() - 48)) {
+                assertFalse("A smaller outer edge must not fit: $count $gap $inner $smallerOuter",
+                    WheelGeometry.fitsTargets(inner.toFloat(), smallerOuter - inner, fitted.selectedScale, count, gap))
+            }
         }
     }
     @Test fun disabledAutofitRetainsSizesAndSmallScreensDoNotClaimCapacity() {

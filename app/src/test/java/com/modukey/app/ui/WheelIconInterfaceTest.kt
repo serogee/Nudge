@@ -20,6 +20,15 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class WheelIconInterfaceTest {
+    @Test fun iconPositionStartsAndResetsAtFiftyFivePercent() {
+        val settings = mutableStateOf(WheelLayoutSettings())
+        rule.activity.setContent { NudgeTheme { Column { WheelIconControls(settings.value) { settings.value = it } } } }
+        rule.runOnIdle { assertEquals(.55f, settings.value.iconPosition) }
+        rule.onNodeWithContentDescription("Icon position").performSemanticsAction(SemanticsActions.SetProgress) { it(.8f) }
+        rule.onNodeWithContentDescription("Reset Icon position").performClick()
+        rule.runOnIdle { assertEquals(.55f, settings.value.iconPosition); assertTrue(settings.value.autoFit) }
+    }
+
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @After fun stop() { (rule.activity.application as NudgeApplication).onTerminate() }
     @Test fun adaptiveDefaultHidesManualSizeAndTogglingRetainsAllValues() {
