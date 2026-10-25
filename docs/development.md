@@ -109,6 +109,20 @@ Keep archived builds under `releases/archive/`. Preserve the earlier unpublished
 
 Install the signed APK over the preceding release without uninstalling. Check retained configuration, accessibility and brightness access, then the changed features. Record device results and unresolved limits. A debug installation does not establish release upgrade compatibility.
 
+### Recover from failed release checks
+
+A failed unit test stops the signed release build. Inspect `app/build/reports/tests/testDebugUnitTest/index.html` for the failed assertion. Deprecation and native-access warnings do not explain an assertion failure.
+
+If tests still expect an older backup schema after pulling a schema change, rebuild the compiled tests from the repository root:
+
+```powershell
+.\gradlew.bat clean :app:testDebugUnitTest --no-build-cache --no-problems-report "-Pkotlin.incremental=false"
+```
+
+Quote the complete `-P` argument in PowerShell. Without quotes, PowerShell can split the property into separate arguments. `--no-problems-report` avoids failures while replacing the generated HTML problems report; test execution and test reports remain enabled.
+
+If a test still fails after the clean build, correct the test or application behavior. Commit source fixes on a feature branch and merge them through a pull request. Then update clean `main` and run the finalizer again.
+
 ## Publish after verification
 
 After the signed build and device checks are accepted, push the tag created by the finalizer:

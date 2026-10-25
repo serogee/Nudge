@@ -71,7 +71,8 @@ class WheelInterfaceTest {
         rule.runOnIdle { assertEquals(156f, app.configuration.preview.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second) }
         rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(180f) }
         rule.onNodeWithContentDescription("Save").performClick()
-        rule.waitUntil(10_000) { rule.runOnIdle { app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second == 180f } }
+        rule.waitUntil(10_000) { rule.onAllNodesWithContentDescription("Rename wheel").fetchSemanticsNodes().isNotEmpty() }
+        rule.runOnIdle { assertEquals(180f, app.configuration.state.value!!.panel("wheel")!!.settings.portrait.wheel.radii(56f).second) }
         rule.runOnIdle { assertEquals(9, app.configuration.state.value!!.panel("wheel")!!.settings.buttons.size) }
         rule.onNodeWithContentDescription("Outer radius").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(148f) }
         rule.onNodeWithContentDescription("Wheel animations").performScrollTo().performClick()
