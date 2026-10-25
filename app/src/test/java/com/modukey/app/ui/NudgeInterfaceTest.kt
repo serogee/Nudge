@@ -80,7 +80,7 @@ class NudgeInterfaceTest {
         ready()
         rule.onNodeWithText("App Settings").assertExists()
         rule.onNodeWithText("Enable Gestures").assertExists()
-        rule.onNodeWithText("Accessibility is off").assertExists()
+        rule.onNodeWithContentDescription("Nudge accessibility").assertIsOff()
         rule.onNodeWithText("Service is disconnected").assertExists()
         rule.onNodeWithText("Info").performClick()
         rule.onNodeWithText("Backup").assertExists()

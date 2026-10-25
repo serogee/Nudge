@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.modukey.app.NudgeApplication
 import com.modukey.app.R
 import com.modukey.app.core.HomeShortcut
+import com.modukey.app.core.ButtonAction
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -57,6 +58,10 @@ class ShortcutActionActivity : ComponentActivity() {
         val config = app.configuration.state.value
         if (shortcut == null || config?.shortcuts?.firstOrNull { it.id == shortcut.id } != shortcut || !shortcut.available(config)) { report(R.string.shortcut_missing); return }
         dispatched = true
+        if (shortcut.button.action == ButtonAction.TOGGLE_ACCESSIBILITY) {
+            if (!app.accessibility.toggle()) { report(R.string.action_failed); return }
+            finish(); return
+        }
         if (!app.shortcuts.run(shortcut.id)) { report(R.string.shortcut_needs_service); return }
         finish()
     }

@@ -49,6 +49,7 @@ import com.modukey.app.core.*
                     BrightnessReturnControls(draft.brightnessReturn) { draft = draft.copy(brightnessReturn = it) }
                 }
                 if (draft.action == ButtonAction.BRIGHTNESS_AUTOMATIC) Help(R.string.brightness_automatic_action_help)
+                if (draft.action == ButtonAction.TOGGLE_ACCESSIBILITY) Help(R.string.accessibility_action_help)
                 if (draft.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) Help(R.string.brightness_step_help)
                 if (draft.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) Help(R.string.native_panel_help)
                 if (draft.action == ButtonAction.EMPTY) DependentSettings(t(label(draft.action))) {

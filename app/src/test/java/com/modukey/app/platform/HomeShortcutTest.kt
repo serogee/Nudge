@@ -7,6 +7,7 @@ import android.content.pm.ShortcutManager
 import android.media.AudioManager
 import android.os.Looper
 import android.os.PowerManager
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -76,6 +77,44 @@ class HomeShortcutTest {
             assertFalse(app.shortcuts.run(shortcut.id)); assertEquals(4, audio.getStreamVolume(AudioManager.STREAM_MUSIC))
         } finally { controller.destroy() }
         assertFalse(app.shortcuts.run(shortcut.id))
+    }
+    @Test fun accessibilityShortcutRedirectsWhileOffAndStopsTheConnectedService() {
+        val toggle = HomeShortcut(name = "Accessibility", button = PanelButton(action = ButtonAction.TOGGLE_ACCESSIBILITY))
+        app.configuration.update { it.copy(shortcuts = listOf(toggle)) }
+        fun launch() {
+            val intent = Intent(app, ShortcutActionActivity::class.java).setAction(Intent.ACTION_VIEW).putExtra(ShortcutActionActivity.EXTRA_ID, toggle.id)
+            val activity = Robolectric.buildActivity(ShortcutActionActivity::class.java, intent).create().start().resume()
+            await { activity.get().isFinishing }
+            activity.pause().stop().destroy()
+        }
+        launch()
+        assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(app).nextStartedActivity.action)
+        assertFalse(app.status.state.value.connected)
+        val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create()
+        try {
+            ReflectionHelpers.callInstanceMethod<Void>(controller.get(), "onServiceConnected")
+            assertTrue(app.status.state.value.connected)
+            val saved = app.configuration.state.value
+            launch()
+            assertFalse(app.status.state.value.connected)
+            assertFalse(app.shortcuts.run(toggle.id))
+            assertEquals(saved, app.configuration.state.value)
+            assertNull(shadowOf(app).nextStartedActivity)
+        } finally { controller.destroy() }
+    }
+    @Test fun deletedAccessibilityShortcutsCannotRedirectOrDisableTheService() {
+        val toggle = HomeShortcut(button = PanelButton(action = ButtonAction.TOGGLE_ACCESSIBILITY))
+        app.configuration.update { it.copy(shortcuts = listOf(toggle)) }
+        shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(true)
+        val intent = Intent(app, ShortcutActionActivity::class.java).setAction(Intent.ACTION_VIEW).putExtra(ShortcutActionActivity.EXTRA_ID, toggle.id)
+        val activity = Robolectric.buildActivity(ShortcutActionActivity::class.java, intent).create().start().resume()
+        await { Keyguard.callback != null }
+        app.configuration.update { it.copy(shortcuts = emptyList()) }
+        shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
+        Keyguard.callback!!.onDismissSucceeded()
+        assertTrue(activity.get().isFinishing)
+        assertNull(shadowOf(app).nextStartedActivity)
+        activity.pause().stop().destroy()
     }
     @Test fun exportedEntryRejectsMissingIdsAndDispatchesAValidSavedActionOnce() {
         var calls = 0; app.shortcuts.bind(this) { calls++; it == shortcut.id }

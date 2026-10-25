@@ -139,7 +139,8 @@ import com.modukey.app.platform.*
         config.handles.any { h -> h.bindings.values.any { it.action?.action in policyActions } }
     Section(R.string.app_settings) {
         Toggle(R.string.enable_gestures, R.string.master_help, config.enabled, default = false) { value -> vm.edit { it.copy(enabled = value) }; vm.flush() }
-        StatusLine(t(if (accessibility) R.string.accessibility_on else R.string.accessibility_off), accessibility)
+        Toggle(R.string.accessibility_service, R.string.accessibility_switch_help,
+            accessibility || service.connected, change = vm::setAccessibility)
         StatusLine(t(if (service.connected) R.string.service_connected else R.string.service_disconnected), service.connected)
         StatusLine(t(R.string.active_count, service.attachedHandleIds.size, config.handles.size), service.attachedHandleIds.isNotEmpty())
         if (!accessibility || !service.connected) {

@@ -454,7 +454,11 @@
     <string name="open_brightness_access">Allow brightness changes</string>
     <string name="brightness_access_help">Allow Modify system settings to change brightness. Showing a preview does not need this access.</string>
     <string name="home_shortcuts">Home screen shortcuts</string>
-    <string name="shortcut_help">Create a shortcut for a button action. Your launcher asks you to confirm. Accessibility must stay connected.</string>
+    <string name="shortcut_help">Create a shortcut for a button action. Your launcher asks you to confirm. Most actions need accessibility connected. Toggle accessibility also works when disconnected.</string>
+    <string name="accessibility_service">Nudge accessibility</string>
+    <string name="accessibility_switch_help">Turn on opens Android settings. Turn off disables Nudge handles. Your saved settings stay available.</string>
+    <string name="toggle_accessibility">Toggle accessibility</string>
+    <string name="accessibility_action_help">Disable Nudge handles when connected. Otherwise, open Android accessibility settings. Enable Nudge handles there to use gestures again.</string>
     <string name="add_shortcut">Add shortcut</string>
     <string name="shortcut_name">Shortcut name</string>
     <string name="pin_shortcut">Add to Home screen</string>

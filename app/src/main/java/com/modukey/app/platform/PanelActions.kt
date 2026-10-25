@@ -52,6 +52,8 @@ class PanelActions(private val service: AccessibilityService,
         when (button.action) {
             ButtonAction.EMPTY -> ActionResult()
             ButtonAction.CLOSE_PANELS -> ActionResult(close = true)
+            ButtonAction.TOGGLE_ACCESSIBILITY -> if (app.accessibility.toggle()) ActionResult(close = true)
+                else ActionResult(message = R.string.action_failed, succeeded = false)
             ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
                 val config = app.configuration.state.value
                 val combined = button.action == ButtonAction.TOGGLE_AND_HIDE_HANDLES

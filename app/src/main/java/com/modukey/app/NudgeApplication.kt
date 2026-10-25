@@ -22,6 +22,7 @@ import com.modukey.app.platform.BrightnessCalibrationOptions
 import com.modukey.app.data.ConfigurationController
 import com.modukey.app.data.DataStoreConfigurationRepository
 import com.modukey.app.platform.IconRepository
+import com.modukey.app.platform.AccessibilityControl
 import com.modukey.app.platform.UnlockRequests
 import com.modukey.app.platform.LocalDiagnostics
 import com.modukey.app.platform.NativeVolumeController
@@ -46,6 +47,7 @@ class NudgeApplication : Application() {
     val brightnessPreview = BrightnessPreview()
     val sliderGuidePreview = SliderGuidePreview()
     val shortcuts = ShortcutRuntime()
+    val accessibility = AccessibilityControl(this)
     val handlePauses: HandlePauses = HandlePauses { paused ->
         configuration.update { it.copy(pausedHandleIds = paused) }
         configuration.flush()

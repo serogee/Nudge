@@ -131,6 +131,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             }, ContextCompat.RECEIVER_NOT_EXPORTED)
             registered = true
             app.shortcuts.bind(this, ::runShortcut)
+            app.accessibility.bind(this) { disableSelf(); stopSession() }
             app.status.report(ServiceState(connected = true)); app.diagnostics.record("Accessibility connected")
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
@@ -557,6 +558,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         raiseHandles = false
         sliderGuideHost?.hide(); sliderGuideHost = null
         app.shortcuts.unbind(this)
+        app.accessibility.unbind(this)
         hideBrightness(); brightnessHost = null
         screenshots?.cancel(); screenshots = null
         systemPanels?.cancel(); systemPanels = null
