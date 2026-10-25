@@ -1,41 +1,26 @@
 package com.modukey.app.core
 
-import kotlin.math.floor
-
 /** Store fitted values in the layout so disabling autofit never restores an older size. */
 object WheelAutofit {
     fun fit(settings: WheelLayoutSettings, screen: Bounds, density: Float, count: Int, edge: Edge): WheelLayoutSettings? {
         if (!settings.autoFit) return settings
         val maximum = WheelGeometry.maximumOuterDp(screen, density, edge)
         val wanted = count.coerceIn(1, 6)
-        var best: WheelLayoutSettings? = null
-        // Earlier priorities win: minimum inner radius, closest to 110%, then maximum outer radius.
-        // Whole dp and percentage steps match the editor's displayed precision.
+        val s = settings.normalized()
+        // Prefer the normal highlight, then minimize the entire outside radius.
+        // At a fixed outside radius, a 48 dp band puts target centers furthest from the origin.
+        // A thicker band cannot fit more targets at a smaller outside radius.
         for (percent in 110 downTo 100) {
             val scale = percent / 100f
-            for (band in 335 downTo 48) {
-                var high = floor(minOf(288f, 336f - band, maximum - band * scale,
-                    best?.innerRadiusDp ?: 288f)).toInt()
-                if (high < 1 || !WheelGeometry.fitsTargets(high.toFloat(), band.toFloat(), scale, wanted)) continue
-                var low = 1
-                while (low < high) {
-                    val middle = (low + high) / 2
-                    if (WheelGeometry.fitsTargets(middle.toFloat(), band.toFloat(), scale, wanted)) high = middle
-                    else low = middle + 1
-                }
-                val inner = low.toFloat()
-                val outer = inner + band
-                val previous = best
-                if (previous == null || inner < previous.innerRadiusDp!! ||
-                    (inner == previous.innerRadiusDp && (scale > previous.selectedScale ||
-                        (scale == previous.selectedScale && outer > previous.outerRadiusDp!!)))) {
-                    best = settings.copy(innerRadiusDp = inner, outerRadiusDp = outer,
-                        expandSelection = true, selectedScale = scale)
-                }
-                if (inner == 1f) return best
+            for (outer in (WheelLayoutSettings.MIN_AUTOFIT_INNER_RADIUS_DP.toInt() + 48)..336) {
+                val inner = outer - 48f
+                if (inner + 48f * scale > maximum) break
+                if (!WheelGeometry.fitsTargets(inner, 48f, scale, wanted, s.gapDp)) continue
+                return s.copy(innerRadiusDp = inner, outerRadiusDp = outer.toFloat(), expandSelection = true,
+                    selectedScale = scale, iconPosition = WheelLayoutSettings.DEFAULT_ICON_POSITION)
             }
         }
-        return best
+        return null
     }
 }
 

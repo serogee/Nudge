@@ -4,18 +4,24 @@ import kotlin.math.*
 
 enum class WheelFocusAnimation { NONE, SMOOTH, SPRING }
 
-data class WheelLayoutSettings(val radiusDp: Float = 128f, val expandSelection: Boolean = true, val selectedScale: Float = DEFAULT_SELECTED_SCALE,
+data class WheelLayoutSettings(val radiusDp: Float = 60f, val expandSelection: Boolean = true, val selectedScale: Float = DEFAULT_SELECTED_SCALE,
     val animationsEnabled: Boolean = true, val innerRadiusDp: Float? = null, val outerRadiusDp: Float? = null,
     val focusAnimation: WheelFocusAnimation = WheelFocusAnimation.SMOOTH, val focusDurationMs: Int = 140,
     val autoFit: Boolean = true, val adaptIconSize: Boolean = true, val iconSizeDp: Float = 32f,
-    val iconPosition: Float = .5f, val hitbox: WheelHitboxSettings = WheelHitboxSettings()) {
-    companion object { const val MIN_INNER_RADIUS_DP = 1f; const val DEFAULT_SELECTED_SCALE = 1.1f }
+    val iconPosition: Float = DEFAULT_ICON_POSITION, val hitbox: WheelHitboxSettings = WheelHitboxSettings(), val gapDp: Float = 4f) {
+    companion object {
+        const val MIN_INNER_RADIUS_DP = 1f
+        const val MIN_AUTOFIT_INNER_RADIUS_DP = 32f
+        const val DEFAULT_SELECTED_SCALE = 1.1f
+        const val DEFAULT_ICON_POSITION = .55f
+    }
     fun normalized(): WheelLayoutSettings {
         val inner = innerRadiusDp?.finite(100f)?.coerceIn(MIN_INNER_RADIUS_DP, 288f)
         val outer = outerRadiusDp?.finite(156f)?.coerceIn((inner ?: MIN_INNER_RADIUS_DP) + 48f, 336f)
-        return copy(radiusDp = radiusDp.finite(128f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(DEFAULT_SELECTED_SCALE).coerceIn(1f, 1.5f),
+        return copy(radiusDp = radiusDp.finite(60f).coerceIn(40f, 240f), selectedScale = selectedScale.finite(DEFAULT_SELECTED_SCALE).coerceIn(1f, 1.5f),
             innerRadiusDp = inner?.coerceAtMost((outer ?: 336f) - 48f), outerRadiusDp = outer, focusDurationMs = focusDurationMs.coerceIn(80, 400),
-            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(.5f).coerceIn(0f, 1f), hitbox = hitbox.normalized())
+            iconSizeDp = iconSizeDp.finite(32f).coerceIn(12f, 128f), iconPosition = iconPosition.finite(DEFAULT_ICON_POSITION).coerceIn(0f, 1f), hitbox = hitbox.normalized(),
+            gapDp = gapDp.finite(4f).coerceIn(0f, 24f))
     }
     /** Missing bounds retain the old center-radius and button-size geometry on import. */
     fun radii(buttonSizeDp: Float): Pair<Float, Float> {
@@ -41,7 +47,7 @@ data class WheelSlice(val start: Float, val end: Float, val point: WheelPoint, v
 /** Angles increase from top to bottom on side handles and left to right on bottom handles. */
 data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val edge: Edge, val radius: Float,
     val cell: Float, val capacity: Int, val count: Int, val expansion: Float, val minimumCell: Float,
-    val innerRadius: Float = (radius - cell / 2f).coerceAtLeast(0f), val gap: Float = 4f) {
+    val innerRadius: Float = (radius - cell / 2f).coerceAtLeast(0f), val gap: Float = 4f, val autoFit: Boolean = false) {
     val outerRadius get() = innerRadius + cell * expansion
     fun point(angle: Float, distance: Float = radius): WheelPoint = when (edge) {
         Edge.LEFT -> WheelPoint(center.x + cos(angle) * distance, center.y + sin(angle) * distance)
@@ -77,25 +83,44 @@ data class WheelGeometryResult(val bounds: Bounds, val center: WheelPoint, val e
                 innerRadius, innerRadius + depth, cell * .55f * scale).also { start = end }
         }
     }
-    fun angularGap(slice: WheelSlice) = (gap / (slice.innerRadius + slice.size / 2f).coerceAtLeast(1f)).coerceAtMost((slice.end - slice.start) / 4f)
+    /** Offset each shared edge by half the gap. The two facing edges stay parallel at every radius. */
+    fun sideGap(slice: WheelSlice, start: Boolean): Float =
+        if (abs(if (start) slice.start + PI.toFloat() / 2f else slice.end - PI.toFloat() / 2f) < .00001f) 0f else gap / 2f
+    fun sideInset(slice: WheelSlice, radius: Float, start: Boolean): Float = asin((sideGap(slice, start) / radius.coerceAtLeast(.0001f)).coerceIn(0f, 1f))
+    fun visibleInnerRadius(slice: WheelSlice): Float {
+        val a = sideGap(slice, true); val b = sideGap(slice, false)
+        if (a + b == 0f) return slice.innerRadius
+        val width = slice.end - slice.start
+        val x = (b + a * cos(width)) / sin(width).coerceAtLeast(.0001f)
+        return maxOf(slice.innerRadius, hypot(x, a))
+    }
+    fun angularGap(slice: WheelSlice): Float {
+        val middle = slice.innerRadius + slice.size / 2f
+        return sideInset(slice, middle, true) + sideInset(slice, middle, false)
+    }
     fun segmentPoints(slice: WheelSlice): List<WheelPoint> {
-        val inset = angularGap(slice) / 2f
-        val start = slice.start + inset; val end = slice.end - inset
-        return (0..48).map { point(start + (end - start) * it / 48f, slice.outerRadius) } +
-            (48 downTo 0).map { point(start + (end - start) * it / 48f, slice.innerRadius) }
+        val inner = visibleInnerRadius(slice)
+        fun arc(radius: Float, indices: IntProgression): List<WheelPoint> {
+            val start = slice.start + sideInset(slice, radius, true)
+            val end = slice.end - sideInset(slice, radius, false)
+            return indices.map { point(start + (end - start) * it / 48f, radius) }
+        }
+        return arc(slice.outerRadius, 0..48) + arc(inner, 48 downTo 0)
     }
     fun tapHit(x: Float, y: Float, selected: Int? = null): Int? {
         val index = hit(x, y, innerRadius, outerRadius, selected) ?: return null
-        val slice = slices(selected)[index]; val inset = angularGap(slice) / 2f
+        val slice = slices(selected)[index]
         val angle = angle(x, y)
-        return index.takeIf { hypot(x - center.x, y - center.y) <= slice.outerRadius &&
-            angle >= slice.start + inset && angle <= slice.end - inset }
+        val distance = hypot(x - center.x, y - center.y)
+        return index.takeIf { distance <= slice.outerRadius &&
+            distance * sin(angle - slice.start) + .0001f >= sideGap(slice, true) &&
+            distance * sin(slice.end - angle) + .0001f >= sideGap(slice, false) }
     }
     fun hit(x: Float, y: Float, minimum: Float, maximum: Float, selected: Int? = null): Int? {
         if (!x.isFinite() || !y.isFinite()) return null
         val distance = hypot(x - center.x, y - center.y)
         // Drag picking reaches slightly inside the hollow center. Normal taps still pass innerRadius as their minimum.
-        val dragInner = innerRadius - minOf(innerRadius * .2f, gap * 3f)
+        val dragInner = innerRadius - minOf(innerRadius * .2f, minimumCell / 4f)
         if (distance < maxOf(minimum, dragInner) || distance > maximum) return null
         return angularHit(x, y, selected)
     }
@@ -115,14 +140,14 @@ object WheelGeometry {
         return minOf((if (side) screen.height / 2f else screen.width / 2f) / d - 8f,
             (if (side) screen.width else screen.height) / d - 16f).coerceAtLeast(0f)
     }
-    internal fun fitsTargets(inner: Float, cell: Float, expansion: Float, count: Int): Boolean {
+    internal fun fitsTargets(inner: Float, cell: Float, expansion: Float, count: Int, gap: Float = 4f): Boolean {
         val candidate = WheelGeometryResult(Bounds(0f, 0f, 0f, 0f), WheelPoint(0f, 0f), Edge.LEFT,
-            inner + cell / 2f, cell, count, count, expansion, 48f, inner, 4f)
+            inner + cell / 2f, cell, count, count, expansion, 48f, inner, gap)
         return (listOf<Int?>(null) + (0 until count).toList()).all { selected ->
             candidate.slices(selected).all { slice ->
                 val target = 48f
-                slice.size >= target && (inner + slice.size / 2f) *
-                    sin((slice.end - slice.start - candidate.angularGap(slice)) / 2f) >= target / 2f
+                slice.size >= target && (inner + slice.size / 2f) * sin((slice.end - slice.start) / 2f) + .0001f >=
+                    target / 2f + maxOf(candidate.sideGap(slice, true), candidate.sideGap(slice, false))
             }
         }
     }
@@ -141,7 +166,7 @@ object WheelGeometry {
         // Capacity depends on 48 dp touch targets. Artwork is fitted separately without changing selection.
         val capacity = (6 downTo 1).firstOrNull { n ->
             cell >= 48f * d && screen.width >= margin * 2f && screen.height >= margin * 2f &&
-                fitsTargets(inner / d, cell / d, expansion, n)
+                fitsTargets(inner / d, cell / d, expansion, n, s.gapDp)
         } ?: 0
         val width = if (side) outer + margin * 2f else (outer + margin) * 2f
         val height = if (side) (outer + margin) * 2f else outer + margin * 2f
@@ -159,7 +184,7 @@ object WheelGeometry {
         val renderedInner = inner.coerceAtMost(outer)
         val renderedCell = if (capacity == 0) ((outer - renderedInner) / expansion).coerceAtLeast(0f) else cell
         return WheelGeometryResult(bounds, WheelPoint(x + localX.coerceAtMost(bounds.width), y + localY.coerceAtMost(bounds.height)),
-            edge, radius, renderedCell, capacity, count.coerceIn(0, capacity), expansion, 48f * d, renderedInner, 4f * d)
+            edge, radius, renderedCell, capacity, count.coerceIn(0, capacity), expansion, 48f * d, renderedInner, s.gapDp * d, s.autoFit)
     }
 }
 

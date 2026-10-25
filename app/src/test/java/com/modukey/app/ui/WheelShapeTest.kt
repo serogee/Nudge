@@ -16,6 +16,28 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [36])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WheelShapeTest {
+    @Test fun smallInnerArcsDoNotRemoveTheOuterCornerRounding() {
+        for (edge in Edge.entries) for (inner in listOf(1f, 8f, 32f)) {
+            val screen = Bounds(0f, 0f, 1000f, 1000f)
+            val g = WheelGeometry.calculate(screen, 1f, PanelLayout(),
+                WheelLayoutSettings(innerRadiusDp = inner, outerRadiusDp = 240f), 6, screen, edge)
+            val slice = g.slices()[2]
+            val angle = slice.end - g.sideInset(slice, slice.outerRadius, false) - 3f / slice.outerRadius
+            val p = g.point(angle, slice.outerRadius - 2f)
+            val bitmap = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888)
+            try {
+                val canvas = Canvas(bitmap)
+                val paint = Paint().apply { color = android.graphics.Color.GREEN }
+                val x = (p.x - g.bounds.x).toInt(); val y = (p.y - g.bounds.y).toInt()
+                canvas.drawPath(wheelShape(g, slice, 0f).asAndroidPath(), paint)
+                assertNotEquals(0, bitmap.getPixel(x, y))
+                bitmap.eraseColor(0)
+                canvas.drawPath(wheelShape(g, slice, 24f).asAndroidPath(), paint)
+                assertEquals("$edge inner=$inner", 0, bitmap.getPixel(x, y))
+            } finally { bitmap.recycle() }
+        }
+    }
+
     @Test fun tinyHolesStayHollowWithRoundedWedgesOnEveryEdge() {
         for (edge in Edge.entries) {
             val g = WheelGeometry.calculate(Bounds(0f, 0f, 800f, 900f), 4f, PanelLayout(),

@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 30 adds per-orientation Wheel drag hitbox modes and manual radii. */
+/** Schema 31 stores constant-width Wheel item gaps independently per orientation. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 30
+    const val SCHEMA = 31
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -96,9 +96,10 @@ object ConfigurationCodec {
             if (it.has("innerRadiusDp")) it.float("innerRadiusDp", 100f) else null,
             if (it.has("outerRadiusDp")) it.float("outerRadiusDp", 156f) else null,
             enumValueOf(it.optString("focusAnimation", "SMOOTH")), it.optInt("focusDurationMs", 140), it.optBoolean("autoFit", false),
-            it.optBoolean("adaptIconSize", true), it.float("iconSizeDp", 32f), it.float("iconPosition", .5f),
+            it.optBoolean("adaptIconSize", true), it.float("iconSizeDp", 32f), it.float("iconPosition", WheelLayoutSettings.DEFAULT_ICON_POSITION),
             it.optJSONObject("hitbox")?.let { h -> WheelHitboxSettings(enumValueOf(h.optString("mode", "AUTOMATIC")),
-                h.float("innerRadiusDp", 32f), h.float("outerRadiusDp", 240f)) } ?: WheelHitboxSettings()) } ?: WheelLayoutSettings(autoFit = p.optString("mode") != "WHEEL"))
+                h.float("innerRadiusDp", 32f), h.float("outerRadiusDp", 240f)) } ?: WheelHitboxSettings(),
+            it.float("gapDp", 4f)) } ?: WheelLayoutSettings(autoFit = p.optString("mode") != "WHEEL"))
     private fun layout(p: PanelLayout) = JSONObject().put("mode", p.mode.name).put("direction", p.direction.name)
         .put("crossCount", p.crossCount).put("maximumLines", p.maximumLines).put("extent", p.extentFraction)
         .put("buttonSize", p.buttonSizeDp).put("follow", p.followHandle).put("x", p.x).put("y", p.y)
@@ -106,7 +107,8 @@ object ConfigurationCodec {
         .put("wheel", JSONObject().put("radiusDp", p.wheel.radiusDp).put("expandSelection", p.wheel.expandSelection).put("selectedScale", p.wheel.selectedScale).put("animationsEnabled", p.wheel.animationsEnabled)
             .put("innerRadiusDp", p.wheel.innerRadiusDp).put("outerRadiusDp", p.wheel.outerRadiusDp).put("focusAnimation", p.wheel.focusAnimation.name).put("focusDurationMs", p.wheel.focusDurationMs).put("autoFit", p.wheel.autoFit)
             .put("adaptIconSize", p.wheel.adaptIconSize).put("iconSizeDp", p.wheel.iconSizeDp).put("iconPosition", p.wheel.iconPosition)
-            .put("hitbox", JSONObject().put("mode", p.wheel.hitbox.mode.name).put("innerRadiusDp", p.wheel.hitbox.innerRadiusDp).put("outerRadiusDp", p.wheel.hitbox.outerRadiusDp)))
+            .put("hitbox", JSONObject().put("mode", p.wheel.hitbox.mode.name).put("innerRadiusDp", p.wheel.hitbox.innerRadiusDp).put("outerRadiusDp", p.wheel.hitbox.outerRadiusDp))
+            .put("gapDp", p.wheel.gapDp))
     private fun wheelPick(p: JSONObject) = WheelPickSettings(p.optBoolean("enabled"), p.float("minimumDistanceDp", 32f),
         p.float("maximumDistanceDp", 240f), p.optBoolean("allowLaterSwipes"), p.optLong("releaseWindowMs", 200))
     private fun wheelPick(p: WheelPickSettings) = JSONObject().put("enabled", p.enabled).put("minimumDistanceDp", p.minimumDistanceDp)

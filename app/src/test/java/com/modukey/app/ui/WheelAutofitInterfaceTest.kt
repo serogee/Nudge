@@ -20,6 +20,47 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [36], qualifiers = "w480dp-h900dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WheelAutofitInterfaceTest {
+    @Test fun gapChangesRefitAllButtonsWithoutDisablingAutofitOrChangingTheOtherOrientation() {
+        val id = start()
+        val other = rule.runOnIdle {
+            val vm = ViewModelProvider(rule.activity)[NudgeViewModel::class.java]
+            vm.editPanel(id) { it.copy(buttons = List(6) { PanelButton() }) }
+            settings(id).landscape
+        }
+        val gap = rule.onNodeWithContentDescription("Item gap")
+        gap.performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(24f) }
+        val wide = rule.runOnIdle {
+            val current = settings(id)
+            assertEquals(24f, current.portrait.wheel.gapDp)
+            assertTrue(current.portrait.wheel.autoFit)
+            assertEquals(other, current.landscape)
+            current.portrait.wheel.outerRadiusDp!!
+        }
+        gap.performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
+        rule.runOnIdle {
+            val current = settings(id).portrait.wheel
+            assertEquals(0f, current.gapDp); assertTrue(current.autoFit)
+            assertTrue(current.outerRadiusDp!! < wide)
+            assertEquals(6, settings(id).buttons.size)
+        }
+    }
+
+    @Test fun manualHitboxChangesShowABriefReferenceAndCancelClearsIt() {
+        val id = start()
+        rule.onNodeWithText("Automatic").performScrollTo().performClick()
+        rule.onNodeWithText("Manual").performClick()
+        rule.onNodeWithContentDescription("Outer hitbox radius").performSemanticsAction(SemanticsActions.SetProgress) { it(300f) }
+        rule.runOnIdle { assertEquals(id, app.editor.hitboxPreview.value?.panelId) }
+        rule.onNodeWithTag("wheel-hitbox-preview").assertExists()
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(2100))
+        rule.waitForIdle()
+        rule.runOnIdle { assertNull(app.editor.hitboxPreview.value) }
+        rule.onNodeWithTag("wheel-hitbox-preview").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Outer hitbox radius").performSemanticsAction(SemanticsActions.SetProgress) { it(320f) }
+        rule.onNodeWithContentDescription("Cancel").performClick()
+        rule.runOnIdle { assertNull(app.editor.hitboxPreview.value) }
+    }
+
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     private val app get() = rule.activity.application as NudgeApplication
     @After fun cleanup() { app.onTerminate() }

@@ -23,6 +23,7 @@ import kotlin.math.roundToInt
     var packPicker by remember { mutableStateOf(false) }
     val packs by vm.iconPacks.collectAsStateWithLifecycle()
     val service by vm.status.collectAsStateWithLifecycle()
+    val hitboxPreview by vm.wheelHitboxPreview.collectAsStateWithLifecycle()
     LaunchedEffect(entry.id) { vm.loadPacks() }
     val p = entry.settings
     val trigger = config.handle(previewHandleId)?.trigger ?: TriggerSettings()
@@ -84,7 +85,9 @@ import kotlin.math.roundToInt
         PreviewHandleChoice(config, previewHandleId, preview)
         Help(R.string.preview_handle_help)
         OrientationChoices(landscape, selectOrientation)
-        PanelPreview(p, l, g, screen, handle, trigger)
+        PanelPreview(p, l, g, screen, handle, trigger, hitboxPreview?.let {
+            it.panelId == entry.id && it.landscape == landscape && l.wheel.hitbox.mode == WheelHitboxMode.MANUAL
+        } == true)
         Help(R.string.panel_preview_help)
         Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
         OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected && previewEnabled) { Text(t(R.string.test_panel)) }
@@ -109,7 +112,24 @@ import kotlin.math.roundToInt
             }
             Help(R.string.wheel_autofit_priority)
             Help(R.string.wheel_radius_help)
-            WheelHitboxControls(l.wheel.hitbox) { change -> layout { it.copy(wheel = it.wheel.copy(hitbox = change(it.wheel.hitbox))) } }
+            SettingSlider(R.string.wheel_gap, l.wheel.gapDp, 0f..24f, t(R.string.dp_value, l.wheel.gapDp.roundToInt()), default = 4f) { value ->
+                vm.editPanel(entry.id) { current ->
+                    val changed = current.layout(landscape).let { it.copy(wheel = it.wheel.copy(gapDp = value)) }
+                    if (landscape && current.landscapeOverride) current.copy(landscape = fitted(changed, true, current.buttons.size))
+                    else current.copy(portrait = fitted(changed, false, current.buttons.size))
+                }
+            }
+            Help(R.string.wheel_gap_help)
+            val pick = config.handle(previewHandleId)?.let { h -> GestureSlot.entries.map(h::target)
+                .firstOrNull { it.panelId == entry.id && it.wheelPick.enabled }?.wheelPick } ?: WheelPickSettings()
+            val bounds = g.wheel?.hitboxRadii(pick, screen.density, l.wheel.hitbox)?.let {
+                it.first / screen.density to it.second / screen.density
+            } ?: (32f to 240f)
+            WheelHitboxControls(l.wheel.hitbox, bounds) { change ->
+                layout { it.copy(wheel = it.wheel.copy(hitbox = change(it.wheel.hitbox))) }
+                val mode = vm.configuration.value?.panel(entry.id)?.settings?.layout(landscape)?.wheel?.hitbox?.mode
+                if (mode == WheelHitboxMode.MANUAL) vm.showWheelHitbox(entry.id, landscape) else vm.hideWheelHitbox()
+            }
             WheelIconControls(l.wheel) { value -> layout { it.copy(wheel = value) } }
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {

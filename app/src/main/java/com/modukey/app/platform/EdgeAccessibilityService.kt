@@ -45,6 +45,7 @@ class EdgeAccessibilityService : AccessibilityService() {
     private var registry: OverlayRegistry<String, HandleWindowSpec>? = null
     private var frames: FrameCoalescer? = null
     private var sliderGuideHost: SliderGuideHost? = null
+    private var wheelHitboxHost: WheelHitboxPreviewHost? = null
     private var brightnessHost: BrightnessPopupHost? = null
     private var brightnessOpen = false
     private var brightnessOwner: String? = null
@@ -104,6 +105,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             },
             { app.diagnostics.record("System panel request failed"); Toast.makeText(this, R.string.native_panel_failed, Toast.LENGTH_SHORT).show() })
         sliderGuideHost = SliderGuideHost(this, manager)
+        wheelHitboxHost = WheelHitboxPreviewHost(this, manager)
         brightnessHost = BrightnessPopupHost(this, manager, app.brightness, { hideBrightness(animate = true); refresh() }, {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }, changed = { panelHost?.refreshSound() })
@@ -136,6 +138,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             scope?.launch { app.configuration.preview.filterNotNull().collect { frames?.request() } }
             scope?.launch { app.configuration.state.filterNotNull().collect { app.handlePauses.reconcile(it); frames?.request(); panelHost?.refreshSound() } }
             scope?.launch { app.sliderGuidePreview.state.collect { frames?.request() } }
+            scope?.launch { app.editor.hitboxPreview.collect { frames?.request() } }
             scope?.launch { app.brightnessPreview.state.collect { frames?.request() } }
             scope?.launch { app.automaticCalibration.state.map { it.phase }.distinctUntilChanged().collect { phase ->
                 if (phase == AutomaticCalibrationPhase.RUNNING) {
@@ -478,6 +481,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             wanted = OpenPanel(selected.panelId, selected.handleId); panelEditing = true
         }
         val identity = wanted?.let { it to panelEditing }; val changed = attachedPanel != identity
+        var showingHitbox = false
         try {
             if (changed) {
                 val previous = attachedPanel?.takeIf { !it.second }?.first
@@ -496,6 +500,17 @@ class EdgeAccessibilityService : AccessibilityService() {
                     panelEditing, edge, if (panelEditing) preview?.quarterTurns ?: 0 else 0, wanted.handleId,
                     wheelBinding?.session?.selected ?: if (panelEditing && geometry.wheel != null && p.layout(space.landscape).wheel.expandSelection && geometry.visibleCount > 0) geometry.visibleCount / 2 else null,
                     wheelBinding != null))
+                val request = app.editor.hitboxPreview.value
+                val wheel = geometry.wheel
+                val hitbox = p.layout(space.landscape).wheel.hitbox
+                if (panelEditing && wheel != null && hitbox.mode == WheelHitboxMode.MANUAL &&
+                    request?.panelId == wanted.panelId && request.landscape == space.landscape) {
+                    try {
+                        val bounds = wheel.hitboxRadii(WheelPickSettings(), space.density, hitbox)
+                        wheelHitboxHost?.show(wheel, bounds, s, preview)
+                        showingHitbox = true
+                    } catch (e: RuntimeException) { app.diagnostics.record("Wheel hitbox preview failed", e) }
+                }
             }
             attachedPanel = identity
             if (wanted != null) errors.remove("panel")
@@ -504,6 +519,7 @@ class EdgeAccessibilityService : AccessibilityService() {
             try { panelHost?.hide(animate = false) } catch (_: RuntimeException) { }; errors["panel"] = getString(R.string.overlay_error)
         }
         val timedPanel = open?.let { config.panel(it.panelId)?.settings }
+        if (!showingHitbox) wheelHitboxHost?.hide()
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
         if (wheelBinding != null) panelTimeout?.touch(true)
         handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
@@ -558,6 +574,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         cancelSlider()
         raiseHandles = false
         sliderGuideHost?.hide(); sliderGuideHost = null
+        wheelHitboxHost?.hide(); wheelHitboxHost = null
         app.shortcuts.unbind(this)
         app.accessibility.unbind(this)
         hideBrightness(); brightnessHost = null

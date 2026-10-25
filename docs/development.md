@@ -90,6 +90,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Finalize-Release.ps1
 
 Confirm the version before running the finalizer. It checks that the prepared commit is on remote main, fast-forwards local main, runs release checks, and builds the signed APK. It verifies package identity, version, signature, and the earlier archived signer when available. It exports artifacts and creates the annotated local version tag. It does not push or publish.
 
+The release build starts with `clean` and disables the build cache and incremental Kotlin compilation. This recompiles tests against the current backup schema. It also disables the generated problems report to avoid the Windows file-replacement failure. Unit tests, their reports, full lint, and signed release assembly remain required. A failed check prevents artifact export and tag creation.
+
 For a local preparation check without fetching, switching, building, or tagging, use:
 
 ```powershell

@@ -105,7 +105,7 @@ class WheelConfigurationTest {
         val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(
             portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = settings)))))
         assertEquals(settings, ConfigurationCodec.decode(ConfigurationCodec.encode(config)).panels.single().settings.portrait.wheel)
-        assertEquals(100f to 156f, WheelLayoutSettings().radii(56f))
+        assertEquals(32f to 88f, WheelLayoutSettings().radii(56f))
         assertEquals(12f to 68f, WheelLayoutSettings(40f).radii(56f))
     }
     @Test fun inactiveLegacyWheelModesCannotConvertAPanelWhenEnablingLandscape() {

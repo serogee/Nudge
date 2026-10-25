@@ -13,6 +13,6 @@ import kotlin.math.roundToInt
             t(R.string.dp_value, settings.iconSizeDp.roundToInt()), default = 32f) { change(settings.copy(iconSizeDp = it)) }
         Help(R.string.wheel_icon_size_help)
     }
-    PercentSlider(R.string.wheel_icon_position, settings.iconPosition, default = .5f) { change(settings.copy(iconPosition = it)) }
+    PercentSlider(R.string.wheel_icon_position, settings.iconPosition, default = WheelLayoutSettings.DEFAULT_ICON_POSITION) { change(settings.copy(iconPosition = it)) }
     Help(R.string.wheel_icon_position_help)
 }

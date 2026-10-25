@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
 class WheelHitboxInterfaceTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @After fun stop() { (rule.activity.application as NudgeApplication).onTerminate() }
-    @Test fun dropdownRetainsManualRadiiAndOnlyThumbDraggingOrNumericEntryChangesThem() {
+    @Test fun dropdownCopiesItsReferenceAndOnlyThumbDraggingOrNumericEntryChangesRadii() {
         val settings = mutableStateOf(WheelHitboxSettings())
         rule.activity.setContent { NudgeTheme { Column(Modifier.width(340.dp).testTag("hitbox-control")) {
             WheelHitboxControls(settings.value) { settings.value = it(settings.value) }
@@ -50,6 +50,20 @@ class WheelHitboxInterfaceTest {
         rule.onNodeWithText("Automatic").performClick()
         rule.onNodeWithText("Automatic").performClick()
         rule.onNodeWithText("Manual").performClick()
-        rule.runOnIdle { assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 12f, 420f), settings.value) }
+        rule.runOnIdle { assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 32f, 240f), settings.value) }
+    }
+
+    @Test fun bothAutomaticAndButtonSizedModesSeedManualBoundsFromTheirCurrentReference() {
+        val settings = mutableStateOf(WheelHitboxSettings())
+        val reference = mutableStateOf(48f to 200f)
+        rule.activity.setContent { NudgeTheme { Column {
+            WheelHitboxControls(settings.value, reference.value) { settings.value = it(settings.value) }
+        } } }
+        rule.onNodeWithText("Automatic").performClick(); rule.onNodeWithText("Manual").performClick()
+        rule.runOnIdle { assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 48f, 200f), settings.value) }
+        rule.onNodeWithText("Manual").performClick(); rule.onNodeWithText("Use Button Size").performClick()
+        rule.runOnIdle { reference.value = 100f to 156f }
+        rule.onNodeWithText("Use Button Size").performClick(); rule.onNodeWithText("Manual").performClick()
+        rule.runOnIdle { assertEquals(WheelHitboxSettings(WheelHitboxMode.MANUAL, 100f, 156f), settings.value) }
     }
 }

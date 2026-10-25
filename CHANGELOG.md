@@ -1,6 +1,34 @@
 # Changelog
 
-## Unreleased
+## 0.5.5 - 2026-10-25
+
+### Added
+
+- Add **Item gap** from **0–24 dp**, defaulting to **4 dp**. Keep facing Wheel edges parallel throughout the band and highlight transitions. Save gaps per orientation. (e46bfad)
+- Show edited **Manual** hitboxes above the Wheel for **two seconds** in the editor and live accessibility preview. Refresh the reference after dragging, numeric entry, or reset. Clear it on expiry, Cancel, editor exit, orientation change, or a mode change. The reference does not receive input. (53a2c61)
+
+### Changed
+
+- Make **Autofit** choose the smallest usable overall outer radius for included buttons and **48 dp** touch targets. Keep the inner radius at least **32 dp**, allowing a larger hole to reduce the outside size. Prefer **110%** highlighting. With six buttons, a 4 dp gap, and enough space, fit **88/136 dp**. New unfitted Wheels start at **32/88 dp**. Preserve explicit older sizes and the **1 dp** manual inner minimum. (9771504)
+- Default and reset **Icon position** to **55%**, including recalculated Autofit layouts. Preserve explicit imported positions until edited or fitted again. (9771504)
+- With Autofit on, start **Automatic** hitboxes at **32 dp** and follow each logical outer edge, including highlighting. With Autofit off, retain saved gesture distances and the inward margin. (9771504)
+- Copy the previous mode's effective unhighlighted bounds when entering **Manual**. Use the selected preview handle's distances where applicable. Keep manual radii independent during highlighting and preserve visual sizes, Autofit, and saved gesture settings. (53a2c61)
+
+### Fixed
+
+- Keep outer corner rounding independent from the limited inner arc. Preserve concentric boundaries and normal tap gaps as the hole becomes smaller. (e46bfad)
+- Run release checks from clean sources without the build cache or incremental Kotlin compilation. Preserve the complete PowerShell property argument and disable the generated problems report. Failed checks prevent artifact export and tagging. (50b4d74)
+
+### Maintenance
+
+- Document Wheel spacing, compact fitting, icon positions, hitbox references, release checks, and recovery. (07e30ae, 50b4d74)
+
+### Compatibility and validation
+
+- Save **schema 31** backups with per-orientation gaps and preserve older imports. Use a 4 dp gap when absent. **Nudge 0.5.4 and earlier cannot import schema-31 backups.**
+- Retain up to six buttons, overflow entries, normal tap exclusions, and independent Drag to pick hitbox modes. Screen space and touch geometry can reduce visible capacity.
+- Pass a clean full run of **872 unit tests across 135 classes**, lint with **0 errors and 27 warnings**, and the **0.5.5-debug / code 21** build. Pass **29 changelog** and **22 finalization** checks.
+- Final signed assembly, signer comparison, physical-device checks, and installation over **0.5.4** remain pending. See the reviewed 0.5.5 release notes.
 
 ## 0.5.4 - 2026-10-25
 

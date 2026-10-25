@@ -23,11 +23,11 @@ class WheelIconConfigurationTest {
         val saved = old.getJSONArray("panels").getJSONObject(0).getJSONObject("portrait").getJSONObject("wheel")
         listOf("adaptIconSize", "iconSizeDp", "iconPosition").forEach(saved::remove)
         val restored = ConfigurationCodec.decode(ConfigurationCodec.upgrade(old.toString())).panels.single().settings.portrait.wheel
-        assertEquals(wheel.copy(adaptIconSize = true, iconSizeDp = 32f, iconPosition = .5f), restored)
+        assertEquals(wheel.copy(adaptIconSize = true, iconSizeDp = 32f, iconPosition = .55f), restored)
     }
     @Test fun invalidIconSettingsUseFiniteBoundedValues() {
         assertEquals(32f, WheelLayoutSettings(iconSizeDp = Float.NaN).normalized().iconSizeDp)
-        assertEquals(.5f, WheelLayoutSettings(iconPosition = Float.POSITIVE_INFINITY).normalized().iconPosition)
+        assertEquals(.55f, WheelLayoutSettings(iconPosition = Float.POSITIVE_INFINITY).normalized().iconPosition)
         assertEquals(12f, WheelLayoutSettings(iconSizeDp = -100f).normalized().iconSizeDp)
         assertEquals(128f, WheelLayoutSettings(iconSizeDp = 1_000f).normalized().iconSizeDp)
         assertEquals(0f, WheelLayoutSettings(iconPosition = -1f).normalized().iconPosition)
