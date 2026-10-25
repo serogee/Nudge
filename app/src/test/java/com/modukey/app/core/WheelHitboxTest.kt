@@ -4,6 +4,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WheelHitboxTest {
+    @Test fun enteringManualCopiesTheEffectivePreviousModeInsteadOfOldManualValues() {
+        for (edge in Edge.entries) for (d in listOf(1f, 3f)) for (fitted in listOf(false, true)) {
+            val g = geometry(edge, d).copy(autoFit = fitted)
+            for (mode in listOf(WheelHitboxMode.AUTOMATIC, WheelHitboxMode.BUTTON_SIZE)) {
+                val before = WheelHitboxSettings(mode, 16f, 420f)
+                val bounds = g.hitboxRadii(WheelPickSettings(), d, before)
+                val manual = before.withMode(WheelHitboxMode.MANUAL, bounds.first / d to bounds.second / d)
+                assertEquals(bounds.first, manual.innerRadiusDp * d, .001f)
+                assertEquals(bounds.second, manual.outerRadiusDp * d, .001f)
+                assertEquals(manual, manual.withMode(WheelHitboxMode.MANUAL, 0f to 600f))
+            }
+        }
+    }
+
     @Test fun fittedAutomaticBoundsKeepThirtyTwoDpInsideAndFollowEachOuterEdge() {
         for (edge in Edge.entries) for (d in listOf(1f, 3f)) {
             val screen = Bounds(0f, 0f, 1000f * d, 1000f * d)

@@ -28,6 +28,8 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as NudgeApplication
     val configuration = app.configuration.preview
     val draft = app.configuration.draft
+    val wheelHitboxPreview = app.editor.hitboxPreview
+    private var hitboxPreviewJob: Job? = null
     val error = app.configuration.error
     val status = app.status.state
     val pausedHandles = app.handlePauses.state
@@ -109,9 +111,16 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun cancelEditing() {
         if (savingEditor.value) return
         app.configuration.cancelDraft()
+        hideWheelHitbox()
         android.widget.Toast.makeText(app, R.string.changes_cancelled, android.widget.Toast.LENGTH_SHORT).show()
     }
-    fun closeEditing() = app.configuration.closeDraft()
+    fun closeEditing() { hideWheelHitbox(); app.configuration.closeDraft() }
+    fun showWheelHitbox(panelId: String, landscape: Boolean) {
+        val request = app.editor.showHitbox(panelId, landscape) ?: return
+        hitboxPreviewJob?.cancel()
+        hitboxPreviewJob = viewModelScope.launch { delay(2_000); app.editor.clearHitbox(request) }
+    }
+    fun hideWheelHitbox() { hitboxPreviewJob?.cancel(); hitboxPreviewJob = null; app.editor.clearHitbox() }
     fun beginEditor(token: Any, handleId: String? = null, panelId: String? = null, preview: Boolean = true, landscape: Boolean? = null) {
         if (panelId != null) app.configuration.openPanel(panelId) else if (handleId != null) app.configuration.openHandle(handleId)
         app.editor.begin(token, EditorSelection(handleId, panelId, preview, landscape))

@@ -1,18 +1,24 @@
 package com.modukey.app.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.modukey.app.core.*
@@ -21,12 +27,15 @@ import com.modukey.app.platform.EdgeHighlightShape
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-@Composable internal fun PanelPreview(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometryResult, screen: ScreenSpace, handle: Bounds, trigger: TriggerSettings) {
+@Composable internal fun PanelPreview(panel: PanelConfig, layout: PanelLayout, geometry: PanelGeometryResult, screen: ScreenSpace,
+    handle: Bounds, trigger: TriggerSettings, showHitbox: Boolean = false) {
+    val hitboxColor = MaterialTheme.colorScheme.primary
     val edge = trigger.placement(screen.landscape).edge
     val path = remember(handle.width, handle.height, edge) { EdgeHighlightShape.path(handle.width,handle.height,edge).asComposePath() }
     fun scale(size: Size) = min(size.width / screen.width, size.height / screen.height) * 0.92f
     fun origin(size: Size, factor: Float) = Offset((size.width-screen.width*factor)/2, (size.height-screen.height*factor)/2)
     val modifier = Modifier.fillMaxWidth().height(if (screen.landscape) 210.dp else 320.dp).clipToBounds()
+        .then(if (showHitbox) Modifier.testTag("wheel-hitbox-preview") else Modifier)
         .drawBehind {
             val factor = scale(size); val o = origin(size, factor)
             drawRoundRect(Color(0xFF22281E), o-Offset(4f,4f), Size(screen.width*factor+8,screen.height*factor+8), CornerRadius(20f))
@@ -36,6 +45,25 @@ import kotlin.math.roundToInt
                 val indicator=TriggerGeometry.indicator(handle.width,handle.height,trigger,edge,screen.density)
                 val radius=min(trigger.cornerRadiusDp*screen.density,min(indicator.width,indicator.height)/2)*factor
                 drawRoundRect(Color(trigger.indicatorColor).copy(alpha=trigger.indicatorOpacity),o+Offset((handle.x+indicator.x)*factor,(handle.y+indicator.y)*factor),Size(indicator.width*factor,indicator.height*factor),CornerRadius(radius))
+            }
+        }
+        .drawWithContent {
+            drawContent()
+            val wheel = geometry.wheel
+            if (showHitbox && wheel != null) {
+                val hitbox = layout.wheel.hitbox.normalized()
+                val points = wheel.hitboxPoints(hitbox.innerRadiusDp * screen.density to hitbox.outerRadiusDp * screen.density)
+                val outline = Path().apply {
+                    points.forEachIndexed { index, p -> if (index == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y) }
+                    close()
+                }
+                val factor = scale(size); val o = origin(size, factor)
+                withTransform({ translate(o.x, o.y); scale(factor, factor, Offset.Zero) }) {
+                    clipRect(0f, 0f, screen.width, screen.height) {
+                        drawPath(outline, hitboxColor.copy(alpha = .25f))
+                        drawPath(outline, hitboxColor, style = Stroke(2f * screen.density))
+                    }
+                }
             }
         }
     Layout(content = { PanelContent(panel, layout, geometry, wheelSelection = if (geometry.wheel != null && geometry.visibleCount > 0) geometry.visibleCount / 2 else null) }, modifier = modifier) { children, constraints ->

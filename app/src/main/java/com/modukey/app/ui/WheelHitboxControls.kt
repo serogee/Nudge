@@ -10,8 +10,9 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
-@Composable internal fun WheelHitboxControls(settings: WheelHitboxSettings, change: ((WheelHitboxSettings) -> WheelHitboxSettings) -> Unit) {
-    OptionRow(t(R.string.wheel_hitbox), WheelHitboxMode.entries, settings.mode, WheelHitboxMode.AUTOMATIC) { mode -> change { it.copy(mode = mode) } }
+@Composable internal fun WheelHitboxControls(settings: WheelHitboxSettings, reference: Pair<Float, Float> = 32f to 240f,
+    change: ((WheelHitboxSettings) -> WheelHitboxSettings) -> Unit) {
+    OptionRow(t(R.string.wheel_hitbox), WheelHitboxMode.entries, settings.mode, WheelHitboxMode.AUTOMATIC) { mode -> change { it.withMode(mode, reference) } }
     Help(when (settings.mode) {
         WheelHitboxMode.AUTOMATIC -> R.string.wheel_hitbox_automatic_help
         WheelHitboxMode.BUTTON_SIZE -> R.string.wheel_hitbox_button_help

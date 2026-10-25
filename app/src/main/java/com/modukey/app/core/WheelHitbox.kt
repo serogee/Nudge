@@ -6,11 +6,23 @@ enum class WheelHitboxMode { AUTOMATIC, BUTTON_SIZE, MANUAL }
 
 data class WheelHitboxSettings(val mode: WheelHitboxMode = WheelHitboxMode.AUTOMATIC,
     val innerRadiusDp: Float = 32f, val outerRadiusDp: Float = 240f) {
+    fun withMode(next: WheelHitboxMode, reference: Pair<Float, Float>): WheelHitboxSettings =
+        if (next == WheelHitboxMode.MANUAL && mode != next)
+            copy(mode = next, innerRadiusDp = reference.first, outerRadiusDp = reference.second).normalized()
+        else copy(mode = next)
     fun normalized(): WheelHitboxSettings {
         val inner = (innerRadiusDp.takeIf(Float::isFinite) ?: 32f).coerceIn(0f, 592f)
         val outer = (outerRadiusDp.takeIf(Float::isFinite) ?: 240f).coerceIn(inner + 8f, 600f)
         return copy(innerRadiusDp = inner, outerRadiusDp = outer)
     }
+}
+
+/** The radial selection fan has no visual item gaps. These points are in logical screen coordinates. */
+fun WheelGeometryResult.hitboxPoints(radii: Pair<Float, Float>): List<WheelPoint> {
+    val inner = radii.first.coerceAtLeast(0f); val outer = radii.second.coerceAtLeast(inner)
+    val half = kotlin.math.PI.toFloat() / 2f
+    return (0..64).map { point(-half + 2f * half * it / 64f, outer) } +
+        (64 downTo 0).map { point(-half + 2f * half * it / 64f, inner) }
 }
 
 /** Fitted Wheels keep a short neutral center even when fitting enlarges the visual hole. */

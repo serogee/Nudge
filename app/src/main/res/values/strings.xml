@@ -585,6 +585,7 @@
     <string name="animation_spring">Spring</string>
     <string name="wheel_selected_size">Selected size</string>
     <string name="wheel_hitbox">Wheel hitbox</string>
+    <string name="wheel_hitbox_preview">Wheel hitbox preview</string>
     <string name="wheel_hitbox_automatic">Automatic</string>
     <string name="wheel_hitbox_button">Use Button Size</string>
     <string name="wheel_hitbox_manual">Manual</string>
@@ -593,7 +594,7 @@
     <string name="wheel_hitbox_outer">Outer hitbox radius</string>
     <string name="wheel_hitbox_automatic_help">With Autofit, select from 32 dp to the current button edge. Otherwise, keep the gesture distances and inward margin.</string>
     <string name="wheel_hitbox_button_help">Use each button\'s inner and outer radii for Drag to pick, including highlight expansion. Normal taps stay unchanged.</string>
-    <string name="wheel_hitbox_manual_help">Set independent Drag to pick radii from zero to 600 dp. Keep at least 8 dp between them. Normal taps stay unchanged.</string>
+    <string name="wheel_hitbox_manual_help">Start with the previous mode\'s bounds. Set radii from zero to 600 dp, at least 8 dp apart. Adjustments briefly highlight the hitbox.</string>
     <string name="wheel_hitbox_gesture_help">Gesture distances apply to Automatic hitboxes when Autofit is off. Autofit follows the fitted outer edge and keeps a 32 dp neutral center.</string>
     <string name="wheel_adapt_icon_size">Adapt icon size</string>
     <string name="wheel_adapt_icon_size_help">Size icons from the wheel radii. Keep the whole icon inside its wedge at the selected position.</string>
