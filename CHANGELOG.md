@@ -1,14 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.5.6 - 2026-10-26
 
 ### Changed
 
-- Default and reset Wheel **Selected size** to **125%**. Keep Autofit on when this value changes and fit the radii around the selected percentage. Preserve saved custom percentages and manual radii when Autofit is off.
+- Default and reset Wheel **Selected size** to **125%**. Keep Autofit on when this value changes. Calculate the radii around the selected percentage and refit the edited orientation. Preserve saved percentages and manual radii with Autofit off. (0ff5627)
 
 ### Fixed
 
-- Keep Home shortcut icons transparent by default and use the same container choice in previews. Export adaptive icons with safe padding to avoid legacy background wrappers and clipped corners. Smooth imported icon edges. Select **With container** for a rounded background. Use **Pin again** to update existing shortcuts.
+- Keep Home shortcut icons transparent by default and match their container choice in previews. Export adaptive icons with safe padding, smooth imported corners, and retain complete vector strokes. Use **With container** for a rounded background and **Pin again** to refresh existing icons. (08c53c7)
+
+### Compatibility and validation
+
+- Keep **schema 31**, saved custom percentages, manual sizes, actions, icon references, and overflow buttons. Screen space can reduce capacity. Source artwork can contain a background, and launchers can add an app badge.
+- Verify **170 relevant tests across 29 classes**, with no remaining failures, errors, or skipped cases, across the broad run and focused reruns. Pass feature-source lint with **0 errors and 27 warnings**, the **0.5.6-debug / code 22** build, **29 changelog checks**, and **22 finalization checks**. See the reviewed 0.5.6 notes for pending signed upgrade checks.
+- Use published **v0.5.5 / code 21** as the baseline for **0.5.6 / code 22**. Build the final signed APK and create its tag from clean merged `main`. Verify the signed upgrade over 0.5.5 before publishing.
 
 ## 0.5.5 - 2026-10-25
 
