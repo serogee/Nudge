@@ -72,13 +72,46 @@ class WheelAutofitInterfaceTest {
         return rule.runOnIdle { app.configuration.preview.value!!.panels.last().id }
     }
     private fun settings(id: String) = app.configuration.preview.value!!.panel(id)!!.settings
-    @Test fun manualSelectedSizeStartsAndResetsAt110Percent() {
+    @Test fun selectedSizeStartsAndResetsAt125PercentWithoutDisablingAutofit() {
         val id = start()
         rule.onNodeWithContentDescription("Selected size").performScrollTo()
-        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale) }
+        rule.runOnIdle { assertEquals(1.25f, settings(id).portrait.wheel.selectedScale) }
         rule.onNodeWithContentDescription("Selected size").performSemanticsAction(SemanticsActions.SetProgress) { it(1.4f) }
         rule.onNodeWithContentDescription("Reset Selected size").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(1.1f, settings(id).portrait.wheel.selectedScale); assertFalse(settings(id).portrait.wheel.autoFit) }
+        rule.runOnIdle { assertEquals(1.25f, settings(id).portrait.wheel.selectedScale); assertTrue(settings(id).portrait.wheel.autoFit) }
+    }
+    @Test fun selectedSizeRefitsRadiiAndPersistsWithoutChangingTheOtherOrientation() {
+        val id = start()
+        val other = rule.runOnIdle {
+            ViewModelProvider(rule.activity)[NudgeViewModel::class.java].editPanel(id) {
+                it.copy(buttons = List(6) { PanelButton() }, landscapeOverride = true)
+            }
+            settings(id).landscape
+        }
+        val size = rule.onNodeWithContentDescription("Selected size")
+        size.performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
+        val small = rule.runOnIdle { settings(id).portrait.wheel.outerRadiusDp!! }
+        size.performSemanticsAction(SemanticsActions.SetProgress) { it(1.5f) }
+        val fitted = rule.runOnIdle {
+            val current = settings(id)
+            assertTrue(current.portrait.wheel.autoFit)
+            assertEquals(1.5f, current.portrait.wheel.selectedScale)
+            assertTrue(current.portrait.wheel.outerRadiusDp!! > small)
+            assertEquals(other, current.landscape)
+            current.portrait.wheel
+        }
+        rule.onNodeWithContentDescription("Save").performClick()
+        rule.waitUntil(10_000) { rule.runOnIdle {
+            app.configuration.state.value!!.panel(id)!!.settings.portrait.wheel == fitted
+        } }
+    }
+    @Test fun selectedSizeRetainsManualRadiiWhenAutofitIsOff() {
+        val id = start()
+        rule.onNodeWithContentDescription("Autofit").performScrollTo().performClick()
+        val original = rule.runOnIdle { settings(id).portrait.wheel }
+        rule.onNodeWithContentDescription("Selected size").performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(1.4f) }
+        rule.runOnIdle { assertEquals(original.copy(selectedScale = 1.4f), settings(id).portrait.wheel) }
     }
     @Test fun manualHitboxEditsPreserveVisualRadiiAutofitAndOtherOrientation() {
         val id = start()
@@ -123,7 +156,7 @@ class WheelAutofitInterfaceTest {
         rule.runOnIdle {
             val vm = ViewModelProvider(rule.activity)[NudgeViewModel::class.java]
             vm.editPanel(id) { it.copy(landscapeOverride = true) }
-            vm.editLayout(id, true) { it.copy(wheel = it.wheel.copy(selectedScale = 1.4f)) }
+            vm.editLayout(id, true) { it.copy(wheel = it.wheel.copy(outerRadiusDp = 180f)) }
             assertFalse(settings(id).landscape.wheel.autoFit)
             assertTrue(settings(id).portrait.wheel.autoFit)
             vm.editLayout(id, false) { it.copy(offsetXDp = 20f, wheel = it.wheel.copy(animationsEnabled = false)) }

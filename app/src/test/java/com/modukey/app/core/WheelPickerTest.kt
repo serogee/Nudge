@@ -71,7 +71,7 @@ class WheelPickerTest {
         assertEquals(3, g.hit(next.x, next.y, 0f, 500f, 3))
     }
     @Test fun neutralOutsideAndMaximumDistanceClearSelectionAndPermitReentry() {
-        val g = geometry(count = 3)
+        val g = geometry(count = 3).copy(autoFit = false)
         val p = g.slices()[1].point
         val session = WheelPickSession(g, WheelPickSettings(enabled = true), 1f, g.center.x, g.center.y, 0, false)
         session.move(p.x, p.y, 10); assertEquals(1, session.selected)

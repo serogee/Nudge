@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Default and reset Wheel **Selected size** to **125%**. Keep Autofit on when this value changes and fit the radii around the selected percentage. Preserve saved custom percentages and manual radii when Autofit is off.
+
 ## 0.5.5 - 2026-10-25
 
 ### Added
