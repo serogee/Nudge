@@ -455,6 +455,7 @@
     <string name="brightness_access_help">Allow Modify system settings to change brightness. Showing a preview does not need this access.</string>
     <string name="home_shortcuts">Home screen shortcuts</string>
     <string name="shortcut_help">Create a shortcut for a button action. Your launcher asks you to confirm. Most actions need accessibility connected. Toggle accessibility also works when disconnected.</string>
+    <string name="shortcut_icon_help">Default icons have no added background. Select With container to add a background. Pin again to update an existing shortcut.</string>
     <string name="accessibility_service">Nudge accessibility</string>
     <string name="accessibility_switch_help">Turn on opens Android settings. Turn off disables Nudge handles. Your saved settings stay available.</string>
     <string name="toggle_accessibility">Toggle accessibility</string>

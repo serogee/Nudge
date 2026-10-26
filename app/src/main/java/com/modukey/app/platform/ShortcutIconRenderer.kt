@@ -20,16 +20,22 @@ internal object ShortcutIconRenderer {
     suspend fun render(context: Context, icons: IconRepository, button: PanelButton): Bitmap {
         val size = (96 * context.resources.displayMetrics.density).roundToInt().coerceIn(96, 288)
         val bitmap = createBitmap(size, size); val canvas = Canvas(bitmap)
-        val container = button.iconContainer != IconContainer.STANDALONE
+        val container = button.iconContainer == IconContainer.CONTAINER
         val outer = size * .08f; val radius = size * .23f
         if (container) canvas.drawRoundRect(outer, outer, size - outer, size - outer, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3C3C3E.toInt() })
         val inset = if (container) size * .25f else outer
         val side = size - inset * 2
         val save = canvas.save(); canvas.translate(inset, inset)
-        canvas.clipPath(Path().apply { addRoundRect(0f, 0f, side, side, side * .25f, side * .25f, Path.Direction.CW) })
+        canvas.clipRect(0f, 0f, side, side)
         val external = if (button.icon.builtIn == null) icons.icon(button, "", size) else null
         when {
-            external != null -> canvas.drawBitmap(external, null, RectF(0f, 0f, side, side), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            external != null -> {
+                val shader = BitmapShader(external, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                    setLocalMatrix(Matrix().apply { setScale(side / external.width, side / external.height) })
+                }
+                canvas.drawRoundRect(0f, 0f, side, side, side * .25f, side * .25f,
+                    Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { this.shader = shader })
+            }
             button.icon.builtIn == null && button.action == ButtonAction.NUDGE_SETTINGS -> ContextCompat.getDrawable(context, R.drawable.ic_modukey)?.let { it.setBounds(0, 0, side.roundToInt(), side.roundToInt()); it.draw(canvas) }
             else -> {
                 val vector = button.icon.builtIn?.let(AppIcons::library) ?: ButtonVectors.action(button.action)

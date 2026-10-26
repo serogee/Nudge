@@ -6,6 +6,10 @@
 
 - Default and reset Wheel **Selected size** to **125%**. Keep Autofit on when this value changes and fit the radii around the selected percentage. Preserve saved custom percentages and manual radii when Autofit is off.
 
+### Fixed
+
+- Keep Home shortcut icons transparent by default and use the same container choice in previews. Export adaptive icons with safe padding to avoid legacy background wrappers and clipped corners. Smooth imported icon edges. Select **With container** for a rounded background. Use **Pin again** to update existing shortcuts.
+
 ## 0.5.5 - 2026-10-25
 
 ### Added

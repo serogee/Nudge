@@ -240,6 +240,8 @@ On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automati
 
 In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
 
+Default and Standalone icons have no added background. **With container** adds a rounded background. Imported artwork keeps its own colors and transparency. Artwork can include its own background. The previews use the same container choice. Use **Pin again** to update an existing shortcut's artwork. Your launcher can add an app badge near the icon's edge.
+
 Most shortcuts require the connected Nudge handles service but can run with Enable Gestures off. **Toggle accessibility** also works while disconnected: it opens Android accessibility settings to enable or recover Nudge handles. While connected, it disables the handles service and closes its overlays. A locked phone must be unlocked before a launcher shortcut runs. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
 
 Backups retain shortcut definitions. Import does not grant permissions or pin icons.
