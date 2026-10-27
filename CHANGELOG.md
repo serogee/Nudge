@@ -2,11 +2,7 @@
 
 ## Unreleased
 
-### Fixed
-
-- Treat **No action** as disabled when both volume and brightness options are off. Ignore empty gestures without vibration or swipe-sequence changes. Keep handles with no assigned gestures visible but let touches pass through their touch areas.
-
-## 0.5.6 - 2026-10-26
+## 0.5.6 - 2026-10-27
 
 ### Changed
 
@@ -15,12 +11,14 @@
 ### Fixed
 
 - Keep Home shortcut icons transparent by default and match their container choice in previews. Export adaptive icons with safe padding, smooth imported corners, and retain complete vector strokes. Use **With container** for a rounded background and **Pin again** to refresh existing icons. (08c53c7)
+- Treat **No action** as disabled when both volume and brightness options are off. Ignore empty gestures without vibration, hold callbacks, or swipe-sequence changes. Keep handles with no active assignments visible and let touches pass through their touch areas. Preserve popup-only, slider, and Wheel gestures. (41b5c53)
 
 ### Compatibility and validation
 
 - Keep **schema 31**, saved custom percentages, manual sizes, actions, icon references, and overflow buttons. Screen space can reduce capacity. Source artwork can contain a background, and launchers can add an app badge.
-- Verify **170 relevant tests across 29 classes**, with no remaining failures, errors, or skipped cases, across the broad run and focused reruns. Pass feature-source lint with **0 errors and 27 warnings**, the **0.5.6-debug / code 22** build, **29 changelog checks**, and **22 finalization checks**. See the reviewed 0.5.6 notes for pending signed upgrade checks.
-- Use published **v0.5.5 / code 21** as the baseline for **0.5.6 / code 22**. Build the final signed APK and create its tag from clean merged `main`. Verify the signed upgrade over 0.5.5 before publishing.
+- Handles with enabled gestures still capture the initial touch. Unassigned taps on those handles stay silent but do not reach the app underneath. Touch replay remains disabled.
+- Verify **170 relevant tests across 29 classes** for the earlier feature source and **105 relevant tests across 12 classes** for the gesture fix, with no remaining failures, errors, or skipped cases. These are separate focused runs, not a complete release suite. Pass current-source lint with **0 errors and 27 warnings**, the **0.5.6-debug / code 22** build, **29 changelog checks**, and **22 finalization checks**. See the reviewed 0.5.6 notes for pending device checks.
+- Reconfirm published **v0.5.5 / code 21** as the baseline for **0.5.6 / code 22**. Build the final signed APK and create its tag from clean merged `main`. Verify the signed upgrade over 0.5.5 before publishing.
 
 ## 0.5.5 - 2026-10-25
 
