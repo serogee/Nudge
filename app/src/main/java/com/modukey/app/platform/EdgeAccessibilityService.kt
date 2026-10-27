@@ -196,9 +196,9 @@ class EdgeAccessibilityService : AccessibilityService() {
         val config = app.configuration.state.value ?: return
         val handle = config.handle(id)?.effectiveGestures(config, screen().landscape) ?: return
         if (app.editor.state.value != null || reason(config, handle) != HandleAvailability.ACTIVE) { refresh(); return }
-        haptics.perform(handle.trigger.feedback(kind))
         val now = SystemClock.elapsedRealtime(); val (target, stage) = sessions.next(handle, kind, now)
         if (target.isNone) return
+        haptics.perform(handle.trigger.feedback(kind))
         // One gesture can request both windows. Android owns the native popup's lifetime.
         replacePanel(target.panelId?.takeIf { config.panel(it) != null }?.let { OpenPanel(it, id) }, id)
         val slot = when (kind) {
@@ -251,14 +251,20 @@ class EdgeAccessibilityService : AccessibilityService() {
         refresh()
     }
     private fun gesturePolicy(id: String): HandleGesturePolicy {
-        val config = app.configuration.state.value ?: return HandleGesturePolicy()
+        val config = app.configuration.state.value ?: return HandleGesturePolicy(enabledGestures = emptySet())
         val landscape = screen().landscape
-        val h = config.handle(id)?.effectiveGestures(config, landscape) ?: return HandleGesturePolicy()
+        val h = config.handle(id)?.effectiveGestures(config, landscape) ?: return HandleGesturePolicy(enabledGestures = emptySet())
         val next = sessions.next(h, GestureKind.SWIPE, SystemClock.elapsedRealtime()).first.normalized()
         fun captures(t: GestureTarget) = t.slideToAdjust || t.dragsWheel(config, landscape)
+        val enabled = buildSet {
+            if (!next.isNone) add(GestureKind.SWIPE)
+            if (!h.runtimeTarget(GestureSlot.HOLD).isNone) add(GestureKind.HOLD)
+            if (!h.runtimeTarget(GestureSlot.TAP).isNone) add(GestureKind.TAP)
+            if (!h.runtimeTarget(GestureSlot.SWIPE_HOLD).isNone) add(GestureKind.SWIPE_HOLD)
+        }
         return HandleGesturePolicy(captures(next), captures(h.target(GestureSlot.HOLD).normalized()),
             captures(h.runtimeTarget(GestureSlot.SWIPE_HOLD).normalized()), !h.hasContinuousSwipe &&
-                (0..2).none { h.target(GestureSlot.entries[it]).dragsWheel(config, landscape) })
+                (0..2).none { h.target(GestureSlot.entries[it]).dragsWheel(config, landscape) }, enabled)
     }
     private fun beginWheel(handle: HandleConfig, slot: GestureSlot, target: GestureTarget, stage: Int?): Boolean {
         val config = app.configuration.state.value ?: return false
@@ -461,7 +467,8 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val space = if (guide) guideScreen else s
                 val b = TriggerGeometry.bounds(space.width, space.height, space.density, space.insets, h.trigger, space.landscape)
                 desired[h.id] = HandleWindowSpec(if (guide) preview?.toDisplay(b) ?: b else b, h.trigger, h.trigger.placement(space.landscape).edge, guide, if (guide) preview?.quarterTurns ?: 0 else 0,
-                    hideIndicator = h.indicatorHidden && !guide, animationsEnabled = config.handleAnimationsEnabled)
+                    hideIndicator = h.indicatorHidden && !guide, animationsEnabled = config.handleAnimationsEnabled,
+                    inputEnabled = h.effectiveGestures(config, space.landscape).bindings.values.any { !it.isNone })
             }
             if (selected != null) reasons[h.id] = HandleAvailability.EDITING
         }
@@ -522,7 +529,7 @@ class EdgeAccessibilityService : AccessibilityService() {
         if (!showingHitbox) wheelHitboxHost?.hide()
         panelTimeout?.configure(if (timedPanel?.autoCloseEnabled == true) timedPanel.autoCloseMs else 0)
         if (wheelBinding != null) panelTimeout?.touch(true)
-        handleBounds = desired.filterValues { !it.editing }.mapValues { it.value.bounds }
+        handleBounds = desired.filterValues { !it.editing && it.inputEnabled }.mapValues { it.value.bounds }
         if (wanted == null) raiseHandles = false else if (changed) raiseHandles = true
         // Keep captured input and its return animation until the handle is idle.
         val raise = raiseHandles && views.values.none { it.hasInteraction }

@@ -46,6 +46,10 @@ Chevrons mark additional options. Dependent controls appear below their parent, 
 
 Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
 
+**No action** disables a gesture when both popup options are off. Disabled gestures do not vibrate, run actions, or reset the swipe sequence. Turn on either popup option to use it without an action.
+
+When every gesture is disabled, the visible handle remains, and its touch area lets touches pass through. A handle with active gestures still captures the initial touch to identify them. Unassigned gesture types do not activate.
+
 | Gesture | Behavior |
 | --- | --- |
 | Tap | Release without significant movement. |

@@ -4,6 +4,45 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class HandleGestureTest {
+    @Test fun disabledGestureKindsDoNotEmitOrScheduleHoldCallbacks() {
+        for (disabled in GestureKind.entries) {
+            val g = HandleGesture(Edge.LEFT, 24f, 1200, 8f, holdImmediately = true, swipeHoldImmediately = true,
+                enabledGestures = GestureKind.entries.toSet() - disabled)
+            g.down(0f, 0f, 0)
+            val moved = disabled == GestureKind.SWIPE || disabled == GestureKind.SWIPE_HOLD
+            if (moved) g.move(30f, 0f, 100)
+            if (disabled == GestureKind.HOLD || disabled == GestureKind.SWIPE_HOLD) {
+                assertNull(g.nextDeadline())
+                assertNull(g.poll(650))
+            }
+            val time = if (disabled == GestureKind.HOLD || disabled == GestureKind.SWIPE_HOLD) 700L else 200L
+            assertNull(disabled.toString(), g.up(if (moved) 30f else 0f, 0f, time))
+            assertFalse(g.emitted)
+        }
+    }
+    @Test fun disabledHoldsCannotConsumeALaterEnabledSwipeAndEmptyPoliciesDoNotPull() {
+        val g = HandleGesture(Edge.LEFT, 24f, 1200, 8f, holdImmediately = true, enabledGestures = setOf(GestureKind.SWIPE))
+        g.down(0f, 0f, 0)
+        assertNull(g.nextDeadline()); assertNull(g.poll(600)); assertFalse(g.emitted)
+        g.move(30f, 0f, 700)
+        assertEquals(GestureKind.SWIPE, g.up(30f, 0f, 800))
+        val empty = HandleGesture(Edge.LEFT, 24f, 600, 8f, holdImmediately = true, swipeHoldImmediately = true,
+            enabledGestures = emptySet())
+        empty.down(0f, 0f, 0); empty.move(30f, 0f, 100)
+        assertEquals(0f, empty.pullDistance)
+        assertNull(empty.nextDeadline()); assertNull(empty.poll(650)); assertNull(empty.up(30f, 0f, 700))
+        assertFalse(empty.emitted)
+    }
+    @Test fun emptyTapAndHoldAssignmentsDoNotResetTheSwipeSequence() {
+        val h = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME,
+            GestureSlot.SWIPE_2 to GestureTarget(brightness = true)))
+        val sessions = GestureSessions()
+        sessions.submitted(h, 0, GestureTarget.VOLUME, 0)
+        for (kind in listOf(GestureKind.TAP, GestureKind.HOLD, GestureKind.SWIPE_HOLD)) {
+            assertTrue(sessions.next(h, kind, 100).first.isNone)
+            assertEquals(GestureTarget(brightness = true) to 1, sessions.next(h, GestureKind.SWIPE, 101))
+        }
+    }
     private fun gesture(edge: Edge = Edge.LEFT) = HandleGesture(edge, 24f, 600, 8f)
     @Test fun `tap and hold run on release with no duplicate result`() {
         val g = gesture(); g.down(0f, 0f, 0)
@@ -39,11 +78,13 @@ class HandleGestureTest {
         assertEquals(GestureTarget.VOLUME to 0, s.next(h, GestureKind.SWIPE, 100000))
     }
     @Test fun `handles are independent and tap resets only its handle`() {
-        val a = HandleConfig(); val b = HandleConfig(); val s = GestureSessions()
-        s.submitted(a, 0, GestureTarget.panel("tools"), 0); s.submitted(b, 0, GestureTarget.panel("tools"), 0)
-        s.next(a, GestureKind.TAP, 100); s.reset(b.id)
+        val a = HandleConfig(bindings = mapOf(GestureSlot.SWIPE_1 to GestureTarget.VOLUME,
+            GestureSlot.SWIPE_2 to GestureTarget(brightness = true), GestureSlot.TAP to GestureTarget.VOLUME))
+        val b = a.copy(id = "other-handle"); val s = GestureSessions()
+        s.submitted(a, 0, GestureTarget.VOLUME, 0); s.submitted(b, 0, GestureTarget.VOLUME, 0)
+        s.next(a, GestureKind.TAP, 100)
         assertEquals(GestureTarget.VOLUME to 0, s.next(a, GestureKind.SWIPE, 100))
-        assertEquals(GestureTarget.VOLUME to 0, s.next(b, GestureKind.SWIPE, 100))
+        assertEquals(GestureTarget(brightness = true) to 1, s.next(b, GestureKind.SWIPE, 100))
     }
     @Test fun `combined targets advance while their panel is open and none stages are skipped`() {
         val target = GestureTarget.panel("tools", volume = true)

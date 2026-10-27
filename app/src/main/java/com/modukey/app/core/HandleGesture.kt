@@ -10,7 +10,8 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private val holdImmediately: Boolean = false, private val swipeHoldImmediately: Boolean = false,
     private val holdDistanceMode: SwipeHoldDistanceMode = SwipeHoldDistanceMode.ANY_DIRECTION,
     private val swipeImmediately: Boolean = false, private val swipeHoldEnabled: Boolean = true,
-    private val swipeDistanceMode: SwipeDistanceMode = SwipeDistanceMode.INWARD_ONLY) {
+    private val swipeDistanceMode: SwipeDistanceMode = SwipeDistanceMode.INWARD_ONLY,
+    private val enabledGestures: Set<GestureKind> = GestureKind.entries.toSet()) {
     private var active = false
     private var cancelled = false
     var emitted = false; private set
@@ -22,7 +23,8 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     private fun holdMeasure() = if (holdDistanceMode == SwipeHoldDistanceMode.ANY_DIRECTION) radial else inward
     private fun validSwipeDistance() = if (swipeDistanceMode == SwipeDistanceMode.ANY_DIRECTION) radial >= distance
         else inward >= distance && inward > abs(parallel)
-    val pullDistance get() = if (active && !cancelled && moved)
+    val pullDistance get() = if (active && !cancelled && moved &&
+        (GestureKind.SWIPE in enabledGestures || GestureKind.SWIPE_HOLD in enabledGestures))
         maxOf(holdMeasure(), if (swipeDistanceMode == SwipeDistanceMode.ANY_DIRECTION) radial else inward).coerceAtLeast(0f) else 0f
     fun down(x: Float, y: Float, time: Long) {
         active = true; cancelled = false; emitted = false; crossed = false; holdCrossed = false; holdReady = false; moved = false
@@ -51,16 +53,16 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
     }
     fun nextDeadline(): Long? = when {
         !active || cancelled || emitted -> null
-        !moved && holdImmediately -> start + holdTime
-        swipeHoldEnabled && holdCrossed && swipeHoldImmediately -> stableAt + swipeHoldTime
+        !moved && holdImmediately && GestureKind.HOLD in enabledGestures -> start + holdTime
+        swipeHoldEnabled && holdCrossed && swipeHoldImmediately && GestureKind.SWIPE_HOLD in enabledGestures -> stableAt + swipeHoldTime
         else -> null
     }
     fun poll(time: Long): GestureKind? {
         if (!active || cancelled || emitted || time < start) return null
         val kind = when {
-            swipeImmediately && crossed && !swipeCancelled && validSwipeDistance() -> GestureKind.SWIPE
-            !moved && holdImmediately && time - start >= holdTime -> GestureKind.HOLD
-            swipeHoldEnabled && validHold() && swipeHoldImmediately && time - stableAt >= swipeHoldTime -> GestureKind.SWIPE_HOLD
+            GestureKind.SWIPE in enabledGestures && swipeImmediately && crossed && !swipeCancelled && validSwipeDistance() -> GestureKind.SWIPE
+            GestureKind.HOLD in enabledGestures && !moved && holdImmediately && time - start >= holdTime -> GestureKind.HOLD
+            GestureKind.SWIPE_HOLD in enabledGestures && swipeHoldEnabled && validHold() && swipeHoldImmediately && time - stableAt >= swipeHoldTime -> GestureKind.SWIPE_HOLD
             else -> null
         }
         if (kind != null) emitted = true
@@ -71,12 +73,12 @@ class HandleGesture(private val edge: Edge, private val distance: Float, private
         if (!active) return null
         update(x, y, time); active = false
         if (cancelled || emitted || time < start) return null
-        val kind = if (!moved) when { time - start <= 250 -> GestureKind.TAP; time - start >= holdTime -> GestureKind.HOLD; else -> null }
+        val kind = (if (!moved) when { time - start <= 250 -> GestureKind.TAP; time - start >= holdTime -> GestureKind.HOLD; else -> null }
         else when {
             swipeHoldEnabled && validHold() && (holdReady || time - stableAt >= swipeHoldTime) -> GestureKind.SWIPE_HOLD
             !swipeCancelled && crossed && validSwipeDistance() && time - start <= timeout -> GestureKind.SWIPE
             else -> null
-        }
+        })?.takeIf { it in enabledGestures }
         emitted = kind != null
         return kind
     }
@@ -93,8 +95,9 @@ class GestureSessions {
     fun retain(ids: Set<String>) { sessions.keys.retainAll(ids) }
     fun next(handle: HandleConfig, kind: GestureKind, now: Long): Pair<GestureTarget, Int?> {
         if (kind != GestureKind.SWIPE) {
-            reset(handle.id)
-            return handle.runtimeTarget(when (kind) { GestureKind.TAP -> GestureSlot.TAP; GestureKind.HOLD -> GestureSlot.HOLD; else -> GestureSlot.SWIPE_HOLD }) to null
+            val target = handle.runtimeTarget(when (kind) { GestureKind.TAP -> GestureSlot.TAP; GestureKind.HOLD -> GestureSlot.HOLD; else -> GestureSlot.SWIPE_HOLD })
+            if (!target.isNone) reset(handle.id)
+            return target to null
         }
         val old = sessions[handle.id]?.takeIf { it.expires == null || now < it.expires }
         val start = old?.stage?.plus(1) ?: 0

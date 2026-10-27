@@ -10,7 +10,7 @@ import com.modukey.app.core.*
 import kotlin.math.roundToInt
 
 internal data class HandleWindowSpec(val bounds: Bounds, val settings: TriggerSettings, val edge: Edge, val editing: Boolean, val previewQuarterTurns: Int = 0,
-    val hideIndicator: Boolean = false, val animationsEnabled: Boolean = true)
+    val hideIndicator: Boolean = false, val animationsEnabled: Boolean = true, val inputEnabled: Boolean = true)
 
 /** Own the registered window even before View receives its attachment callback. */
 internal class HandleWindowHost(private val context: Context, private val manager: WindowManager,
@@ -26,7 +26,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun attach(value: HandleWindowSpec) {
         check(view == null)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
-        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
+        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled, value.inputEnabled)
         view = next; changed(next)
         try {
             val p = params(value)
@@ -39,7 +39,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     override fun update(value: HandleWindowSpec) {
         val current = requireNotNull(view)
         val p = params(value); val previous = layout
-        current.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
+        current.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled, value.inputEnabled)
         if (previous?.x != p.x || previous.y != p.y || previous.width != p.width || previous.height != p.height || previous.flags != p.flags) {
             current.cancelGesture(); manager.updateViewLayout(current, p); layout = p
         }
@@ -48,7 +48,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
         val previous = view ?: return attach(value)
         val next = HandleTriggerView(context, activate, reveal, interactionEnded)
         next.setDrawingOwner(false)
-        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled)
+        next.configure(value.settings, value.edge, value.editing, value.previewQuarterTurns, value.hideIndicator, value.animationsEnabled, value.inputEnabled)
         next.inheritVisibility(previous)
         val p = params(value)
         try { manager.addView(next, p) }
@@ -92,7 +92,7 @@ internal class HandleWindowHost(private val context: Context, private val manage
     @SuppressLint("RtlHardcoded")
     private fun params(spec: HandleWindowSpec) = WindowManager.LayoutParams(spec.bounds.width.roundToInt().coerceAtLeast(1), spec.bounds.height.roundToInt().coerceAtLeast(1),
         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or (if (spec.editing) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0), PixelFormat.TRANSLUCENT).apply {
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or (if (spec.editing || !spec.inputEnabled) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0), PixelFormat.TRANSLUCENT).apply {
         gravity = Gravity.TOP or Gravity.LEFT; x = spec.bounds.x.roundToInt(); y = spec.bounds.y.roundToInt()
         setFitInsetsTypes(0); layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS; title = "Nudge handle"
         windowAnimations = 0

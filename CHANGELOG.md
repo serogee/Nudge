@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Treat **No action** as disabled when both volume and brightness options are off. Ignore empty gestures without vibration or swipe-sequence changes. Keep handles with no assigned gestures visible but let touches pass through their touch areas.
+
 ## 0.5.6 - 2026-10-26
 
 ### Changed
