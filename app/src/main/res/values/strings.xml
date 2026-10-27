@@ -455,6 +455,7 @@
     <string name="brightness_access_help">Allow Modify system settings to change brightness. Showing a preview does not need this access.</string>
     <string name="home_shortcuts">Home screen shortcuts</string>
     <string name="shortcut_help">Create a shortcut for a button action. Your launcher asks you to confirm. Most actions need accessibility connected. Toggle accessibility also works when disconnected.</string>
+    <string name="shortcut_icon_help">Default icons have no added background. Select With container to add a background. Pin again to update an existing shortcut.</string>
     <string name="accessibility_service">Nudge accessibility</string>
     <string name="accessibility_switch_help">Turn on opens Android settings. Turn off disables Nudge handles. Your saved settings stay available.</string>
     <string name="toggle_accessibility">Toggle accessibility</string>
@@ -565,8 +566,8 @@
     <string name="wheel_hover_background_color">Hover background color</string>
     <string name="wheel_hover_highlight_color">Hover highlight color</string>
     <string name="wheel_autofit">Autofit</string>
-    <string name="wheel_autofit_help">Fit sizes when adding or removing buttons. Manual size changes turn Autofit off. Turning it off keeps the fitted sizes.</string>
-    <string name="wheel_autofit_priority">Prefer 110 percent selection size, then the smallest outer radius. Keep the inner radius at least 32 dp.</string>
+    <string name="wheel_autofit_help">Fit radii when buttons, Item gap, or Selected size change. Manual radius changes turn Autofit off. Turning it off keeps the fitted sizes.</string>
+    <string name="wheel_autofit_priority">Use Selected size to find the smallest outer radius. Keep the inner radius at least 32 dp.</string>
     <string name="wheel_radius">Wheel radii</string>
     <string name="wheel_gap">Item gap</string>
     <string name="wheel_gap_help">Set a constant gap from zero to 24 dp. Autofit keeps room for usable touch targets.</string>

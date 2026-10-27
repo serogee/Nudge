@@ -14,6 +14,7 @@ import com.modukey.app.core.*
 
 @Composable fun HomeShortcutsSection(config: AppConfiguration, vm: NudgeViewModel) {
     val context = LocalContext.current
+    val shortcutPanel = remember { PanelConfig(background = 0xFF202122, iconBackground = false) }
     val supported by vm.shortcutSupported.collectAsStateWithLifecycle()
     val pinned by vm.pinnedShortcuts.collectAsStateWithLifecycle()
     val busy by vm.shortcutBusy.collectAsStateWithLifecycle()
@@ -23,13 +24,14 @@ import com.modukey.app.core.*
     var removing by remember { mutableStateOf<HomeShortcut?>(null) }
     Section(R.string.home_shortcuts) {
         Help(R.string.shortcut_help)
+        Help(R.string.shortcut_icon_help)
         if (supported == false) Help(R.string.shortcut_unsupported)
         if (config.shortcuts.isEmpty()) Help(R.string.shortcut_none)
         config.shortcuts.forEach { shortcut ->
             val name = shortcut.name.ifBlank { context.buttonLabel(shortcut.button) }
             ListItem(headlineContent = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { Text(t(if (shortcut.id in pinned) R.string.shortcut_pinned else R.string.shortcut_not_pinned)) },
-                leadingContent = { ButtonGraphic(shortcut.button, "", Modifier.size(32.dp)) },
+                leadingContent = { PanelButtonFace(shortcut.button, shortcutPanel, 32.dp) },
                 trailingContent = { Row {
                     EditIcon(AppIcons.Add, R.string.pin_again, enabled = !busy && supported == true) { vm.pinShortcut(shortcut) }
                     EditIcon(AppIcons.Delete, R.string.delete, enabled = !busy) { removing = shortcut }
@@ -44,7 +46,7 @@ import com.modukey.app.core.*
         choosing = false; editing = PanelButton(action = action)
     }
     editing?.let { button ->
-        ButtonEditor(button, PanelConfig(background = 0xFF202122), vm, { editing = null }, includeEmpty = false) {
+        ButtonEditor(button, shortcutPanel, vm, { editing = null }, includeEmpty = false) {
             editing = null; naming = it
         }
     }
@@ -55,7 +57,7 @@ import com.modukey.app.core.*
         val needsOwner = button.needsHandleOwner
         AlertDialog(onDismissRequest = { naming = null }, title = { Text(t(R.string.add_shortcut)) }, text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { PanelButtonFace(button, PanelConfig(background = 0xFF202122), 64.dp) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { PanelButtonFace(button, shortcutPanel, 64.dp) }
                 OutlinedTextField(name, { name = it.take(80) }, label = { Text(t(R.string.shortcut_name)) }, singleLine = true)
                 OutlinedButton(onClick = { naming = null; editing = button }, modifier = Modifier.fillMaxWidth()) {
                     Icon(AppIcons.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(R.string.shortcut_configure))

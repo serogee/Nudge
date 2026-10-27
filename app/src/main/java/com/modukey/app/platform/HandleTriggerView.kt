@@ -21,6 +21,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     private var settings = TriggerSettings()
     private var edge = Edge.RIGHT
     private var editing = false
+    private var inputEnabled = true
     private var hideIndicator = false
     private var animationsEnabled = true
     private var previewQuarterTurns = 0
@@ -70,7 +71,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         }
     }
     fun configure(settings: TriggerSettings, edge: Edge, editing: Boolean, previewQuarterTurns: Int = 0, hideIndicator: Boolean = false,
-        animationsEnabled: Boolean = true) {
+        animationsEnabled: Boolean = true, inputEnabled: Boolean = true) {
         val turns = if (editing) previewQuarterTurns.mod(4) else 0
         if (this.edge != edge || this.editing != editing || this.previewQuarterTurns != turns || this.settings.swipeDistanceDp != settings.swipeDistanceDp || this.settings.swipeTimeoutMs != settings.swipeTimeoutMs ||
             this.settings.holdTimeMs != settings.holdTimeMs || this.settings.swipeHoldTimeMs != settings.swipeHoldTimeMs ||
@@ -79,7 +80,8 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
             this.settings.swipeHoldDistanceMode != settings.swipeHoldDistanceMode || this.settings.swipeDistanceMode != settings.swipeDistanceMode) {
             cancelGesture(); this.edge = edge; this.settings = settings; gesture = recognizer()
         }
-        this.settings = settings; this.edge = edge; this.editing = editing
+        if (this.inputEnabled != inputEnabled) cancelGesture()
+        this.settings = settings; this.edge = edge; this.editing = editing; this.inputEnabled = inputEnabled
         this.hideIndicator = hideIndicator && !editing
         if (this.animationsEnabled != animationsEnabled) {
             this.animationsEnabled = animationsEnabled
@@ -90,15 +92,15 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         }
         if (this.hideIndicator) { animator?.cancel(); animator = null; bounce = 0f; resetPull() }
         this.previewQuarterTurns = turns
-        importantForAccessibility = if (editing) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
-        isClickable = !editing; geometry(); updateSoftHide(); invalidate()
+        importantForAccessibility = if (editing || !inputEnabled) IMPORTANT_FOR_ACCESSIBILITY_NO else IMPORTANT_FOR_ACCESSIBILITY_YES
+        isClickable = !editing && inputEnabled; geometry(); updateSoftHide(); invalidate()
     }
     private fun recognizer() = HandleGesture(edge, settings.swipeDistanceDp * resources.displayMetrics.density, settings.swipeTimeoutMs,
         ViewConfiguration.get(context).scaledTouchSlop.toFloat(), settings.holdTimeMs, settings.swipeHoldTimeMs,
         settings.swipeHoldDistanceDp * resources.displayMetrics.density, settings.swipeHoldTimeoutMs,
         settings.holdExecution == HoldExecution.AFTER_TIME || policy.holdAtDeadline,
         settings.swipeHoldExecution == HoldExecution.AFTER_TIME || policy.swipeHoldAtDeadline, settings.swipeHoldDistanceMode,
-        policy.swipeAtDistance, policy.swipeHoldEnabled, settings.swipeDistanceMode)
+        policy.swipeAtDistance, policy.swipeHoldEnabled, settings.swipeDistanceMode, policy.enabledGestures)
     fun captureInteraction(move: (Float, Float, Boolean) -> Unit, ended: (Boolean) -> Unit): Boolean {
         if (!touching || editing || interactionMove != null) return false
         interactionMove = move; interactionEnd = ended; gesture.cancel(); gestureHandler.removeCallbacks(deadline)
@@ -167,6 +169,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         next?.let { postDelayed(expire, (it - SystemClock.uptimeMillis()).coerceAtLeast(0)) }
     }
     private fun completeGesture(kind: GestureKind) {
+        if (kind !in gesturePolicy().enabledGestures) return
         if (softHide.gesture(SystemClock.uptimeMillis())) {
             onReveal()
             if (animationsEnabled && !hideIndicator && ValueAnimator.areAnimatorsEnabled()) {
@@ -194,7 +197,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         val b = TriggerGeometry.indicator(logicalWidth, logicalHeight, settings, edge, resources.displayMetrics.density)
         indicator.set(b.x, b.y, b.x + b.width, b.y + b.height)
         radius = (settings.cornerRadiusDp * resources.displayMetrics.density).coerceAtMost(minOf(b.width, b.height) / 2)
-        systemGestureExclusionRects = if (editing || edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))
+        systemGestureExclusionRects = if (editing || !inputEnabled || edge == Edge.BOTTOM) emptyList() else listOf(Rect(0, 0, width, height))
     }
     override fun onDraw(canvas: Canvas) {
         if (!drawingEnabled) return
@@ -250,12 +253,14 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
     }
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (editing || retired) return false
+        if (editing || retired || !inputEnabled) return false
         touchX = event.rawX; touchY = event.rawY
         eventTime = event.eventTime; eventUptime = SystemClock.uptimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                endInteraction(true); resetPull(); touching = true; policy = gesturePolicy(); gesture = recognizer()
+                policy = gesturePolicy()
+                if (policy.enabledGestures.isEmpty()) return false
+                endInteraction(true); resetPull(); touching = true; gesture = recognizer()
                 softHide.touch(true, SystemClock.uptimeMillis()); scheduleExpiry(); gesture.down(event.rawX, event.rawY, event.eventTime); scheduleDeadline(event.eventTime)
             }
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> cancelGesture()
@@ -277,7 +282,7 @@ class HandleTriggerView(context: Context, private val activate: (GestureKind) ->
         return true
     }
     override fun performClick(): Boolean {
-        if (editing || retired || interactionMove != null) return false
+        if (editing || retired || !inputEnabled || interactionMove != null || GestureKind.TAP !in gesturePolicy().enabledGestures) return false
         super.performClick(); completeGesture(GestureKind.TAP); return true
     }
 }

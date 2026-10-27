@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.abs
 
 data class HandleGesturePolicy(val swipeAtDistance: Boolean = false, val holdAtDeadline: Boolean = false,
-    val swipeHoldAtDeadline: Boolean = false, val swipeHoldEnabled: Boolean = true)
+    val swipeHoldAtDeadline: Boolean = false, val swipeHoldEnabled: Boolean = true,
+    val enabledGestures: Set<GestureKind> = GestureKind.entries.toSet())
 enum class SliderKind { VOLUME, BRIGHTNESS }
 data class SliderApplied(val fraction: Float, val tolerance: Float)
 

@@ -8,7 +8,7 @@ enum class SliderActivation { AFTER_HOLD, IMMEDIATE }
 data class GestureTarget(val panelId: String? = null, val volume: Boolean = false, val action: PanelButton? = null, val brightness: Boolean = false,
     val slideToAdjust: Boolean = false, val sliderActivation: SliderActivation = SliderActivation.AFTER_HOLD, val sliderHoldMs: Long = 200,
     val wheelPick: WheelPickSettings = WheelPickSettings()) {
-    val isNone get() = panelId == null && !volume && action == null && !brightness
+    val isNone get() = panelId == null && !volume && (action == null || action.action == ButtonAction.EMPTY) && !brightness
     fun normalized(): GestureTarget {
         val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
         val pick = target.wheelPick.normalized().let { if (target.panelId == null) it.copy(enabled = false) else it }

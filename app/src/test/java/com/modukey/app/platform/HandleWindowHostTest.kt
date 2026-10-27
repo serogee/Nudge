@@ -24,6 +24,30 @@ import java.time.Duration
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31, 36])
 class HandleWindowHostTest {
+    @Test fun inactiveHandlesPassTouchesThroughAndRestoreInputWithoutReplacingTheWindow() {
+        val windows = PendingWindows(app.getSystemService(WindowManager::class.java))
+        var actions = 0
+        val host = HandleWindowHost(app, windows, { actions++ }, {}) {}
+        val spec = HandleWindowSpec(Bounds(0f, 200f, 16f, 120f), TriggerSettings(indicatorVisible = true), Edge.LEFT, false,
+            inputEnabled = false)
+        try {
+            host.attach(spec)
+            val view = windows.registered.keys.single() as HandleTriggerView
+            view.layout(0, 0, 16, 120)
+            fun touchable() = (windows.registered.getValue(view) as WindowManager.LayoutParams).flags and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE == 0
+            assertFalse(touchable()); assertFalse(view.isClickable); assertFalse(view.performClick())
+            assertTrue(view.systemGestureExclusionRects.isEmpty())
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, view.importantForAccessibility)
+            host.update(spec.copy(inputEnabled = true))
+            assertSame(view, windows.registered.keys.single())
+            assertTrue(touchable()); assertTrue(view.isClickable); assertTrue(view.performClick())
+            assertFalse(view.systemGestureExclusionRects.isEmpty()); assertEquals(1, actions)
+            host.update(spec)
+            assertFalse(touchable()); assertFalse(view.performClick()); assertEquals(1, actions)
+            assertEquals(1, windows.adds); assertEquals(0, windows.removes)
+        } finally { host.detach() }
+    }
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     @After fun cleanup() { app.onTerminate() }
     // Model WindowManager accepting a window before ViewRoot delivers attachment.

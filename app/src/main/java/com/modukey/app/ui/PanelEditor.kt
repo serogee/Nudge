@@ -41,6 +41,11 @@ import kotlin.math.roundToInt
         val wheel = WheelAutofit.fit(value.wheel, space.usable, space.density, count, trigger.placement(isLandscape).edge)
         return value.copy(wheel = wheel ?: value.wheel)
     }
+    fun fitLayout(change: (PanelLayout) -> PanelLayout) = vm.editPanel(entry.id) { current ->
+        val changed = change(current.layout(landscape))
+        if (landscape && current.landscapeOverride) current.copy(landscape = fitted(changed, true, current.buttons.size))
+        else current.copy(portrait = fitted(changed, false, current.buttons.size))
+    }
     fun fitButtons(value: PanelConfig): PanelConfig = if (!value.isWheel) value else value.copy(
         portrait = fitted(value.portrait, false, value.buttons.size),
         landscape = if (value.landscapeOverride) fitted(value.landscape, true, value.buttons.size) else value.landscape)
@@ -113,11 +118,7 @@ import kotlin.math.roundToInt
             Help(R.string.wheel_autofit_priority)
             Help(R.string.wheel_radius_help)
             SettingSlider(R.string.wheel_gap, l.wheel.gapDp, 0f..24f, t(R.string.dp_value, l.wheel.gapDp.roundToInt()), default = 4f) { value ->
-                vm.editPanel(entry.id) { current ->
-                    val changed = current.layout(landscape).let { it.copy(wheel = it.wheel.copy(gapDp = value)) }
-                    if (landscape && current.landscapeOverride) current.copy(landscape = fitted(changed, true, current.buttons.size))
-                    else current.copy(portrait = fitted(changed, false, current.buttons.size))
-                }
+                fitLayout { it.copy(wheel = it.wheel.copy(gapDp = value)) }
             }
             Help(R.string.wheel_gap_help)
             val pick = config.handle(previewHandleId)?.let { h -> GestureSlot.entries.map(h::target)
@@ -133,7 +134,7 @@ import kotlin.math.roundToInt
             WheelIconControls(l.wheel) { value -> layout { it.copy(wheel = value) } }
             Toggle(R.string.wheel_expand, R.string.wheel_expand_help, l.wheel.expandSelection, default = true, optionsExpanded = l.wheel.expandSelection) { value -> layout { it.copy(wheel = it.wheel.copy(expandSelection = value)) } }
             if (l.wheel.expandSelection) DependentSettings(R.string.wheel_expand) {
-                SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = WheelLayoutSettings.DEFAULT_SELECTED_SCALE, valueScale = 100f) { value -> layout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
+                SettingSlider(R.string.wheel_selected_size, l.wheel.selectedScale, 1f..1.5f, t(R.string.percent, (l.wheel.selectedScale * 100).roundToInt()), default = WheelLayoutSettings.DEFAULT_SELECTED_SCALE, valueScale = 100f) { value -> fitLayout { it.copy(wheel = it.wheel.copy(selectedScale = value)) } }
             }
             Toggle(R.string.wheel_animations, R.string.wheel_animations_help, l.wheel.animationsEnabled, default = true) { value ->
                 layout { it.copy(wheel = it.wheel.copy(animationsEnabled = value)) }

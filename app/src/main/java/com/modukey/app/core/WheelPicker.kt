@@ -12,7 +12,7 @@ data class WheelLayoutSettings(val radiusDp: Float = 60f, val expandSelection: B
     companion object {
         const val MIN_INNER_RADIUS_DP = 1f
         const val MIN_AUTOFIT_INNER_RADIUS_DP = 32f
-        const val DEFAULT_SELECTED_SCALE = 1.1f
+        const val DEFAULT_SELECTED_SCALE = 1.25f
         const val DEFAULT_ICON_POSITION = .55f
     }
     fun normalized(): WheelLayoutSettings {

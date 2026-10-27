@@ -46,6 +46,10 @@ Chevrons mark additional options. Dependent controls appear below their parent, 
 
 Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
 
+**No action** disables a gesture when both popup options are off. Disabled gestures do not vibrate, run actions, or reset the swipe sequence. Turn on either popup option to use it without an action.
+
+When every gesture is disabled, the visible handle remains, and its touch area lets touches pass through. A handle with active gestures still captures the initial touch to identify them. Unassigned gesture types do not activate.
+
 | Gesture | Behavior |
 | --- | --- |
 | Tap | Release without significant movement. |
@@ -110,7 +114,7 @@ A Wheel layout shows a hollow semicircle facing inward from its handle. Each but
 
 Each wheel shows **up to six buttons**. Inner radius, outer radius, expansion, and screen space can reduce this capacity. With **Autofit** on, Add button checks whether fitted sizes can make room. It is unavailable when the screen cannot fit another button or six buttons are saved. Overflow buttons remain saved, editable, and reorderable.
 
-**Autofit** is beside **Add button** and defaults on for new wheels. Adding or removing a button fits the active layouts to their screen space. It prefers 110% selection size, then chooses the smallest overall outer radius that fits every button and its 48 dp touch target. The inner radius stays at least **32 dp** and can increase to reduce the outside size. Selection size can decrease toward 100% when the screen cannot fit the preferred highlight. Autofit sets **Icon position** to **55%**. Turn Autofit off to retain the fitted sizes. Manual radius or selection-size changes turn it off automatically for that orientation. Position, color, corner, and animation changes keep it on. Older wheels retain explicit saved sizes until edited or fitted again.
+**Autofit** is beside **Add button** and defaults on for new wheels. Adding or removing a button fits the active layouts to their screen space. Autofit uses **Selected size**, which defaults to **125%**, to calculate the smallest usable outer radius. Each button keeps a 48 dp touch target. The inner radius stays at least **32 dp** and can increase to reduce the outside size. Autofit keeps the selected percentage when space is insufficient. Add button is unavailable when another button cannot fit. Autofit sets **Icon position** to **55%**. Turn Autofit off to retain the fitted sizes. Manual radius changes turn it off automatically for that orientation. Selected size changes keep Autofit on and recalculate the radii for that orientation. Position, color, corner, and animation changes keep it on. Older wheels retain explicit saved sizes until edited or fitted again.
 
 **Wheel radii** uses one track with two points. Press **Inner radius** or **Outer radius**, then drag that point. Pressing the track does not move either point. The inner radius sets the hollow center; the outer radius sets the unselected edge. New wheels start at **32 dp inside and 88 dp outside** before Autofit adjusts them. The shared manual track covers 1–336 dp, with at least 48 dp between the bounds. Manual sizing still permits a 1 dp hole and a 49 dp outer edge. Screen limits can reduce the rendered size or button capacity. Older wheels retain their previous radius and band width until edited.
 
@@ -132,7 +136,7 @@ Turn Adapt icon size off to show **Icon size**, a preferred size from **12–128
 
 **Icon position** is available in both modes and defaults and resets to **55%**, slightly outside the middle of the band. Autofit also applies 55% when it recalculates. Zero percent is the nearest safe inner position; 100% is the nearest safe outer position. The endpoints keep room for visible artwork. Automatic sizing responds to the available width and depth as icons move. Very narrow areas can produce small icons. These controls use thumb dragging and numeric entry. They preserve Wheel Autofit and retain separate portrait and landscape values. Explicit saved positions remain until edited or fitted again.
 
-**Expand selection** defaults on. **Selected size** accepts 100–150% and defaults to 110% for manual sizing and reset. Autofit also prefers 110%. Saved custom sizes remain unchanged. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
+**Expand selection** defaults on. **Selected size** accepts 100–150% and defaults and resets to **125%**. Autofit uses the selected percentage to calculate the radii. With Autofit off, changing Selected size keeps the manual radii. Saved custom percentages remain unchanged. The highlighted wedge grows in angle and depth. Its icon grows too. Other wedges and icons shrink, while neighboring angular selection regions give space to the highlighted wedge. The hollow center remains empty.
 
 The current selection keeps its expanded hit region until your finger crosses its boundary. The new selection receives the expansion immediately. **Wheel animations** defaults on. **Highlight transition** offers **No animation**, **Smooth**, and **Spring**. Smooth defaults to 140 ms and accepts 80–400 ms. The outline, wedge, and icon transition together, and a new selection interrupts the current motion. No animation applies highlight and shape changes immediately. Transitions also work when expansion is off. Animation does not move the logical selection boundaries or select an action under a stationary finger. Turn the option off for immediate shape changes and no Wheel window motion. Android's disabled-animation setting is also respected. Toggle action colors keep their usual meaning.
 
@@ -239,6 +243,8 @@ On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automati
 ## Home screen shortcuts
 
 In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
+
+Default and Standalone icons have no added background. **With container** adds a rounded background. Imported artwork keeps its own colors and transparency. Artwork can include its own background. The previews use the same container choice. Use **Pin again** to update an existing shortcut's artwork. Your launcher can add an app badge near the icon's edge.
 
 Most shortcuts require the connected Nudge handles service but can run with Enable Gestures off. **Toggle accessibility** also works while disconnected: it opens Android accessibility settings to enable or recover Nudge handles. While connected, it disables the handles service and closes its overlays. A locked phone must be unlocked before a launcher shortcut runs. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
 

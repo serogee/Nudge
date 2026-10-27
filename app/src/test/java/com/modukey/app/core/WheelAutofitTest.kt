@@ -5,15 +5,16 @@ import org.junit.Test
 
 class WheelAutofitTest {
     @Test fun fittedWheelsContainAllButtonsAndTouchTargetsAcrossOrientationsAndDensities() {
-        for (edge in Edge.entries) for (density in listOf(1f, 3f)) for (count in 1..6) {
-            val screen = Bounds(12f, 24f, 400f * density, 800f * density)
-            val settings = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, density, count, edge))
+        for (edge in Edge.entries) for (density in listOf(1f, 3f)) for (count in 1..6) for (scale in listOf(1f, 1.1f, 1.25f, 1.5f)) {
+            val screen = Bounds(12f, 24f, 800f * density, 1000f * density)
+            val settings = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(selectedScale = scale), screen, density, count, edge))
             val g = WheelGeometry.calculate(screen, density, PanelLayout(), settings, count, screen, edge)
             assertEquals("$edge $density $count $settings", count, g.count)
             assertEquals(settings.innerRadiusDp!! * density, g.innerRadius, .001f)
             assertTrue(settings.innerRadiusDp!! >= 32f)
             assertEquals(.55f, settings.iconPosition)
-            assertTrue(g.expansion in 1f..1.1f)
+            assertEquals(scale, settings.selectedScale)
+            assertEquals(scale, g.expansion)
             assertTrue(g.bounds.x >= screen.x && g.bounds.y >= screen.y)
             assertTrue(g.bounds.x + g.bounds.width <= screen.x + screen.width + .001f)
             assertTrue(g.bounds.y + g.bounds.height <= screen.y + screen.height + .001f)
@@ -29,14 +30,13 @@ class WheelAutofitTest {
         val screen = Bounds(0f, 0f, 800f, 900f)
         val one = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, 1f, 1, Edge.LEFT))
         assertEquals(32f, one.innerRadiusDp!!)
-        assertEquals(1.1f, one.selectedScale)
+        assertEquals(1.25f, one.selectedScale)
         assertEquals(80f, one.outerRadiusDp!!)
         val six = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(), screen, 1f, 6, Edge.LEFT))
-        assertEquals(88f, six.innerRadiusDp!!)
-        assertEquals(136f, six.outerRadiusDp!!)
-        for (gap in listOf(0f, 4f, 24f)) for (count in 1..6) {
-            val fitted = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(gapDp = gap, iconPosition = .2f), screen, 1f, count, Edge.LEFT))
-            assertEquals(1.1f, fitted.selectedScale)
+        assertTrue(six.innerRadiusDp!! > one.innerRadiusDp!!)
+        for (scale in listOf(1f, 1.1f, 1.25f, 1.5f)) for (gap in listOf(0f, 4f, 24f)) for (count in 1..6) {
+            val fitted = requireNotNull(WheelAutofit.fit(WheelLayoutSettings(selectedScale = scale, gapDp = gap, iconPosition = .2f), screen, 1f, count, Edge.LEFT))
+            assertEquals(scale, fitted.selectedScale)
             assertEquals(.55f, fitted.iconPosition)
             val smallerOuter = fitted.outerRadiusDp!! - 1f
             for (inner in 32..(smallerOuter.toInt() - 48)) {
@@ -44,6 +44,11 @@ class WheelAutofitTest {
                     WheelGeometry.fitsTargets(inner.toFloat(), smallerOuter - inner, fitted.selectedScale, count, gap))
             }
         }
+    }
+    @Test fun insufficientSpaceDoesNotReplaceTheSelectedSizeWithASmallerHighlight() {
+        val screen = Bounds(0f, 0f, 400f, 180f)
+        assertNotNull(WheelAutofit.fit(WheelLayoutSettings(selectedScale = 1f), screen, 1f, 1, Edge.LEFT))
+        assertNull(WheelAutofit.fit(WheelLayoutSettings(selectedScale = 1.25f), screen, 1f, 1, Edge.LEFT))
     }
     @Test fun disabledAutofitRetainsSizesAndSmallScreensDoNotClaimCapacity() {
         val settings = WheelLayoutSettings(innerRadiusDp = 64f, outerRadiusDp = 180f, autoFit = false)
@@ -59,9 +64,10 @@ class WheelAutofitTest {
         val edits: List<(PanelLayout) -> PanelLayout> = listOf(
             { it.copy(buttonSizeDp = 64f) }, { it.copy(wheel = it.wheel.copy(radiusDp = 140f)) },
             { it.copy(wheel = it.wheel.copy(innerRadiusDp = 20f)) }, { it.copy(wheel = it.wheel.copy(outerRadiusDp = 180f)) },
-            { it.copy(wheel = it.wheel.copy(expandSelection = false)) }, { it.copy(wheel = it.wheel.copy(selectedScale = 1.2f)) })
+            { it.copy(wheel = it.wheel.copy(expandSelection = false)) })
         edits.forEach { assertFalse(layout.editSize(it).wheel.autoFit) }
         assertTrue(layout.editSize { it }.wheel.autoFit)
+        assertTrue(layout.editSize { it.copy(wheel = it.wheel.copy(selectedScale = 1.4f)) }.wheel.autoFit)
         assertTrue(layout.editSize { it.copy(x = .8f, offsetYDp = 12f) }.wheel.autoFit)
         assertTrue(layout.editSize { it.copy(wheel = it.wheel.copy(animationsEnabled = false, focusDurationMs = 280)) }.wheel.autoFit)
     }
