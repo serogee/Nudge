@@ -48,13 +48,13 @@ import com.modukey.app.core.*
                 if (draft.action in listOf(ButtonAction.BRIGHTNESS_MAXIMUM, ButtonAction.BRIGHTNESS_MINIMUM)) DependentSettings(t(label(draft.action))) {
                     BrightnessReturnControls(draft.brightnessReturn) { draft = draft.copy(brightnessReturn = it) }
                 }
-                if (draft.action == ButtonAction.BRIGHTNESS_AUTOMATIC) Help(R.string.brightness_automatic_action_help)
-                if (draft.action == ButtonAction.TOGGLE_ACCESSIBILITY) Help(R.string.accessibility_action_help)
-                if (draft.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) Help(R.string.brightness_step_help)
-                if (draft.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) Help(R.string.native_panel_help)
+                if (draft.action == ButtonAction.BRIGHTNESS_AUTOMATIC) OptionInfo(R.string.brightness_automatic_action_help)
+                if (draft.action == ButtonAction.TOGGLE_ACCESSIBILITY) OptionInfo(R.string.accessibility_action_help)
+                if (draft.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) OptionInfo(R.string.brightness_step_help)
+                if (draft.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) OptionInfo(R.string.native_panel_help)
                 if (draft.action == ButtonAction.EMPTY) DependentSettings(t(label(draft.action))) {
                     OptionRow(t(R.string.appearance), EmptyAppearance.entries, draft.emptyAppearance, EmptyAppearance.SLASH) { draft = draft.copy(emptyAppearance = it) }
-                    Help(R.string.empty_button_help)
+                    OptionInfo(R.string.empty_button_help)
                 } else {
                 SettingTitle(t(R.string.button_icon), reset = if (draft.icon != IconReference()) ({ draft = draft.copy(icon = IconReference()) }) else null)
                 OutlinedButton(onClick = { vm.loadPacks(); page = 3 }, modifier = Modifier.fillMaxWidth()) {

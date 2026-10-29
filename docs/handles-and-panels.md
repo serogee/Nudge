@@ -42,6 +42,8 @@ Tap a slider's percentage or dp readout to enter a number. **Save** or keyboard 
 
 Chevrons mark additional options. Dependent controls appear below their parent, grouped by a left line. Action-picker gear badges mark action-specific options. Their backgrounds use 75% opacity; the gear stays fully opaque.
 
+In **Info → Interface**, turn off **Additional option info** to hide descriptions below options throughout the app. The setting starts on. Labels, current values, service status, errors, progress, and Help content stay visible. Invalid duration entries still show their allowed range. The choice stays saved across restarts and JSON backups. Adding copies from a backup keeps the current choice; replacing the configuration uses the imported choice.
+
 ## Gestures
 
 Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.

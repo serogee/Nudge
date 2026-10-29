@@ -25,6 +25,7 @@ import com.modukey.app.R
 import kotlin.math.roundToInt
 
 val LocalFinishAdjustment = staticCompositionLocalOf<() -> Unit> { {} }
+val LocalShowOptionInfo = compositionLocalOf { true }
 @Composable fun t(@StringRes id: Int, vararg args: Any): String = stringResource(id, *args)
 fun Modifier.semanticsDescription(value: String) = semantics { contentDescription = value }
 @Composable fun Section(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) = Section(t(title), content)
@@ -52,6 +53,7 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
     }
 }
 @Composable fun Help(@StringRes text: Int) { Text(t(text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+@Composable fun OptionInfo(@StringRes text: Int) { if (LocalShowOptionInfo.current) Help(text) }
 @Composable fun Notice(text: String) { Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) { Text(text, Modifier.padding(12.dp)) } }
 @Composable fun EditIcon(icon: ImageVector, @StringRes description: Int, enabled: Boolean = true, action: () -> Unit) {
     IconButton(onClick = action, enabled = enabled) { Icon(icon, t(description), Modifier.size(20.dp)) }
@@ -73,7 +75,7 @@ fun Modifier.semanticsDescription(value: String) = semantics { contentDescriptio
     Row(Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Switch) { change(!checked) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
             SettingTitle(t(title), enabled = enabled, reset = if (default != null && checked != default) ({ change(default) }) else null)
-            detail?.let { Help(it) }
+            detail?.let { OptionInfo(it) }
         }
         if (optionsExpanded != null) OptionsIndicator(optionsExpanded, enabled)
         val description = t(title)

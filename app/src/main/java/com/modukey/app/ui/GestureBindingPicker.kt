@@ -88,19 +88,19 @@ import kotlin.math.roundToInt
                             SettingSlider(R.string.wheel_maximum_distance, pick.maximumDistanceDp, maxOf(48f, pick.minimumDistanceDp + 8f)..600f, t(R.string.dp_value, pick.maximumDistanceDp.roundToInt()), default = 240f) {
                                 draft = draft.copy(wheelPick = pick.copy(maximumDistanceDp = it).normalized())
                             }
-                            Help(R.string.wheel_distance_help)
+                            OptionInfo(R.string.wheel_distance_help)
                         }
-                        Help(R.string.wheel_hitbox_gesture_help)
+                        OptionInfo(R.string.wheel_hitbox_gesture_help)
                         if (slot.ordinal < 3) {
                             Toggle(R.string.wheel_allow_later, R.string.wheel_allow_later_help, pick.allowLaterSwipes, default = false, optionsExpanded = pick.allowLaterSwipes) {
                                 draft = draft.copy(wheelPick = pick.copy(allowLaterSwipes = it))
                             }
                             if (pick.allowLaterSwipes) DependentSettings(R.string.wheel_allow_later) {
                                 DurationInput(R.string.wheel_release_window, pick.releaseWindowMs, 100L..1_000L, 200) { draft = draft.copy(wheelPick = pick.copy(releaseWindowMs = it)) }
-                                Help(R.string.wheel_release_help)
+                                OptionInfo(R.string.wheel_release_help)
                             }
-                        } else Help(R.string.wheel_hold_help)
-                        Help(R.string.wheel_orientation_help)
+                        } else OptionInfo(R.string.wheel_hold_help)
+                        OptionInfo(R.string.wheel_orientation_help)
                     }
                 }
             }
@@ -113,9 +113,9 @@ import kotlin.math.roundToInt
                     BrightnessReturnControls(action.brightnessReturn) { draft = draft.copy(action = action.copy(brightnessReturn = it)) }
                 }
             }
-            if (draft.action?.action == ButtonAction.BRIGHTNESS_AUTOMATIC) item { Help(R.string.brightness_automatic_action_help) }
-            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) item { Help(R.string.brightness_step_help) }
-            if (draft.action?.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) item { Help(R.string.native_panel_help) }
+            if (draft.action?.action == ButtonAction.BRIGHTNESS_AUTOMATIC) item { OptionInfo(R.string.brightness_automatic_action_help) }
+            if (draft.action?.action in listOf(ButtonAction.BRIGHTNESS_UP, ButtonAction.BRIGHTNESS_DOWN)) item { OptionInfo(R.string.brightness_step_help) }
+            if (draft.action?.action in listOf(ButtonAction.NOTIFICATIONS, ButtonAction.CONTROL_PANEL)) item { OptionInfo(R.string.native_panel_help) }
             if (draft.action?.action == ButtonAction.OPEN_APP) item {
                 DependentSettings(t(label(ButtonAction.OPEN_APP))) {
                     OutlinedButton(onClick = { pendingApp = draft.action; vm.loadApps(); page = 2 }, modifier = Modifier.fillMaxWidth()) {
@@ -151,9 +151,9 @@ import kotlin.math.roundToInt
             OptionRow(t(R.string.slider_activation), SliderActivation.entries, target.sliderActivation, SliderActivation.AFTER_HOLD) { change(target.copy(sliderActivation = it)) }
             if (target.sliderActivation == SliderActivation.AFTER_HOLD) DependentSettings(R.string.slider_after_hold) {
                 DurationInput(R.string.slider_hold_time, target.sliderHoldMs, 100L..1_000L, 200) { change(target.copy(sliderHoldMs = it)) }
-                Help(R.string.slider_hold_help)
-            } else Help(R.string.slider_immediate_help)
-            if (target.action != null) Help(R.string.slider_action_timing_help)
+                OptionInfo(R.string.slider_hold_help)
+            } else OptionInfo(R.string.slider_immediate_help)
+            if (target.action != null) OptionInfo(R.string.slider_action_timing_help)
         }
     }
 }

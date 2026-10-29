@@ -51,8 +51,8 @@ import kotlin.math.roundToInt
                         Section(R.string.preview) {
                             OrientationChoices(landscape, selectOrientation)
                             PhonePreview(s, landscape, others)
-                            Help(R.string.preview_help)
-                            Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
+                            OptionInfo(R.string.preview_help)
+                            if (service.connected) OptionInfo(R.string.preview_orientation) else Help(R.string.preview_unavailable)
                             if (others.any { bounds.overlaps(TriggerGeometry.bounds(screen.width, screen.height, screen.density, screen.insets, it, landscape)) }) Notice(t(R.string.overlap_help))
                             Toggle(R.string.landscape_enabled, R.string.landscape_enabled_help, s.landscapeEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(landscapeEnabled = value) } }
                             Toggle(R.string.landscape_override, R.string.override_help, s.landscapeOverrideEnabled, default = false) { value -> vm.editTrigger(h.id) { it.copy(landscapeOverrideEnabled = value) } }
@@ -84,12 +84,12 @@ import kotlin.math.roundToInt
                             DependentSettings(R.string.make_handle_visible) {
                                 SettingSlider(R.string.indicator_length, s.indicatorLengthFraction, 0f..1f, t(R.string.touch_length_percent, (s.indicatorLengthFraction*100).roundToInt()), s.indicatorVisible, default = 2f / 3f, valueScale = 100f) { value -> vm.editTrigger(h.id) { it.copy(indicatorLengthFraction = value) } }
                                 SettingSlider(R.string.indicator_thickness, s.indicatorThicknessDp, 0f..32f, t(R.string.dp_value, s.indicatorThicknessDp.roundToInt()), s.indicatorVisible, default = 4f) { value -> vm.editTrigger(h.id) { it.copy(indicatorThicknessDp = value) } }
-                                Help(R.string.indicator_thickness_help)
+                                OptionInfo(R.string.indicator_thickness_help)
                                 PercentSlider(R.string.opacity, s.indicatorOpacity, s.indicatorVisible, default = .65f) { value -> vm.editTrigger(h.id) { it.copy(indicatorOpacity = value) } }
                                 SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..16f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), s.indicatorVisible, default = 2f) { value -> vm.editTrigger(h.id) { it.copy(cornerRadiusDp = value) } }
                                 ColorPicker(s.indicatorColor, s.indicatorVisible, default = TriggerSettings().indicatorColor) { value -> vm.editTrigger(h.id) { it.copy(indicatorColor = value) } }
                             }
-                            if (!s.indicatorVisible) Help(R.string.visible_off_help)
+                            if (!s.indicatorVisible) OptionInfo(R.string.visible_off_help)
                         }
                     }
                     1 -> HandleGestureSettings(config, h, vm, landscape)
@@ -99,12 +99,12 @@ import kotlin.math.roundToInt
                         Toggle(R.string.soft_hide, R.string.soft_hide_help, s.softHideEnabled, default = false, optionsExpanded = s.softHideEnabled) { value -> vm.editTrigger(h.id) { it.copy(softHideEnabled = value) } }
                         if (s.softHideEnabled) DependentSettings(R.string.soft_hide) {
                             DurationInput(R.string.hide_after, s.softHideDelayMs, 1000L..30000L, default = 3000) { value -> vm.editTrigger(h.id) { it.copy(softHideDelayMs = value) } }
-                            Help(R.string.soft_hide_detection)
+                            OptionInfo(R.string.soft_hide_detection)
                         }
-                        Help(R.string.screen_off_help)
+                        OptionInfo(R.string.screen_off_help)
                         SettingTitle(t(R.string.excluded_apps), reset = if (s.excludedPackages.isNotEmpty()) ({ vm.editTrigger(h.id) { it.copy(excludedPackages = emptySet()) } }) else null)
                         OutlinedButton(onClick = { vm.loadApps(); exclusions = true }) { Text(t(R.string.excluded_apps)); Spacer(Modifier.width(8.dp)); Icon(AppIcons.Down, null, Modifier.size(18.dp)) }
-                        Help(R.string.exclusions_help)
+                        OptionInfo(R.string.exclusions_help)
                         TextButton(onClick = { reset = true }) { Text(t(R.string.reset_handle)) }
                     }
                 }

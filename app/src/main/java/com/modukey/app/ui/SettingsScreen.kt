@@ -31,8 +31,12 @@ import com.modukey.app.updates.*
     val busy by vm.backupBusy.collectAsStateWithLifecycle(); val pending by vm.importPreview.collectAsStateWithLifecycle()
     val export=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let(vm::export) }
     val importLauncher=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::readImport) }
+    Section(R.string.interface_settings) {
+        Toggle(R.string.additional_option_info, R.string.additional_option_info_help, config.showOptionInfo,
+            default = true, change = vm::setShowOptionInfo)
+    }
     Section(R.string.backup) {
-        Help(R.string.backup_help)
+        OptionInfo(R.string.backup_help)
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick={ export.launch("Nudge-configuration.json") },enabled=!busy) { Text(t(R.string.export_config)) }
             OutlinedButton(onClick={ importLauncher.launch(arrayOf("application/json","text/plain")) },enabled=!busy) { Text(t(R.string.import_config)) }
@@ -69,13 +73,13 @@ import com.modukey.app.updates.*
         AlertDialog(onDismissRequest={ vm.importPreview.value=null },title={ Text(t(R.string.import_config)) },text={ Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text(t(R.string.import_summary,imported.handles.size,imported.panels.size,imported.panels.sumOf { it.settings.buttons.size }))
             Text(t(R.string.import_shortcut_summary, imported.shortcuts.size))
-            Help(R.string.import_shortcut_help)
+            OptionInfo(R.string.import_shortcut_help)
             imported.handles.forEach { Text(context.handleLabel(imported,it)) }
             imported.panels.forEach { Text(context.panelLabel(it)) }
             Row { RadioButton(!replace,{ replace=false }); TextButton(onClick={ replace=false }) { Text(t(R.string.import_add)) } }
-            Help(R.string.import_add_help)
+            OptionInfo(R.string.import_add_help)
             Row { RadioButton(replace,{ replace=true }); TextButton(onClick={ replace=true }) { Text(t(R.string.import_replace)) } }
-            Help(R.string.import_replace_help)
+            OptionInfo(R.string.import_replace_help)
         } },confirmButton={ TextButton(onClick={ vm.applyImport(replace) }) { Text(t(R.string.confirm_import)) } },dismissButton={ TextButton(onClick={ vm.importPreview.value=null }) { Text(t(R.string.cancel)) } })
     }
 }
@@ -87,7 +91,7 @@ import com.modukey.app.updates.*
     Toggle(R.string.include_prereleases,R.string.prerelease_help,config.includePrereleases,default=false,change=vm::setIncludePrereleases)
     OutlinedButton(onClick=vm::checkForUpdates,enabled=state!=UpdateState.Checking) { Text(t(if(state==UpdateState.Checking) R.string.checking else R.string.check_updates)) }
     when(val s=state) {
-        UpdateState.Idle -> Help(R.string.update_idle)
+        UpdateState.Idle -> OptionInfo(R.string.update_idle)
         UpdateState.Checking -> CircularProgressIndicator()
         is UpdateState.NoRelease -> { Help(if(s.includePrereleases) R.string.update_no_release_testing else R.string.update_no_release); OutlinedButton(onClick={ open(GitHubReleaseSource.RELEASES_PAGE) }) { Text(t(R.string.view_releases)) } }
         is UpdateState.Failed -> {

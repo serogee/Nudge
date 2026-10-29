@@ -85,7 +85,8 @@ import com.modukey.app.platform.*
         catch (_: android.content.ActivityNotFoundException) { vm.tell(R.string.action_failed) }
         catch (_: SecurityException) { vm.tell(R.string.action_failed) }
     }
-    CompositionLocalProvider(LocalFinishAdjustment provides vm::flush) { NudgeTheme {
+    CompositionLocalProvider(LocalFinishAdjustment provides vm::flush,
+        LocalShowOptionInfo provides (config?.showOptionInfo ?: true)) { NudgeTheme {
         Scaffold(topBar = {
             if (tab != 0) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { Image(painterResource(R.drawable.ic_modukey), null, Modifier.size(32.dp)); Text(t(R.string.app_name)) } },
                 navigationIcon = { if (handle != null || panel != null) EditIcon(AppIcons.Back, R.string.back, action = ::back) },
@@ -154,7 +155,7 @@ import com.modukey.app.platform.*
     }
     Section(R.string.test_volume) {
         val check by vm.popupCheck.collectAsStateWithLifecycle()
-        Help(R.string.volume_test_help)
+        OptionInfo(R.string.volume_test_help)
         Button(onClick = vm::testVolume) { Text(t(R.string.test_volume)) }
         Text(t(check))
         if (check != R.string.volume_unchecked) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -165,7 +166,7 @@ import com.modukey.app.platform.*
     BrightnessPopupSettingsSection(config, vm)
     BrightnessCalibrationSection()
     HomeShortcutsSection(config, vm)
-    Help(R.string.touch_help)
+    OptionInfo(R.string.touch_help)
     HyperOsSetup(vm, openSettings)
 }
 
@@ -195,7 +196,7 @@ import com.modukey.app.platform.*
                         Text(t(R.string.handles), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         FilledTonalButton(onClick = { edit(vm.addHandle()) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(R.string.add_handle)) }
                     }
-                    Help(R.string.manage_handles_help)
+                    OptionInfo(R.string.manage_handles_help)
                     if (config.handles.isEmpty()) Help(R.string.no_handles)
                 }
         }) { h, _ ->

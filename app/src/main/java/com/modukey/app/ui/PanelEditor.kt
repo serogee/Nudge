@@ -88,13 +88,13 @@ import kotlin.math.roundToInt
     }
     Section(R.string.preview) {
         PreviewHandleChoice(config, previewHandleId, preview)
-        Help(R.string.preview_handle_help)
+        OptionInfo(R.string.preview_handle_help)
         OrientationChoices(landscape, selectOrientation)
         PanelPreview(p, l, g, screen, handle, trigger, hitboxPreview?.let {
             it.panelId == entry.id && it.landscape == landscape && l.wheel.hitbox.mode == WheelHitboxMode.MANUAL
         } == true)
-        Help(R.string.panel_preview_help)
-        Help(if (service.connected) R.string.preview_orientation else R.string.preview_unavailable)
+        OptionInfo(R.string.panel_preview_help)
+        if (service.connected) OptionInfo(R.string.preview_orientation) else Help(R.string.preview_unavailable)
         OutlinedButton(onClick = { vm.testPanel(entry.id, previewHandleId) }, enabled = service.connected && previewEnabled) { Text(t(R.string.test_panel)) }
         Toggle(R.string.panel_landscape_override, R.string.override_help, p.landscapeOverride, default = false) { value -> vm.editPanel(entry.id) { fitButtons(it.copy(landscapeOverride = value)) } }
         if (landscape && !p.landscapeOverride) Help(R.string.inherited_help)
@@ -104,23 +104,23 @@ import kotlin.math.roundToInt
         DependentSettings(R.string.layout) {
             if (l.mode == PanelMode.FIXED) {
                 CountStepper(if (l.direction == PanelDirection.VERTICAL) R.string.maximum_rows else R.string.maximum_columns, l.maximumLines, 1, 20, 5) { value -> layout { it.copy(maximumLines = value) } }
-                Help(R.string.fixed_help)
+                OptionInfo(R.string.fixed_help)
             } else if (l.mode == PanelMode.SCROLLABLE) {
                 SettingSlider(if (l.direction == PanelDirection.VERTICAL) R.string.panel_height else R.string.panel_width, l.extentFraction, .15f..1f,
                     t(R.string.percent, (l.extentFraction * 100).roundToInt()), default = .6f, valueScale = 100f) { value -> layout { it.copy(extentFraction = value) } }
-                Help(R.string.scrollable_help)
+                OptionInfo(R.string.scrollable_help)
             }
         }
         if (l.mode == PanelMode.WHEEL) {
             WheelRadiusControl(l.wheel, l.buttonSizeDp) { inner, outer ->
                 layout { it.copy(wheel = it.wheel.copy(innerRadiusDp = inner, outerRadiusDp = outer)) }
             }
-            Help(R.string.wheel_autofit_priority)
-            Help(R.string.wheel_radius_help)
+            OptionInfo(R.string.wheel_autofit_priority)
+            OptionInfo(R.string.wheel_radius_help)
             SettingSlider(R.string.wheel_gap, l.wheel.gapDp, 0f..24f, t(R.string.dp_value, l.wheel.gapDp.roundToInt()), default = 4f) { value ->
                 fitLayout { it.copy(wheel = it.wheel.copy(gapDp = value)) }
             }
-            Help(R.string.wheel_gap_help)
+            OptionInfo(R.string.wheel_gap_help)
             val pick = config.handle(previewHandleId)?.let { h -> GestureSlot.entries.map(h::target)
                 .firstOrNull { it.panelId == entry.id && it.wheelPick.enabled }?.wheelPick } ?: WheelPickSettings()
             val bounds = g.wheel?.hitboxRadii(pick, screen.density, l.wheel.hitbox)?.let {
@@ -147,7 +147,7 @@ import kotlin.math.roundToInt
                     l.wheel.focusDurationMs.toFloat(), 80f..400f, t(R.string.ms_value, l.wheel.focusDurationMs), default = 140f) { value ->
                     layout { it.copy(wheel = it.wheel.copy(focusDurationMs = value.roundToInt())) }
                 }
-                Help(R.string.wheel_focus_animation_help)
+                OptionInfo(R.string.wheel_focus_animation_help)
             }
         } else {
             OptionRow(t(R.string.direction), PanelDirection.entries, l.direction, defaults.direction) { value -> layout { it.copy(direction = value) } }
@@ -164,7 +164,7 @@ import kotlin.math.roundToInt
             if (l.followHandle) {
                 SettingSlider(R.string.offset_x, l.offsetXDp, -240f..240f, t(R.string.dp_value, l.offsetXDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetXDp = value) } }
                 SettingSlider(R.string.offset_y, l.offsetYDp, -240f..240f, t(R.string.dp_value, l.offsetYDp.roundToInt()), default = 0f) { value -> layout { it.copy(offsetYDp = value) } }
-                Help(R.string.offset_help)
+                OptionInfo(R.string.offset_help)
             } else {
                 PercentSlider(R.string.center_x, l.x, default = .5f) { value -> layout { it.copy(x = value) } }
                 PercentSlider(R.string.center_y, l.y, default = .5f) { value -> layout { it.copy(y = value) } }
@@ -173,21 +173,21 @@ import kotlin.math.roundToInt
     }
     Section(R.string.outside_touch) {
         OptionRow(t(R.string.outside_touch), OutsideTouch.entries, p.outsideTouch, OutsideTouch.BLOCK) { value -> vm.editPanel(entry.id) { it.copy(outsideTouch = value) } }
-        Help(R.string.outside_help)
+        OptionInfo(R.string.outside_help)
     }
     Section(R.string.panel_timeout) {
         Toggle(R.string.auto_close_panel, R.string.auto_close_help, p.autoCloseEnabled, default = false, optionsExpanded = p.autoCloseEnabled) { value -> vm.editPanel(entry.id) { it.copy(autoCloseEnabled = value) } }
         if (p.autoCloseEnabled) DependentSettings(R.string.auto_close_panel) {
             DurationInput(R.string.close_after, p.autoCloseMs, 1000L..60000L, default = 3000) { value -> vm.editPanel(entry.id) { it.copy(autoCloseMs = value) } }
-            Help(R.string.panel_timeout_help)
+            OptionInfo(R.string.panel_timeout_help)
         }
     }
     Section(R.string.panel_animation) {
-        if (l.mode == PanelMode.WHEEL && !l.wheel.animationsEnabled) Help(R.string.wheel_animations_help)
+        if (l.mode == PanelMode.WHEEL && !l.wheel.animationsEnabled) OptionInfo(R.string.wheel_animations_help)
         else {
             OptionRow(t(R.string.open_animation), PanelAnimation.entries, p.animation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(animation = value) } }
             OptionRow(t(R.string.close_animation), PanelAnimation.entries, p.closeAnimation, PanelAnimation.NONE) { value -> vm.editPanel(entry.id) { it.copy(closeAnimation = value) } }
-            Help(R.string.animation_help)
+            OptionInfo(R.string.animation_help)
         }
     }
     Section(R.string.appearance) {
@@ -196,7 +196,7 @@ import kotlin.math.roundToInt
         SettingSlider(R.string.corner_radius, p.cornerDp, 0f..48f, t(R.string.dp_value, p.cornerDp.roundToInt()), default = 24f) { value -> vm.editPanel(entry.id) { it.copy(cornerDp = value) } }
         SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
             t(R.string.percent, (p.iconCornerFraction * 200).roundToInt()), default = .25f, valueScale = 200f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
-        Help(R.string.icon_corners_help)
+        OptionInfo(R.string.icon_corners_help)
         Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
         Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true, optionsExpanded = !p.automaticButtonColor) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
         if (!p.automaticButtonColor) DependentSettings(R.string.automatic_button_color) {

@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Add **Additional option info** in **Info → Interface**, enabled by default. Hide descriptions below options when off. Retain live status, errors, progress, and Help content. Save the choice across restarts and backups.
 - Give **Toggle and hide handles** a separate icon. Add all three handle action icons to the built-in icon picker. Save their references in **schema 32** backups and retain older imports.
 
 ## 0.5.6 - 2026-10-27

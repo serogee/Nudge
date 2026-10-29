@@ -270,6 +270,9 @@
     <string name="decrease">Decrease %1$s</string>
     <string name="increase">Increase %1$s</string>
     <string name="info">Info</string>
+    <string name="interface_settings">Interface</string>
+    <string name="additional_option_info">Additional option info</string>
+    <string name="additional_option_info_help">Show descriptions below options. Status messages stay visible.</string>
     <string name="app_settings">App Settings</string>
     <string name="enable_gestures">Enable Gestures</string>
     <string name="manage_handles">Manage Handles</string>

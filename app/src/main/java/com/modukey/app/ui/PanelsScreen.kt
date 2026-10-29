@@ -22,7 +22,7 @@ import com.modukey.app.core.*
                 Text(t(if (wheels) R.string.wheels else R.string.panels), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 FilledTonalButton(onClick = { edit(vm.addPanel(wheels)) }) { Icon(AppIcons.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(if (wheels) R.string.add_wheel else R.string.add_panel)) }
             }
-            Help(if (wheels) R.string.manage_wheels_help else R.string.manage_panels_help)
+            OptionInfo(if (wheels) R.string.manage_wheels_help else R.string.manage_panels_help)
             if (panels.isEmpty()) Help(if (wheels) R.string.no_wheels else R.string.no_panels)
             ReorderableList(panels, { it.id }, context::panelLabel, Modifier.weight(1f), vm::reorderPanel, vm::flush) { panel, _ ->
                 Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {

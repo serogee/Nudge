@@ -23,8 +23,8 @@ import com.modukey.app.core.*
     var naming by remember { mutableStateOf<PanelButton?>(null) }
     var removing by remember { mutableStateOf<HomeShortcut?>(null) }
     Section(R.string.home_shortcuts) {
-        Help(R.string.shortcut_help)
-        Help(R.string.shortcut_icon_help)
+        OptionInfo(R.string.shortcut_help)
+        OptionInfo(R.string.shortcut_icon_help)
         if (supported == false) Help(R.string.shortcut_unsupported)
         if (config.shortcuts.isEmpty()) Help(R.string.shortcut_none)
         config.shortcuts.forEach { shortcut ->
@@ -73,7 +73,7 @@ import com.modukey.app.core.*
                             DropdownMenuItem(text = { Text(context.handleLabel(config, h)) }, onClick = { owner = h.id; expanded = false })
                         } }
                     }
-                    Help(R.string.shortcut_owner_help)
+                    OptionInfo(R.string.shortcut_owner_help)
                 }
             }
         }, confirmButton = { Button(onClick = {

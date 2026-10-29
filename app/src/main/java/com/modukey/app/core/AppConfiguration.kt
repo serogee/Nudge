@@ -140,6 +140,7 @@ data class AppConfiguration(
     val shortcuts: List<HomeShortcut> = emptyList(),
     val handleAnimationsEnabled: Boolean = true,
     val pausedHandleIds: Set<String> = emptySet(),
+    val showOptionInfo: Boolean = true,
 ) {
     val hideHandleIndicators get() = handles.isNotEmpty() && handles.all { it.indicatorHidden }
     val hiddenIndicatorIds get() = handles.filter { it.indicatorHidden }.mapTo(mutableSetOf()) { it.id }

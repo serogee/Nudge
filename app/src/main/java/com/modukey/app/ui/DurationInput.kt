@@ -36,7 +36,8 @@ import com.modukey.app.R
                 input.toLongOrNull()?.takeIf { it in range }?.let(change)
             }
         }, singleLine = true, suffix = { Text(t(R.string.milliseconds_unit)) },
-            supportingText = { Text(t(R.string.duration_range, range.first, range.last)) },
+            supportingText = if (LocalShowOptionInfo.current || number == null || number !in range)
+                ({ Text(t(R.string.duration_range, range.first, range.last)) }) else null,
             isError = number == null || number !in range,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),

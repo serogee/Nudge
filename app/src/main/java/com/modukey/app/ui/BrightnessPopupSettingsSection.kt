@@ -33,18 +33,18 @@ import kotlin.math.roundToInt
         Toggle(R.string.brightness_preview, R.string.brightness_preview_help, preview) { preview = it }
         if (preview && !service.connected) Help(R.string.preview_unavailable)
         OptionRow(t(R.string.brightness_touch_behavior), BrightnessTouchBehavior.entries, s.touchBehavior, defaults.touchBehavior) { v -> edit { it.copy(touchBehavior = v) } }
-        Help(R.string.brightness_touch_behavior_help)
+        OptionInfo(R.string.brightness_touch_behavior_help)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(t(R.string.appearance), Modifier.weight(1f))
             EditIcon(if (expanded) AppIcons.ChevronUp else AppIcons.Down, if (expanded) R.string.collapse_setup else R.string.expand_setup) { expanded = !expanded }
         }
         if (expanded) DependentSettings(R.string.appearance) {
-            Help(R.string.brightness_slider_help)
-            Help(R.string.brightness_size_help)
+            OptionInfo(R.string.brightness_slider_help)
+            OptionInfo(R.string.brightness_size_help)
             OptionRow(t(R.string.brightness_position), BrightnessSide.entries, s.side, defaults.side) { v -> edit { it.copy(side = v) } }
             if (s.side == BrightnessSide.OPPOSITE_VOLUME) DependentSettings(R.string.brightness_position) {
                 OptionRow(t(R.string.volume_popup_side), VolumeSide.entries, s.volumeSide, defaults.volumeSide) { v -> edit { it.copy(volumeSide = v) } }
-                Help(R.string.volume_side_help)
+                OptionInfo(R.string.volume_side_help)
             }
             if (s.side == BrightnessSide.CUSTOM) DependentSettings(R.string.brightness_position) {
                 PercentSlider(R.string.center_x, s.x, default = defaults.x) { v -> edit { it.copy(x = v) } }
@@ -55,7 +55,7 @@ import kotlin.math.roundToInt
             DurationInput(R.string.slider_timeout, s.timeoutMs, 1000L..10000L, default = defaults.timeoutMs) { v -> edit { it.copy(timeoutMs = v) } }
             OptionRow(t(R.string.open_animation), PanelAnimation.entries, s.animation, defaults.animation) { v -> edit { it.copy(animation = v) } }
             OptionRow(t(R.string.close_animation), PanelAnimation.entries, s.closeAnimation, defaults.closeAnimation) { v -> edit { it.copy(closeAnimation = v) } }
-            Help(R.string.brightness_animation_help)
+            OptionInfo(R.string.brightness_animation_help)
             SettingSlider(R.string.corner_radius, s.cornerRadiusDp, 0f..64f, t(R.string.dp_value, s.cornerRadiusDp.roundToInt()), default = defaults.cornerRadiusDp) { v -> edit { it.copy(cornerRadiusDp = v) } }
             Toggle(R.string.slider_show_background, R.string.slider_background_help, s.showBackground, default = true, optionsExpanded = s.showBackground) { v -> edit { it.copy(showBackground = v) } }
             DependentSettings(R.string.slider_show_background) {
@@ -70,7 +70,7 @@ import kotlin.math.roundToInt
             ColorPicker(s.icon, title = R.string.slider_icon, default = defaults.icon) { v -> edit { it.copy(icon = v) } }
             PercentSlider(R.string.slider_icon_opacity, s.iconOpacity, default = 1f) { v -> edit { it.copy(iconOpacity = v) } }
             OutlinedButton(onClick = vm::openBrightnessAccess) { Text(t(R.string.open_brightness_access)) }
-            Help(R.string.brightness_access_help)
+            OptionInfo(R.string.brightness_access_help)
         }
     }
 }
