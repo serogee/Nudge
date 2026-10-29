@@ -11,8 +11,8 @@ import kotlin.math.roundToInt
     if (!settings.adaptIconSize) DependentSettings(R.string.wheel_adapt_icon_size) {
         SettingSlider(R.string.wheel_icon_size, settings.iconSizeDp, 12f..128f,
             t(R.string.dp_value, settings.iconSizeDp.roundToInt()), default = 32f) { change(settings.copy(iconSizeDp = it)) }
-        Help(R.string.wheel_icon_size_help)
+        OptionInfo(R.string.wheel_icon_size_help)
     }
     PercentSlider(R.string.wheel_icon_position, settings.iconPosition, default = WheelLayoutSettings.DEFAULT_ICON_POSITION) { change(settings.copy(iconPosition = it)) }
-    Help(R.string.wheel_icon_position_help)
+    OptionInfo(R.string.wheel_icon_position_help)
 }

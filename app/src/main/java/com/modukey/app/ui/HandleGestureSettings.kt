@@ -22,14 +22,14 @@ import kotlin.math.roundToInt
     SliderTravelControls(h, vm)
     CollapsibleSection(R.string.swipe_settings) {
         OptionRow(t(R.string.swipe_hold_distance_mode), SwipeDistanceMode.entries, s.swipeDistanceMode, SwipeDistanceMode.INWARD_ONLY) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceMode = v) } }
-        Help(R.string.swipe_distance_mode_help)
+        OptionInfo(R.string.swipe_distance_mode_help)
         SettingSlider(R.string.swipe_distance, s.swipeDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeDistanceDp = v) } }
         DurationInput(R.string.swipe_time, s.swipeTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeTimeoutMs = v) } }
         GestureFeedbackControls(R.string.swipe_feedback, s.swipeFeedback) { v -> vm.editTrigger(h.id) { it.copy(swipeFeedback = v) } }
     }
     CollapsibleSection(R.string.swipe_hold_settings) {
         OptionRow(t(R.string.swipe_hold_distance_mode), SwipeHoldDistanceMode.entries, s.swipeHoldDistanceMode, SwipeHoldDistanceMode.ANY_DIRECTION) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceMode = v) } }
-        Help(R.string.swipe_hold_distance_mode_help)
+        OptionInfo(R.string.swipe_hold_distance_mode_help)
         SettingSlider(R.string.swipe_hold_distance, s.swipeHoldDistanceDp, 12f..80f, t(R.string.dp_value, s.swipeHoldDistanceDp.roundToInt()), default = 24f) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldDistanceDp = v) } }
         DurationInput(R.string.swipe_hold_swipe_time, s.swipeHoldTimeoutMs, 200L..1200L, default = 600) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeoutMs = v) } }
         DurationInput(R.string.swipe_hold_time, s.swipeHoldTimeMs, 300L..3000L, default = 500) { v -> vm.editTrigger(h.id) { it.copy(swipeHoldTimeMs = v) } }
@@ -46,7 +46,7 @@ import kotlin.math.roundToInt
     }
     CollapsibleSection(R.string.swipe_sequence_settings) {
         DurationInput(R.string.volume_sequence, h.volumeSequenceMs, 1000L..10000L, default = 3000) { v -> vm.editHandle(h.id) { it.copy(volumeSequenceMs = v) } }
-        Help(R.string.volume_sequence_help); Help(R.string.gesture_help); Help(R.string.hold_help)
+        OptionInfo(R.string.volume_sequence_help); OptionInfo(R.string.gesture_help); OptionInfo(R.string.hold_help)
     }
 }
 

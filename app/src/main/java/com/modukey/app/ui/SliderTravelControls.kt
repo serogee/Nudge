@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
         onDispose { vm.previewSliderGuide(token, null); lifecycle.removeObserver(observer) }
     }
     if (kinds.isNotEmpty()) CollapsibleSection(R.string.slider_travel) {
-        Help(R.string.slider_travel_help)
+        OptionInfo(R.string.slider_travel_help)
         kinds.forEach { kind ->
             val volume = kind == SliderKind.VOLUME
             val travel = if (volume) handle.volumeTravelDp else handle.brightnessTravelDp

@@ -4,6 +4,7 @@ import android.app.KeyguardManager
 import android.content.Intent
 import android.os.Looper
 import android.os.PowerManager
+import android.os.VibratorManager
 import android.view.MotionEvent
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
@@ -40,17 +41,21 @@ class WheelGestureRuntimeTest {
     private data class Fixture(val service: EdgeAccessibilityService, val view: HandleTriggerView, val host: Host,
         val dismiss: (PanelDismissReason) -> Unit)
     private fun fixture(allowLater: Boolean = false, slot: GestureSlot = GestureSlot.SWIPE_1, drag: Boolean = true,
-        hitbox: WheelHitboxSettings = WheelHitboxSettings(), innerRadius: Float? = null): Fixture {
+        hitbox: WheelHitboxSettings = WheelHitboxSettings(), innerRadius: Float? = null,
+        feedback: GestureKind? = null, buttonCount: Int = 1): Fixture {
         val controller = Robolectric.buildService(EdgeAccessibilityService::class.java).create(); destroy = { controller.destroy() }
         val service = controller.get()
         shadowOf(app).grantPermissions("${app.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
         shadowOf(app.getSystemService(PowerManager::class.java)).setIsInteractive(true)
         shadowOf(app.getSystemService(KeyguardManager::class.java)).setKeyguardLocked(false)
         await { app.configuration.state.value != null }
-        val panel = SavedPanel(id = "wheel", settings = PanelConfig(buttons = listOf(PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY)),
+        val panel = SavedPanel(id = "wheel", settings = PanelConfig(buttons = List(buttonCount) { PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY) },
             portrait = PanelLayout(mode = PanelMode.WHEEL, wheel = WheelLayoutSettings(hitbox = hitbox, innerRadiusDp = innerRadius)), autoCloseEnabled = true, autoCloseMs = 1000))
         val target = GestureTarget.panel(panel.id).copy(wheelPick = WheelPickSettings(drag, allowLaterSwipes = allowLater))
-        val handle = HandleConfig(id = "handle", enabled = true, trigger = TriggerSettings(portrait = Placement(Edge.LEFT), landscapeEnabled = true),
+        val handle = HandleConfig(id = "handle", enabled = true, trigger = TriggerSettings(portrait = Placement(Edge.LEFT), landscapeEnabled = true,
+            swipeFeedback = GestureFeedback(feedback == GestureKind.SWIPE, 1f),
+            swipeHoldFeedback = GestureFeedback(feedback == GestureKind.SWIPE_HOLD, 1f),
+            holdFeedback = GestureFeedback(feedback == GestureKind.HOLD, 1f)),
             bindings = mapOf(slot to target, GestureSlot.SWIPE_2 to GestureTarget.VOLUME))
         app.configuration.update { AppConfiguration(enabled = true, handles = listOf(handle), panels = listOf(panel)) }
         ReflectionHelpers.callInstanceMethod<Void>(service, "onServiceConnected")
@@ -70,6 +75,43 @@ class WheelGestureRuntimeTest {
     private fun stage(f: Fixture) = ReflectionHelpers.getField<GestureSessions>(f.service, "sessions")
         .next(app.configuration.state.value!!.handle("handle")!!.effectiveGestures(app.configuration.state.value!!, false), GestureKind.SWIPE,
             android.os.SystemClock.elapsedRealtime()).second
+    private fun checkWheelItemChangesStaySilent(kind: GestureKind, slot: GestureSlot) {
+        val f = fixture(slot = slot, feedback = kind, buttonCount = 2)
+        shadowOf(app).grantPermissions(android.Manifest.permission.VIBRATE)
+        val vibrator = f.service.getSystemService(VibratorManager::class.java).defaultVibrator
+        val vibration = shadowOf(vibrator)
+        vibration.setHasVibrator(true)
+        if (kind == GestureKind.HOLD) { touch(f.view, MotionEvent.ACTION_DOWN); idle(500) }
+        else { open(f); if (kind == GestureKind.SWIPE_HOLD) idle(500) }
+        assertTrue("The opening gesture must keep its feedback", vibration.isVibrating)
+        vibrator.cancel()
+        assertFalse(vibration.isVibrating)
+        val geometry = f.host.spec!!.geometry.wheel!!
+        val points = geometry.slices().map { it.point }
+        assertEquals(2, points.size)
+        for (index in listOf(0, 1, 0)) {
+            val point = points[index]
+            touch(f.view, MotionEvent.ACTION_MOVE, point.x, point.y); idle()
+            assertEquals(index, f.host.spec!!.wheelSelection)
+            assertFalse("Changing the selected item must stay silent", vibration.isVibrating)
+        }
+        val outside = geometry.point(0f, 300f)
+        touch(f.view, MotionEvent.ACTION_MOVE, outside.x, outside.y); idle()
+        assertNull(f.host.spec!!.wheelSelection)
+        touch(f.view, MotionEvent.ACTION_MOVE, points[1].x, points[1].y); idle()
+        assertEquals(1, f.host.spec!!.wheelSelection)
+        assertFalse("Reentering the Wheel must stay silent", vibration.isVibrating)
+        touch(f.view, MotionEvent.ACTION_UP, points[1].x, points[1].y); idle()
+        assertNull(f.host.spec)
+        assertTrue(app.configuration.state.value!!.handle("handle")!!.indicatorHidden)
+        assertFalse("Releasing the selected item must stay silent", vibration.isVibrating)
+    }
+    @Test fun swipeHoldFeedbackDoesNotRepeatForWheelItemChanges() =
+        checkWheelItemChangesStaySilent(GestureKind.SWIPE_HOLD, GestureSlot.SWIPE_HOLD)
+    @Test fun swipeFeedbackDoesNotRepeatForWheelItemChanges() =
+        checkWheelItemChangesStaySilent(GestureKind.SWIPE, GestureSlot.SWIPE_1)
+    @Test fun holdFeedbackDoesNotRepeatForWheelItemChanges() =
+        checkWheelItemChangesStaySilent(GestureKind.HOLD, GestureSlot.HOLD)
     @Test fun releaseExecutesOnceAndClosesBeforeTheAction() {
         val f = fixture(); open(f)
         assertTrue(f.host.spec!!.wheelDragging); assertNull(f.host.spec!!.wheelSelection)

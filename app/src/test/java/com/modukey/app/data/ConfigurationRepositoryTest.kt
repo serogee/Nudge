@@ -28,6 +28,28 @@ class ConfigurationRepositoryTest {
         val store=PreferenceDataStoreFactory.create(storage=storage,scope=CoroutineScope(Dispatchers.IO+job))
         try { block(store) } finally { job.cancelAndJoin() }
     }
+    @Test fun optionInfoDefaultsOnAndSavedChoicesSurviveReopeningAndBackups()=runTest {
+        val file=folder.newFile("option-info.preferences_pb")
+        val old=JSONObject(ConfigurationCodec.encode(AppConfiguration())).put("schema",31).apply { remove("showOptionInfo") }
+        session(file) { store ->
+            store.edit { it[stringPreferencesKey("configuration.v1")]=old.toString() }
+            val repo=DataStoreConfigurationRepository(store)
+            val loaded=repo.configuration.first()
+            assertTrue(loaded.showOptionInfo)
+            repo.write(loaded.copy(showOptionInfo=false))
+        }
+        session(file) { store ->
+            val repo=DataStoreConfigurationRepository(store)
+            val restored=repo.configuration.first()
+            assertFalse(restored.showOptionInfo)
+            val backup=ConfigurationCodec.decode(ConfigurationCodec.encode(restored))
+            assertEquals(restored,backup)
+            assertFalse(restored.addCopies(AppConfiguration()).showOptionInfo)
+            assertTrue(AppConfiguration().addCopies(backup).showOptionInfo)
+            repo.write(restored.copy(showOptionInfo=true))
+        }
+        session(file) { assertTrue(DataStoreConfigurationRepository(it).configuration.first().showOptionInfo) }
+    }
     @Test fun pausesAndVisibilitySurviveReopeningWithMasterAndHandlesOff()=runTest {
         val file=folder.newFile("saved-pauses.preferences_pb")
         val original=AppConfiguration(enabled=false,handles=listOf(

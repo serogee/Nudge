@@ -42,6 +42,8 @@ Tap a slider's percentage or dp readout to enter a number. **Save** or keyboard 
 
 Chevrons mark additional options. Dependent controls appear below their parent, grouped by a left line. Action-picker gear badges mark action-specific options. Their backgrounds use 75% opacity; the gear stays fully opaque.
 
+In **Info → Interface**, turn off **Additional option info** to hide descriptions below options throughout the app. The setting starts on. Labels, current values, service status, errors, progress, and Help content stay visible. Invalid duration entries still show their allowed range. The choice stays saved across restarts and JSON backups. Adding copies from a backup keeps the current choice; replacing the configuration uses the imported choice.
+
 ## Gestures
 
 Each assignment can run a direct action, open a panel or wheel, or do neither. **Show Volume Popup** and **Show brightness slider** can accompany the assignment.
@@ -61,7 +63,7 @@ Ordinary swipes default to **Inward only**. **Any direction** measures straight-
 
 Swipe and hold has its own direction, distance, swipe time, and hold time. Its default direction is **Any direction**. Movement beyond the threshold does not restart the hold. Returning below it resets the hold, with tolerance for small jitter.
 
-Hold and Swipe and hold have separate execution settings. Each hold time accepts 300–3,000 ms and defaults to 500 ms. Haptic feedback and strength are separate for each gesture type. Cancelled and multitouch gestures do not run actions.
+Hold and Swipe and hold have separate execution settings. Each hold time accepts 300–3,000 ms and defaults to 500 ms. Haptic feedback and strength are separate for each gesture type. With its haptic feedback on, a gesture gives one pulse when it opens a Wheel. Wheel item changes, reentry, and release do not repeat that pulse. Cancelled and multitouch gestures do not run actions.
 
 A panel keeps its invoking handle's swipe sequence active. Closing it resets the sequence. After a direct action or popup alone, another swipe advances only within the configured **Swipe sequence timeout**.
 
@@ -166,7 +168,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use **schema 31** and retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-31 backups. The temporary hitbox highlight is not saved.
+New backups use **schema 32** and include the three handle action icons in the built-in library. **Toggle and hide handles** uses a separate icon from **Toggle handle visibility**. Backups retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-32 backups. The temporary hitbox highlight is not saved.
 
 ## Actions and appearance
 
@@ -189,6 +191,8 @@ Saved app and icon-pack artwork is preloaded and cached locally. Reopening a but
 **Hide visible handles** hides the bars while gestures remain available. Hiding survives restarts and retains appearance values. Editing guides remain available.
 
 **Toggle handles** and **Toggle handle visibility** offer **All handles**, **This handle**, and **Other handles**. They target enabled handles. This handle means the one that invoked the action.
+
+**Toggle handle visibility** uses a slashed eye. The button is active when all targeted handles are hidden. Like **Hide visible handles**, active means hidden. Visible, mixed, and empty target groups stay inactive.
 
 **Toggle and hide handles** has separate pause/resume and hide/show target groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. If any handle in the pause group is paused, the button resumes that group and shows the visibility group. Otherwise, it pauses and hides the selected groups. This corrects differences caused by separate controls. With no pause group, show the visibility group if any target is hidden. Otherwise, hide it.
 

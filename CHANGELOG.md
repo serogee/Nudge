@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.5.7 - 2026-10-29
+
+### Added
+
+- Give **Toggle and hide handles** a separate icon. Add all three handle action icons to the built-in picker and retain consistent panel, Wheel, preview, and Home shortcut artwork. (7262407)
+- Add **Additional option info** in **Info → Interface**, enabled by default. Hide descriptions below options when off. Keep live status, errors, progress, and Help content visible. Save the choice across restarts and backups. (3e8c793)
+
+### Fixed
+
+- Keep enabled gesture feedback to one pulse when Swipe, Hold, or Swipe and hold opens a Wheel. Item changes, reentry, and release do not repeat that pulse. Preserve highlighting and selected actions. (d5275d5)
+- Use a slashed eye for **Toggle handle visibility**. Make it active when all targeted handles are hidden, matching the meaning of **Hide visible handles**. Keep visible, mixed, and empty target groups inactive. (a3aeaee)
+
+### Compatibility and validation
+
+- Save **schema 32** backups with the new icon references and option-info choice. Keep older imports and default descriptions to on. **Nudge 0.5.6 and earlier cannot import schema-32 backups.**
+- Pass **136 focused tests across 13 classes** with no failures, errors, or skips. Pass lint with **0 errors and 27 warnings**, the **0.5.7-debug / code 23** build, **29 changelog checks**, and **22 isolated finalization checks**. API 31 and 36 results are simulated; this is not a complete release test run.
+- Confirm published **v0.5.6 / code 22** as the baseline for **0.5.7 / code 23**. Preserve its changelog, notes, artifacts, and tag. Signed assembly and physical-device checks remain pending until after the GitHub merge.
+
 ## 0.5.6 - 2026-10-27
 
 ### Changed

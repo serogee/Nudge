@@ -51,6 +51,8 @@ import com.modukey.app.core.*
     BuiltInIcon.CALENDAR -> R.string.calendar; BuiltInIcon.CLOCK -> R.string.clock; BuiltInIcon.MAP -> R.string.map
     BuiltInIcon.HOME -> R.string.home; BuiltInIcon.FAVORITE -> R.string.favorite; BuiltInIcon.APPS -> R.string.apps
     BuiltInIcon.NUDGE -> R.string.app_name
+    BuiltInIcon.HANDLE -> R.string.toggle_handles; BuiltInIcon.HANDLE_VISIBILITY -> R.string.toggle_handle_visibility
+    BuiltInIcon.TOGGLE_AND_HIDE_HANDLES -> R.string.toggle_and_hide_handles
     else -> error("Unlabelled option: $value")
 }
 fun Context.buttonLabel(button: PanelButton): String = if (button.action == ButtonAction.OPEN_APP && button.appLabel.isNotBlank()) button.appLabel else getString(label(button.action))

@@ -40,6 +40,7 @@ object ButtonVectors {
         ButtonAction.BRIGHTNESS_AUTOMATIC -> AppIcons.BrightnessAutomatic
         ButtonAction.TOGGLE_HANDLES -> AppIcons.Handle; ButtonAction.OPEN_APP -> AppIcons.Apps; ButtonAction.EMPTY -> AppIcons.Empty
         ButtonAction.TOGGLE_ACCESSIBILITY -> accessibility
-        ButtonAction.TOGGLE_HANDLE_VISIBILITY, ButtonAction.TOGGLE_AND_HIDE_HANDLES -> AppIcons.HandleVisibility
+        ButtonAction.TOGGLE_HANDLE_VISIBILITY -> AppIcons.HandleVisibility
+        ButtonAction.TOGGLE_AND_HIDE_HANDLES -> AppIcons.HandleToggleAndHide
     }
 }

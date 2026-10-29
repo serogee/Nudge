@@ -15,7 +15,7 @@ import com.modukey.app.platform.SoundState
     val s = panel.activeAppearance
     val defaults = ActiveButtonAppearance()
     SettingTitle(t(R.string.active_button_colors))
-    Help(R.string.active_button_colors_help)
+    OptionInfo(R.string.active_button_colors_help)
     Toggle(R.string.use_active_background, null, s.useBackground, default = true, optionsExpanded = s.useBackground) { change(s.copy(useBackground = it)) }
     if (s.useBackground) DependentSettings(R.string.use_active_background) {
         Toggle(R.string.automatic_active_background, null, s.automaticBackground, default = true, optionsExpanded = !s.automaticBackground) { change(s.copy(automaticBackground = it)) }

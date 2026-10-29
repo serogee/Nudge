@@ -36,6 +36,7 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
     fun pauseHandles(paused: Boolean) { app.configuration.state.value?.let { app.handlePauses.setAll(paused, it) } }
     fun hideVisibleHandles(hidden: Boolean) { edit { it.hideIndicators(hidden) }; flush() }
     fun setHandleAnimationsEnabled(enabled: Boolean) { edit { it.copy(handleAnimationsEnabled = enabled) }; flush() }
+    fun setShowOptionInfo(show: Boolean) { edit { it.copy(showOptionInfo = show) }; flush() }
     private val launcherShortcuts = PinnedShortcuts(app, app.icons)
     val shortcutSupported = MutableStateFlow<Boolean?>(null)
     val pinnedShortcuts = MutableStateFlow<Set<String>>(emptySet())

@@ -8,13 +8,14 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 31 stores constant-width Wheel item gaps independently per orientation. */
+/** Schema 32 adds built-in artwork for the three handle actions. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 31
+    const val SCHEMA = 32
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
+        .put("showOptionInfo", config.showOptionInfo)
         .put("pausedHandleIds", array(config.pausedHandleIds.sorted()))
         .put("includePrereleases", config.includePrereleases).put("handles", array(config.handles.map(::handle)))
         .put("panels", array(config.panels.map { panel(it.settings).put("id", it.id).put("name", it.name) }))
@@ -76,6 +77,7 @@ object ConfigurationCodec {
             require(handles.all { h -> h.bindings.values.all { it.panelId == null || it.panelId in panelIds } })
             AppConfiguration(root.optBoolean("enabled"), root.optBoolean("includePrereleases"), handles, panels, if (schema >= 7) brightness(root.optJSONObject("brightnessPopup") ?: JSONObject(), schema) else BrightnessPopupSettings(), shortcuts,
                 handleAnimationsEnabled = root.optBoolean("handleAnimationsEnabled", true),
+                showOptionInfo = root.optBoolean("showOptionInfo", true),
                 pausedHandleIds = if (schema >= 21) root.optJSONArray("pausedHandleIds")?.let { values ->
                     (0 until values.length()).map { values.getString(it) }.toSet()
                 }.orEmpty() else emptySet()).normalized()

@@ -90,7 +90,7 @@ internal data class ButtonPresentation(val title: String, val description: Strin
         ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
         ButtonAction.BRIGHTNESS_AUTOMATIC -> state.automaticBrightness
         ButtonAction.TOGGLE_HANDLE_VISIBILITY -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
-            targets.isNotEmpty() && targets.none { it in state.hiddenIndicatorIds }
+            targets.isNotEmpty() && targets.all { it in state.hiddenIndicatorIds }
         }
         ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
             val paused = handleGroupTargets(button.toggleScope, state.ownerHandleId, state.enabledHandleIds)
@@ -173,7 +173,7 @@ fun ButtonGraphic(button: PanelButton, pack: String, modifier: Modifier = Modifi
         ButtonAction.TOGGLE_HANDLES -> Icon(AppIcons.Handle, null, modifier, tint = tint)
         ButtonAction.TOGGLE_ACCESSIBILITY -> Icon(ButtonVectors.action(button.action), null, modifier, tint = tint)
         ButtonAction.TOGGLE_HANDLE_VISIBILITY -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
-        ButtonAction.TOGGLE_AND_HIDE_HANDLES -> Icon(AppIcons.HandleVisibility, null, modifier, tint = tint)
+        ButtonAction.TOGGLE_AND_HIDE_HANDLES -> Icon(ButtonVectors.action(button.action), null, modifier, tint = tint)
         ButtonAction.NOTIFICATIONS -> Icon(AppIcons.Notifications, null, modifier, tint = tint)
         ButtonAction.CONTROL_PANEL -> Icon(AppIcons.ControlPanel, null, modifier, tint = tint)
         ButtonAction.BRIGHTNESS_UP -> Icon(AppIcons.BrightnessUp, null, modifier, tint = tint)

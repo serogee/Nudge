@@ -284,8 +284,6 @@ class EdgeAccessibilityService : AccessibilityService() {
                 val old = driver.selected
                 driver.move(x, y, SystemClock.uptimeMillis())
                 if (old != driver.selected) {
-                    if (driver.selected != null) haptics.perform(original.trigger.feedback(when (slot) {
-                        GestureSlot.HOLD -> GestureKind.HOLD; GestureSlot.SWIPE_HOLD -> GestureKind.SWIPE_HOLD; else -> GestureKind.SWIPE }))
                     frames?.request()
                 }
             }

@@ -31,7 +31,7 @@ enum class PanelAnimation { NONE, FADE, SLIDE, SCALE }
 enum class EmptyAppearance { NO_ICON, NO_BUTTON, SLASH }
 
 enum class IconContainer { DEFAULT, CONTAINER, STANDALONE }
-enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS, NUDGE }
+enum class BuiltInIcon { CAMERA, WALLET, PHONE, FLASHLIGHT, MUSIC, HEADPHONES, CALENDAR, CLOCK, MAP, HOME, FAVORITE, APPS, NUDGE, HANDLE, HANDLE_VISIBILITY, TOGGLE_AND_HIDE_HANDLES }
 
 data class IconReference(val packageName: String = "", val drawable: String = "", val builtIn: BuiltInIcon? = null)
 data class PanelButton(
@@ -140,6 +140,7 @@ data class AppConfiguration(
     val shortcuts: List<HomeShortcut> = emptyList(),
     val handleAnimationsEnabled: Boolean = true,
     val pausedHandleIds: Set<String> = emptySet(),
+    val showOptionInfo: Boolean = true,
 ) {
     val hideHandleIndicators get() = handles.isNotEmpty() && handles.all { it.indicatorHidden }
     val hiddenIndicatorIds get() = handles.filter { it.indicatorHidden }.mapTo(mutableSetOf()) { it.id }
