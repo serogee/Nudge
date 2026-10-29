@@ -7,6 +7,10 @@
 - Add **Additional option info** in **Info → Interface**, enabled by default. Hide descriptions below options when off. Retain live status, errors, progress, and Help content. Save the choice across restarts and backups.
 - Give **Toggle and hide handles** a separate icon. Add all three handle action icons to the built-in icon picker. Save their references in **schema 32** backups and retain older imports.
 
+### Fixed
+
+- Stop repeating gesture haptic feedback when the selected Wheel item changes. Keep the enabled feedback pulse when Swipe, Hold, or Swipe and hold opens the Wheel. Item changes, reentry, and release stay silent.
+
 ## 0.5.6 - 2026-10-27
 
 ### Changed

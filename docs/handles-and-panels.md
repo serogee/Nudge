@@ -63,7 +63,7 @@ Ordinary swipes default to **Inward only**. **Any direction** measures straight-
 
 Swipe and hold has its own direction, distance, swipe time, and hold time. Its default direction is **Any direction**. Movement beyond the threshold does not restart the hold. Returning below it resets the hold, with tolerance for small jitter.
 
-Hold and Swipe and hold have separate execution settings. Each hold time accepts 300–3,000 ms and defaults to 500 ms. Haptic feedback and strength are separate for each gesture type. Cancelled and multitouch gestures do not run actions.
+Hold and Swipe and hold have separate execution settings. Each hold time accepts 300–3,000 ms and defaults to 500 ms. Haptic feedback and strength are separate for each gesture type. With its haptic feedback on, a gesture gives one pulse when it opens a Wheel. Wheel item changes, reentry, and release do not repeat that pulse. Cancelled and multitouch gestures do not run actions.
 
 A panel keeps its invoking handle's swipe sequence active. Closing it resets the sequence. After a direct action or popup alone, another swipe advances only within the configured **Swipe sequence timeout**.
 
