@@ -29,6 +29,7 @@ object AppIcons {
     val HandleVisibility = icon("Handle visibility") {
         moveTo(2f,12f); curveTo(7f,3f,17f,3f,22f,12f); curveTo(17f,21f,7f,21f,2f,12f); close()
         moveTo(15f,12f); curveTo(15f,16f,9f,16f,9f,12f); curveTo(9f,8f,15f,8f,15f,12f)
+        moveTo(3f,3f); lineTo(21f,21f)
     }
     val HandleToggleAndHide = icon("Toggle and hide handles") {
         moveTo(8f,3f); lineTo(18f,3f); curveTo(20f,3f,21f,4f,21f,6f); lineTo(21f,16f)

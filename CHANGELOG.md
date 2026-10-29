@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Use a slashed eye for **Toggle handle visibility** and its built-in icon. Show the action as active when all targeted handles are hidden, matching the meaning of **Hide visible handles**. Keep visible, mixed, and empty target groups inactive.
 - Stop repeating gesture haptic feedback when the selected Wheel item changes. Keep the enabled feedback pulse when Swipe, Hold, or Swipe and hold opens the Wheel. Item changes, reentry, and release stay silent.
 
 ## 0.5.6 - 2026-10-27

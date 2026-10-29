@@ -88,12 +88,18 @@ class HandleGlobalControlsInterfaceTest {
         rule.onNodeWithText("Toggle handle visibility").performClick()
         rule.runOnIdle { assertEquals(ButtonAction.TOGGLE_HANDLE_VISIBILITY, selected) }
     }
-    @Test fun visibilityActionShowsItsCurrentOnAndOffState() {
+    @Test fun visibilityActionIsActiveOnlyWhenAllTargetedHandlesAreHidden() {
         val state = mutableStateOf(SoundState(enabledHandleIds = setOf("a")))
         rule.activity.setContent { NudgeTheme { PanelButtonFace(PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY), PanelConfig(), 56.dp,
             state.value, true) { state.value = state.value.copy(hiddenIndicatorIds = if (state.value.hiddenIndicatorIds.isEmpty()) setOf("a") else emptySet()) } } }
-        rule.onNodeWithContentDescription("Toggle handle visibility. On").assertIsSelected().performClick()
         rule.onNodeWithContentDescription("Toggle handle visibility. Off").assertIsNotSelected().performClick()
+        rule.onNodeWithContentDescription("Toggle handle visibility. On").assertIsSelected().performClick()
+        rule.onNodeWithContentDescription("Toggle handle visibility. Off").assertIsNotSelected()
+        rule.runOnIdle { state.value = state.value.copy(enabledHandleIds = setOf("a", "b"), hiddenIndicatorIds = setOf("a")) }
+        rule.onNodeWithContentDescription("Toggle handle visibility. Off").assertIsNotSelected()
+        rule.runOnIdle { state.value = state.value.copy(hiddenIndicatorIds = setOf("a", "b")) }
         rule.onNodeWithContentDescription("Toggle handle visibility. On").assertIsSelected()
+        rule.runOnIdle { state.value = state.value.copy(enabledHandleIds = emptySet()) }
+        rule.onNodeWithContentDescription("Toggle handle visibility. Off").assertIsNotSelected()
     }
 }

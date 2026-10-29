@@ -90,7 +90,7 @@ internal data class ButtonPresentation(val title: String, val description: Strin
         ButtonAction.BRIGHTNESS_MINIMUM -> state.minimumBrightness
         ButtonAction.BRIGHTNESS_AUTOMATIC -> state.automaticBrightness
         ButtonAction.TOGGLE_HANDLE_VISIBILITY -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
-            targets.isNotEmpty() && targets.none { it in state.hiddenIndicatorIds }
+            targets.isNotEmpty() && targets.all { it in state.hiddenIndicatorIds }
         }
         ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
             val paused = handleGroupTargets(button.toggleScope, state.ownerHandleId, state.enabledHandleIds)
