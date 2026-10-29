@@ -305,6 +305,15 @@ class NudgeInterfaceTest {
         rule.runOnIdle { rule.activity.setContent { NudgeTheme { IconPicker(emptyList(), {}) { picked = it } } } }
         rule.onNodeWithText("Camera").performClick()
         rule.runOnIdle { assertEquals(IconReference(builtIn = BuiltInIcon.CAMERA), picked) }
+        for (icon in listOf(BuiltInIcon.HANDLE, BuiltInIcon.HANDLE_VISIBILITY, BuiltInIcon.TOGGLE_AND_HIDE_HANDLES)) {
+            rule.onNodeWithText("Search icons").performTextReplacement(rule.activity.getString(label(icon)))
+            rule.onNode(hasText(rule.activity.getString(label(icon))) and !hasSetTextAction()).performClick()
+            rule.runOnIdle {
+                assertEquals(IconReference(builtIn = icon), picked)
+                val config = AppConfiguration(panels = listOf(SavedPanel(settings = PanelConfig(buttons = listOf(PanelButton(icon = picked!!)))))).normalized()
+                assertEquals(config, com.modukey.app.data.ConfigurationCodec.decode(com.modukey.app.data.ConfigurationCodec.encode(config)))
+            }
+        }
     }
     @Test fun `button editor keeps volume and container changes private until save`() {
         ready()

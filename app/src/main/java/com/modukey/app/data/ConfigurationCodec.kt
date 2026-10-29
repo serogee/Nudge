@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 31 stores constant-width Wheel item gaps independently per orientation. */
+/** Schema 32 adds built-in artwork for the three handle actions. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 31
+    const val SCHEMA = 32
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)

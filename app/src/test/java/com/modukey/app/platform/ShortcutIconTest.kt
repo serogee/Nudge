@@ -117,4 +117,18 @@ class ShortcutIconTest {
             bitmap.recycle()
         }
     }
+    @Test fun handleActionsHaveDistinctArtworkAndMatchTheirLibraryIcons() = runBlocking {
+        val pairs = listOf(ButtonAction.TOGGLE_HANDLES to BuiltInIcon.HANDLE,
+            ButtonAction.TOGGLE_HANDLE_VISIBILITY to BuiltInIcon.HANDLE_VISIBILITY,
+            ButtonAction.TOGGLE_AND_HIDE_HANDLES to BuiltInIcon.TOGGLE_AND_HIDE_HANDLES)
+        val rendered = pairs.map { (action, _) -> ShortcutIconRenderer.render(app, app.icons, PanelButton(action = action)) }
+        try {
+            for (i in rendered.indices) {
+                for (j in 0 until i) assertFalse("Handle actions must have different artwork", rendered[i].sameAs(rendered[j]))
+                val library = ShortcutIconRenderer.render(app, app.icons, PanelButton(icon = IconReference(builtIn = pairs[i].second)))
+                try { assertTrue("The picker must use the action artwork", rendered[i].sameAs(library)) }
+                finally { library.recycle() }
+            }
+        } finally { rendered.forEach { it.recycle() } }
+    }
 }

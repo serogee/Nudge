@@ -166,7 +166,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use **schema 31** and retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-31 backups. The temporary hitbox highlight is not saved.
+New backups use **schema 32** and include the three handle action icons in the built-in library. **Toggle and hide handles** uses a separate icon from **Toggle handle visibility**. Backups retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-32 backups. The temporary hitbox highlight is not saved.
 
 ## Actions and appearance
 

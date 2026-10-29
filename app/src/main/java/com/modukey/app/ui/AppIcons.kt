@@ -30,6 +30,12 @@ object AppIcons {
         moveTo(2f,12f); curveTo(7f,3f,17f,3f,22f,12f); curveTo(17f,21f,7f,21f,2f,12f); close()
         moveTo(15f,12f); curveTo(15f,16f,9f,16f,9f,12f); curveTo(9f,8f,15f,8f,15f,12f)
     }
+    val HandleToggleAndHide = icon("Toggle and hide handles") {
+        moveTo(8f,3f); lineTo(18f,3f); curveTo(20f,3f,21f,4f,21f,6f); lineTo(21f,16f)
+        moveTo(16f,21f); lineTo(6f,21f); curveTo(4f,21f,3f,20f,3f,18f); lineTo(3f,8f)
+        moveTo(18f,9f); lineTo(18f,14f)
+        moveTo(3f,3f); lineTo(21f,21f)
+    }
     val Drag = icon("Drag") { for(x in listOf(9f,15f)) for(y in listOf(5f,12f,19f)) { moveTo(x,y); lineTo(x+.1f,y) } }
     val ChevronUp = icon("Collapse") { moveTo(6f,15f); lineTo(12f,9f); lineTo(18f,15f) }
     val Down = icon("Expand") { moveTo(6f,9f); lineTo(12f,15f); lineTo(18f,9f) }
@@ -113,5 +119,7 @@ object AppIcons {
         BuiltInIcon.MUSIC -> Music; BuiltInIcon.HEADPHONES -> Headphones; BuiltInIcon.CALENDAR -> Calendar; BuiltInIcon.CLOCK -> Clock
         BuiltInIcon.MAP -> Map; BuiltInIcon.HOME -> Home; BuiltInIcon.FAVORITE -> Favorite; BuiltInIcon.APPS -> Apps
         BuiltInIcon.NUDGE -> Nudge
+        BuiltInIcon.HANDLE -> Handle; BuiltInIcon.HANDLE_VISIBILITY -> HandleVisibility
+        BuiltInIcon.TOGGLE_AND_HIDE_HANDLES -> HandleToggleAndHide
     }
 }
