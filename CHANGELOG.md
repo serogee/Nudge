@@ -2,9 +2,21 @@
 
 ## Unreleased
 
+## 0.5.8 - 2026-10-30
+
 ### Fixed
 
-- Keep **Toggle and hide handles** active when its pause group remains paused after a separate visibility change. With no pause group, follow visibility. Keep both group states in its accessibility description.
+- Keep **Toggle and hide handles** active when all handles in its pause group remain paused after a separate visibility change. With no pause group, follow visibility. Preserve coordinated pause/hide and resume/show actions, target scopes, and separate accessibility status for both groups. (9495e3f)
+
+### Maintenance
+
+- Explain the combined button's independent active state in the user guide. (f271c6f)
+
+### Compatibility and validation
+
+- Keep **schema 32** and saved configuration. Nudge **0.5.7 and 0.5.8** support these backups; **0.5.6 and earlier cannot import them**. Older supported backups remain importable.
+- Pass **29 focused tests across four classes** with no failures, errors, or skips for the completed fix source. Pass source lint with **0 errors and 27 warnings**, the new **0.5.8-debug / code 24** build, **29 changelog checks**, and **22 isolated finalization checks**. API 31 and 36 results are simulated; this is not a complete release test run.
+- Confirm published **v0.5.7 / code 23** at `ac908b8d608823fa5348ae6eef55bc6f1c383a05` as the baseline for **0.5.8 / code 24**. Match all three published asset digests and verify the prior APK signer. Preserve published history and archived artifacts. Signed assembly and physical-device upgrade checks remain pending until after the GitHub merge.
 
 ## 0.5.7 - 2026-10-29
 
