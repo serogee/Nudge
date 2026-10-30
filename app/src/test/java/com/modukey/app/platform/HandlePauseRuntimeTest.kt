@@ -82,7 +82,10 @@ class HandlePauseRuntimeTest {
         assertTrue(actions.execute(f.owner.id,combined,false).succeeded)
         assertEquals(setOf("other"),app.configuration.state.value!!.pausedHandleIds)
         assertTrue(app.configuration.state.value!!.hideHandleIndicators)
-        app.configuration.update { it.hideIndicators(false) }
+        assertTrue(actions.execute(f.owner.id, PanelButton(action = ButtonAction.TOGGLE_HANDLE_VISIBILITY), false).succeeded)
+        assertTrue(app.configuration.state.value!!.hiddenIndicatorIds.isEmpty())
+        assertEquals(setOf("other"), app.configuration.state.value!!.pausedHandleIds)
+        assertEquals(setOf("other"), actions.snapshot().pausedHandleIds)
         assertTrue(actions.execute(f.owner.id,combined,false).succeeded)
         assertTrue(app.configuration.state.value!!.pausedHandleIds.isEmpty())
         assertTrue(app.configuration.state.value!!.hiddenIndicatorIds.isEmpty())

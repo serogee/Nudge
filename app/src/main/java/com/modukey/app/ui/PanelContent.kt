@@ -93,11 +93,11 @@ internal data class ButtonPresentation(val title: String, val description: Strin
             targets.isNotEmpty() && targets.all { it in state.hiddenIndicatorIds }
         }
         ButtonAction.TOGGLE_AND_HIDE_HANDLES -> {
-            val paused = handleGroupTargets(button.toggleScope, state.ownerHandleId, state.enabledHandleIds)
-            val hidden = handleGroupTargets(button.visibilityScope, state.ownerHandleId, state.enabledHandleIds)
-            button.hasHandleGroups &&
-                (button.toggleScope == HandleGroupScope.NONE || (paused.isNotEmpty() && paused.all { it in state.pausedHandleIds })) &&
-                (button.visibilityScope == HandleGroupScope.NONE || (hidden.isNotEmpty() && hidden.all { it in state.hiddenIndicatorIds }))
+            val usesPauseGroup = button.toggleScope != HandleGroupScope.NONE
+            val targets = handleGroupTargets(if (usesPauseGroup) button.toggleScope else button.visibilityScope,
+                state.ownerHandleId, state.enabledHandleIds)
+            val affected = if (usesPauseGroup) state.pausedHandleIds else state.hiddenIndicatorIds
+            targets.isNotEmpty() && targets.all { it in affected }
         }
         ButtonAction.TOGGLE_HANDLES -> handleToggleTargets(button.handleScope, state.ownerHandleId, state.enabledHandleIds).let { targets ->
             state.handlesEnabled && targets.isNotEmpty() && targets.none { it in state.pausedHandleIds }

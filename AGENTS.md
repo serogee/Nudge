@@ -15,14 +15,14 @@
 
 Approved by the user on 2026-10-17. Keep local planning files in the ignored `.plans/` directory.
 
-| Scope | Use for |
-| --- | --- |
-| `trigger` | Coordinated edge-shortcut changes to geometry, activation, visibility, rotation, lock-screen operation, or its live preview. |
-| `settings` | Preference storage, migration, defaults, field updates, and save coordination. |
-| `accessibility` | Service binding, connection reporting, permission checks, lifecycle cleanup, and service diagnostics. |
-| `ui` | Settings screens, controls, help text, previews, and app branding when trigger behavior is unchanged. |
-| `release` | Versioning, signing, APK packaging, release scripts, changelog, and compatibility records. |
-| `repo` | Git configuration, repository instructions, commit conventions, and scope definitions. |
+| Scope           | Use for                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`       | Coordinated edge-shortcut changes to geometry, activation, visibility, rotation, lock-screen operation, or its live preview. |
+| `settings`      | Preference storage, migration, defaults, field updates, and save coordination.                                               |
+| `accessibility` | Service binding, connection reporting, permission checks, lifecycle cleanup, and service diagnostics.                        |
+| `ui`            | Settings screens, controls, help text, previews, and app branding when trigger behavior is unchanged.                        |
+| `release`       | Versioning, signing, APK packaging, release scripts, changelog, and compatibility records.                                   |
+| `repo`          | Git configuration, repository instructions, commit conventions, and scope definitions.                                       |
 
 ## App text
 
@@ -40,7 +40,7 @@ Approved by the user on 2026-10-17. Keep local planning files in the ignored `.p
 - During development, keep changes under Unreleased and use tests, lint, or debug builds for verification. Do not invoke `scripts/Release.ps1` automatically.
 - Store each version's APK, checksum, exported notes, and build metadata in `releases/<version>/`. Keep archived builds under `releases/archive/`.
 - Treat established local version tags (`v<major>.<minor>.<patch>`) as published releases. The newest tag can remain a working release until the user marks it ready. Do not use a working tag as the published baseline merely because it exists.
-- Use the latest earlier, reachable published tag as the changelog baseline. On 2026-10-29, GitHub releases/latest confirmed stable `v0.5.6`, code 22, published at `2026-10-27T03:24:22Z`. Its annotated tag and matching published APK metadata identify commit `5778bf358894e041ab8a5c9dc049a76faf099d56`. The local APK, checksum file, and build metadata SHA-256 values match the published asset digests. `0.5.7`, code 23, is the current working release. Use `-FromTag v0.5.6` for its notes. Do not treat `0.5.7` as published until publication is confirmed.
+- Use the latest earlier, reachable published tag as the changelog baseline. On 2026-10-30, GitHub releases/latest confirmed stable `v0.5.7`, code 23, published at `2026-10-29T06:22:55Z`. Its annotated tag and matching published APK metadata identify commit `ac908b8d608823fa5348ae6eef55bc6f1c383a05`. The local APK, checksum file, and build metadata SHA-256 values match the published asset digests. `0.5.8`, code 24, is the current working release. Use `-FromTag v0.5.7` for its notes. Do not treat `0.5.8` as published until publication is confirmed.
 - Prepare the version and reviewed notes on the feature branch. Build the final signed APK and create its tag from clean `main` after a GitHub merge or a user-authorized local merge. Do not merge, push, or publish without the user's instruction.
 - Preserve the earlier unpublished code-3 APK and exact tag object under `releases/archive/0.1.2-build.3/` and `archive/v0.1.2-build.3`. The old tag was never pushed. The 0.1.3 build was canceled before export or tagging.
 - Commit completed features and fixes before preparing release notes. Increase both version values in `version.properties` for a new distributed APK.
