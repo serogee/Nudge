@@ -47,6 +47,51 @@ class HandleToggleInterfaceTest {
         rule.runOnIdle { sound.value = sound.value.copy(pausedHandleIds = setOf("b")) }
         rule.onNodeWithContentDescription("Toggle handles. Off").assertIsNotSelected().assertHasClickAction()
     }
+    @Test fun combinedTileKeepsItsPauseStateWhenVisibilityChanges() {
+        val sound = mutableStateOf(SoundState(enabledHandleIds = setOf("a", "b"), ownerHandleId = "a", handlesEnabled = true))
+        val button = mutableStateOf(PanelButton(action = ButtonAction.TOGGLE_AND_HIDE_HANDLES))
+        rule.activity.setContent { NudgeTheme { PanelButtonFace(button.value, PanelConfig(), 56.dp, sound.value, true) {} } }
+        for ((scope, targets) in listOf(HandleGroupScope.ALL to setOf("a", "b"),
+            HandleGroupScope.CURRENT to setOf("a"), HandleGroupScope.OTHERS to setOf("b"))) {
+            rule.runOnIdle {
+                button.value = button.value.copy(toggleScope = scope)
+                sound.value = sound.value.copy(pausedHandleIds = emptySet(), hiddenIndicatorIds = emptySet())
+            }
+            rule.onNodeWithContentDescription("Toggle and hide handles. Gestures: Running. Visibility: Shown.").assertIsNotSelected()
+            rule.runOnIdle { sound.value = sound.value.copy(pausedHandleIds = targets, hiddenIndicatorIds = setOf("a", "b")) }
+            rule.onNodeWithContentDescription("Toggle and hide handles. Gestures: Paused. Visibility: Hidden.").assertIsSelected()
+            rule.runOnIdle { sound.value = sound.value.copy(hiddenIndicatorIds = emptySet()) }
+            rule.onNodeWithContentDescription("Toggle and hide handles. Gestures: Paused. Visibility: Shown.").assertIsSelected()
+            rule.runOnIdle { sound.value = sound.value.copy(hiddenIndicatorIds = setOf("a")) }
+            rule.onNodeWithContentDescription("Toggle and hide handles. Gestures: Paused. Visibility: Mixed.").assertIsSelected()
+            rule.runOnIdle { sound.value = sound.value.copy(pausedHandleIds = emptySet(), hiddenIndicatorIds = setOf("a", "b")) }
+            rule.onNodeWithContentDescription("Toggle and hide handles. Gestures: Running. Visibility: Hidden.").assertIsNotSelected()
+        }
+        rule.runOnIdle {
+            button.value = button.value.copy(toggleScope = HandleGroupScope.ALL, visibilityScope = HandleGroupScope.NONE)
+            sound.value = sound.value.copy(pausedHandleIds = setOf("a", "b"), hiddenIndicatorIds = emptySet())
+        }
+        rule.onNode(hasClickAction()).assertIsSelected()
+        rule.runOnIdle { sound.value = sound.value.copy(pausedHandleIds = setOf("a")) }
+        rule.onNode(hasClickAction()).assertIsNotSelected()
+        rule.runOnIdle { sound.value = sound.value.copy(enabledHandleIds = emptySet()) }
+        rule.onNode(hasClickAction()).assertIsNotSelected()
+    }
+    @Test fun combinedTileWithoutAPauseGroupFollowsVisibility() {
+        val sound = mutableStateOf(SoundState(enabledHandleIds = setOf("a", "b"), pausedHandleIds = setOf("a", "b")))
+        val button = mutableStateOf(PanelButton(action = ButtonAction.TOGGLE_AND_HIDE_HANDLES, toggleScope = HandleGroupScope.NONE))
+        rule.activity.setContent { NudgeTheme { PanelButtonFace(button.value, PanelConfig(), 56.dp, sound.value, true) {} } }
+        val tile = rule.onNode(hasClickAction())
+        tile.assertIsNotSelected()
+        rule.runOnIdle { sound.value = sound.value.copy(hiddenIndicatorIds = setOf("a")) }
+        tile.assertIsNotSelected()
+        rule.runOnIdle { sound.value = sound.value.copy(hiddenIndicatorIds = setOf("a", "b")) }
+        tile.assertIsSelected()
+        rule.runOnIdle { button.value = button.value.copy(visibilityScope = HandleGroupScope.NONE) }
+        tile.assertIsNotSelected()
+        rule.runOnIdle { button.value = button.value.copy(toggleScope = HandleGroupScope.CURRENT) }
+        tile.assertIsNotSelected()
+    }
     @Test fun `brightness tiles expose the current system limit`() {
         rule.activity.setContent { NudgeTheme { PanelButtonFace(PanelButton(action = ButtonAction.BRIGHTNESS_MAXIMUM), PanelConfig(), 56.dp,
             SoundState(maximumBrightness = true), true) {} } }
