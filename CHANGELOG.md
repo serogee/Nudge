@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Keep **Toggle and hide handles** active when its pause group remains paused after a separate visibility change. With no pause group, follow visibility. Keep both group states in its accessibility description.
+
 ## 0.5.7 - 2026-10-29
 
 ### Added

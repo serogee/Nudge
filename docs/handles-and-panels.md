@@ -196,6 +196,8 @@ Saved app and icon-pack artwork is preloaded and cached locally. Reopening a but
 
 **Toggle and hide handles** has separate pause/resume and hide/show target groups. Each can select None, All handles, This handle, or Other handles. Select at least one group. If any handle in the pause group is paused, the button resumes that group and shows the visibility group. Otherwise, it pauses and hides the selected groups. This corrects differences caused by separate controls. With no pause group, show the visibility group if any target is hidden. Otherwise, hide it.
 
+The combined button is active when all handles in its pause group are paused. Showing or hiding handles separately does not change this state. With no pause group, the button is active when all handles in its visibility group are hidden. The button's accessibility description reports both states.
+
 Combined pause and visibility changes save together. Backups retain saved pauses, including pauses on disabled handles. Older backups without pause selections start resumed. Adding copies creates new handles that start disabled and unpaused. Replacing the configuration retains its saved pauses while the master switch stays off for review.
 
 Home shortcuts using This handle or Other handles require a selected handle. The Handles tab's visibility switch applies to every saved handle.
