@@ -315,8 +315,17 @@
     <string name="show_volume_help">Show the native volume popup when this button changes volume.</string>
     <string name="icon_container">Icon container</string>
     <string name="container_default">Panel default</string>
-    <string name="with_container">With container</string>
+    <string name="with_container">With Container</string>
     <string name="standalone_icon">Standalone</string>
+    <string name="button_background">Background</string>
+    <string name="button_background_color">Background color</string>
+    <string name="background_adaptive">Adaptive</string>
+    <string name="background_transparent">Transparent</string>
+    <string name="background_choose_color">Choose color</string>
+    <string name="button_background_help">Adaptive uses the default button color. Transparent removes the added background. App artwork keeps its original colors and background.</string>
+    <string name="edit_shortcut">Edit shortcut</string>
+    <string name="shortcut_saved">Shortcut saved.</string>
+    <string name="shortcut_refresh_failed">Shortcut saved. The launcher could not refresh its icon. Try Pin again.</string>
     <string name="icon_background">Show icon background</string>
     <string name="icon_background_help">Put icons inside a shape. Each button can override this setting.</string>
     <string name="button_color">Button color</string>
@@ -458,7 +467,7 @@
     <string name="brightness_access_help">Allow Modify system settings to change brightness. Showing a preview does not need this access.</string>
     <string name="home_shortcuts">Home screen shortcuts</string>
     <string name="shortcut_help">Create a shortcut for a button action. Your launcher asks you to confirm. Most actions need accessibility connected. Toggle accessibility also works when disconnected.</string>
-    <string name="shortcut_icon_help">Default icons have no added background. Select With container to add a background. Pin again to update an existing shortcut.</string>
+    <string name="shortcut_icon_help">Each shortcut has its own background settings. App artwork can contain a background. Launchers can add a background or badge. Pin again refreshes an existing icon.</string>
     <string name="accessibility_service">Nudge accessibility</string>
     <string name="accessibility_switch_help">Turn on opens Android settings. Turn off disables Nudge handles. Your saved settings stay available.</string>
     <string name="toggle_accessibility">Toggle accessibility</string>

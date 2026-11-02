@@ -323,7 +323,7 @@ class NudgeInterfaceTest {
         rule.runOnIdle { rule.activity.setContent { NudgeTheme { ButtonEditor(original, PanelConfig(), vm, {}) { saved = it } } } }
         rule.onNodeWithText("Show Volume Popup").performScrollTo().performClick()
         rule.runOnIdle { assertNull(saved) }
-        rule.onNodeWithText("Panel default").performScrollTo().performClick()
+        rule.onNodeWithText("With Container").performScrollTo().performClick()
         rule.onNodeWithText("Standalone").performClick()
         rule.runOnIdle { assertNull(saved) }
         rule.onNodeWithText("Save").performClick()

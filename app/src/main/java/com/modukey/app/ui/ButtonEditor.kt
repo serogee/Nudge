@@ -14,8 +14,8 @@ import com.modukey.app.R
 import com.modukey.app.core.*
 
 /** A button is saved once. Cancel cannot leave a partly configured app action. */
-@Composable fun ButtonEditor(button: PanelButton, panel: PanelConfig, vm: NudgeViewModel, dismiss: () -> Unit, includeEmpty: Boolean = true, save: (PanelButton) -> Unit) {
-    var draft by remember(button.id) { mutableStateOf(button) }
+@Composable fun ButtonEditor(button: PanelButton, panel: PanelConfig, vm: NudgeViewModel, dismiss: () -> Unit, includeEmpty: Boolean = true, homeShortcut: Boolean = false, save: (PanelButton) -> Unit) {
+    var draft by remember(button.id) { mutableStateOf(button.explicitAppearance(panel.iconBackground)) }
     var page by remember(button.id) { mutableIntStateOf(if (button.action == ButtonAction.OPEN_APP && button.appPackage.isBlank()) 2 else 0) }
     val context = LocalContext.current
     val packs by vm.iconPacks.collectAsStateWithLifecycle()
@@ -27,7 +27,7 @@ import com.modukey.app.core.*
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Surface(Modifier.fillMaxWidth(), color = androidx.compose.ui.graphics.Color(panel.background).copy(alpha = panel.opacity), shape = MaterialTheme.shapes.large) {
                     Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PanelButtonFace(draft, panel, 64.dp)
+                        if (homeShortcut) ShortcutGraphic(draft, 64.dp) else PanelButtonFace(draft, panel, 64.dp)
                         Text(context.buttonLabel(draft), color = contrastOn(androidx.compose.ui.graphics.Color(panel.background)), style = MaterialTheme.typography.titleSmall)
                     }
                 }
@@ -60,7 +60,16 @@ import com.modukey.app.core.*
                 OutlinedButton(onClick = { vm.loadPacks(); page = 3 }, modifier = Modifier.fillMaxWidth()) {
                     ButtonGraphic(draft, panel.iconPack, Modifier.size(24.dp)); Spacer(Modifier.width(12.dp)); Text(t(R.string.choose_icon), Modifier.weight(1f)); Icon(AppIcons.Down, null, Modifier.size(18.dp))
                 }
-                OptionRow(t(R.string.icon_container), IconContainer.entries, draft.iconContainer, IconContainer.DEFAULT) { draft = draft.copy(iconContainer = it) }
+                OptionRow(t(R.string.icon_container), listOf(IconContainer.CONTAINER, IconContainer.STANDALONE), draft.iconContainer, IconContainer.CONTAINER) { draft = draft.copy(iconContainer = it) }
+                OptionRow(t(R.string.button_background), ButtonBackgroundMode.entries, draft.background.mode, ButtonBackgroundMode.AUTOMATIC) {
+                    draft = draft.copy(background = draft.background.copy(mode = it))
+                }
+                if (draft.background.mode == ButtonBackgroundMode.CUSTOM) {
+                    ColorPicker(draft.background.color, title = R.string.button_background_color, default = ButtonBackground().color) {
+                        draft = draft.copy(background = draft.background.copy(color = it))
+                    }
+                }
+                OptionInfo(R.string.button_background_help)
                 }
             }
         }, confirmButton = { Button(onClick = { save(draft) }, enabled = (includeEmpty || draft.action != ButtonAction.EMPTY) &&

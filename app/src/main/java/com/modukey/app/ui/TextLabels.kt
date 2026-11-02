@@ -45,6 +45,7 @@ import com.modukey.app.core.*
     EmptyAppearance.NO_ICON -> R.string.empty_no_icon; EmptyAppearance.NO_BUTTON -> R.string.empty_no_button; EmptyAppearance.SLASH -> R.string.empty_slash
     PanelAnimation.NONE -> R.string.animation_none; PanelAnimation.FADE -> R.string.animation_fade
     PanelAnimation.SLIDE -> R.string.animation_slide; PanelAnimation.SCALE -> R.string.animation_scale
+    ButtonBackgroundMode.AUTOMATIC -> R.string.background_adaptive; ButtonBackgroundMode.TRANSPARENT -> R.string.background_transparent; ButtonBackgroundMode.CUSTOM -> R.string.background_choose_color
     IconContainer.DEFAULT -> R.string.container_default; IconContainer.CONTAINER -> R.string.with_container; IconContainer.STANDALONE -> R.string.standalone_icon
     BuiltInIcon.CAMERA -> R.string.camera; BuiltInIcon.WALLET -> R.string.wallet; BuiltInIcon.PHONE -> R.string.phone
     BuiltInIcon.FLASHLIGHT -> R.string.flashlight; BuiltInIcon.MUSIC -> R.string.music; BuiltInIcon.HEADPHONES -> R.string.headphones

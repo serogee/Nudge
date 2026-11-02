@@ -168,7 +168,7 @@ Landscape overrides retain their own Wheel dimensions and placement. A wheel sta
 
 Held input pauses automatic closure. Multitouch, interrupted input, Back, rotation, screen-off, unavailable configuration, or service loss cancels picking. Drag wheels open and close without movement animations so visible selection and touch positions stay aligned. Test physical touch ownership on your phone, especially when native popups accompany a wheel.
 
-New backups use **schema 32** and include the three handle action icons in the built-in library. **Toggle and hide handles** uses a separate icon from **Toggle handle visibility**. Backups retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only earlier schemas cannot import schema-32 backups. The temporary hitbox highlight is not saved.
+New backups use **schema 33** and save each button's background mode and color. They also include the three handle action icons in the built-in library. **Toggle and hide handles** uses a separate icon from **Toggle handle visibility**. Backups retain item gaps, both Wheel radii, hitbox modes and manual bounds, icon size and position choices, highlight transitions, hover colors, drag settings, shared links, and overflow buttons. Older wheels keep their saved sizes and animation choices. Missing gaps use 4 dp; missing icon positions use 55%. Missing transition settings use Smooth at 140 ms. Older backups remain importable. Builds that support only schema 32 or earlier cannot import schema-33 backups. The temporary hitbox highlight is not saved.
 
 ## Actions and appearance
 
@@ -178,7 +178,11 @@ Panel buttons and direct gestures can open apps or settings, control sound and b
 
 The **Input Method** action opens Android's keyboard chooser. You select the keyboard. **Screenshot** asks Android to capture and save the screen; Nudge does not read the image. Visible handles may appear in screenshots.
 
-Choose built-in icons, installed app icons, or supported icon packs. Missing apps or packs retain their references and use fallback icons. Standalone buttons omit the container. Empty buttons reserve a layout cell.
+Choose built-in icons, installed app icons, or supported icon packs. Missing apps or packs retain their references and use fallback icons. **With Container** keeps padding around the artwork. **Standalone** uses larger artwork. Empty buttons reserve a layout cell.
+
+Each button has a **Background** choice. **Adaptive** uses the panel's default button color, including its Automatic button color setting. **Transparent** draws no normal button background. **Choose color** sets an independent color. Switching modes retains the chosen color. These choices change the background, not the app artwork. Active colors remain separate.
+
+The editors show two explicit container choices. Older **Panel default** values resolve from their saved panel setting. Older Standalone buttons retain transparent normal backgrounds. Existing sizes, actions, colors, and icon references remain saved.
 
 Saved app and icon-pack artwork is preloaded and cached locally. Reopening a button uses available artwork immediately while its package version is checked. A bounded disk cache supports later app starts. App or icon-pack updates refresh the cached artwork. Android can clear this cache, so the first load can still take time. Backups retain icon references rather than image files.
 
@@ -250,7 +254,11 @@ On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automati
 
 In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
 
-Default and Standalone icons have no added background. **With container** adds a rounded background. Imported artwork keeps its own colors and transparency. Artwork can include its own background. The previews use the same container choice. Use **Pin again** to update an existing shortcut's artwork. Your launcher can add an app badge near the icon's edge.
+Each shortcut has its own **With Container** or **Standalone** style and **Background** setting. **Adaptive** uses Nudge's default neutral button color. It does not select Android's adaptive icon format or recolor the app artwork. **Transparent** removes Nudge's added background. **Choose color** uses a separate saved color. Original artwork can contain its own background; Transparent does not erase it.
+
+The editor, naming preview, and shortcut list show the same bitmap exported to Android. The export preserves alpha and does not add another adaptive wrapper or doubled padding. A launcher can still add its own background, shape, or app badge. Actual transparent Home display on stock MIUI/HyperOS 1.0 remains unverified.
+
+Select **Edit shortcut** to change a saved shortcut. Save updates its existing pinned ID, label, action, and artwork. Other shortcuts retain their settings. If the launcher cannot refresh an icon, its settings remain saved; use **Pin again** to retry. Editing an unpinned definition does not pin a new icon.
 
 Most shortcuts require the connected Nudge handles service but can run with Enable Gestures off. **Toggle accessibility** also works while disconnected: it opens Android accessibility settings to enable or recover Nudge handles. While connected, it disables the handles service and closes its overlays. A locked phone must be unlocked before a launcher shortcut runs. Their icons are static. Removing a shortcut in Nudge disables its action; remove any remaining launcher icon separately.
 

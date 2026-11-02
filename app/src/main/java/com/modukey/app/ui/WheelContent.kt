@@ -46,7 +46,8 @@ import kotlin.math.roundToInt
     val faces = shown.map { buttonPresentation(it, panel, state) }
     val highlight = MaterialTheme.colorScheme.primary
     val background = Color(panel.background).copy(alpha = panel.opacity)
-    val hover = faces.mapIndexed { index, face -> wheelHoverPalette(face.palette, background, face.container, highlight, panel.wheelHover, weights[index]) }
+    val painted = shown.mapIndexed { index, button -> faces[index].container || button.background.mode != ButtonBackgroundMode.TRANSPARENT }
+    val hover = faces.mapIndexed { index, face -> wheelHoverPalette(face.palette, background, painted[index], highlight, panel.wheelHover, weights[index]) }
     val click = if (interactive) Modifier.pointerInput(geometry, shown, selected) {
         detectTapGestures { position ->
             geometry.tapHit(position.x + geometry.bounds.x, position.y + geometry.bounds.y, selected)?.let { index ->
@@ -85,8 +86,8 @@ import kotlin.math.roundToInt
             if (button.action != ButtonAction.EMPTY || button.emptyAppearance != EmptyAppearance.NO_BUTTON) {
                 val shape = outlines[index]; val face = faces[index]
                 val colors = hover[index]
-                fill(shape, if (face.container) background else colors.background)
-                if (face.container) fill(shape, colors.background)
+                fill(shape, if (painted[index]) background else colors.background)
+                if (painted[index]) fill(shape, colors.background)
                 face.palette.outline?.let { drawPath(shape, it, style = Stroke(2.dp.toPx())) }
                 if (weights[index] > 0f) drawPath(shape, colors.highlight, style = Stroke(2.dp.toPx()))
             }

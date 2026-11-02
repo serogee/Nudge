@@ -10,7 +10,7 @@ data class GestureTarget(val panelId: String? = null, val volume: Boolean = fals
     val wheelPick: WheelPickSettings = WheelPickSettings()) {
     val isNone get() = panelId == null && !volume && (action == null || action.action == ButtonAction.EMPTY) && !brightness
     fun normalized(): GestureTarget {
-        val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.normalized().copy(showVolumePopup = false)) else this
+        val target = if (action != null) copy(panelId = null, volume = volume || (action.showVolumePopup && action.action in listOf(ButtonAction.VOLUME_UP, ButtonAction.VOLUME_DOWN)), action = action.explicitAppearance(true).normalized().copy(showVolumePopup = false)) else this
         val pick = target.wheelPick.normalized().let { if (target.panelId == null) it.copy(enabled = false) else it }
         return target.copy(slideToAdjust = target.slideToAdjust && (target.volume xor target.brightness) && !pick.enabled,
             sliderHoldMs = target.sliderHoldMs.coerceIn(100, 1_000), wheelPick = pick)
@@ -39,14 +39,15 @@ data class PanelButton(
     val appPackage: String = "", val appActivity: String = "", val appLabel: String = "",
     val icon: IconReference = IconReference(),
     val showVolumePopup: Boolean = false,
-    val iconContainer: IconContainer = IconContainer.DEFAULT,
+    val iconContainer: IconContainer = IconContainer.CONTAINER,
     val emptyAppearance: EmptyAppearance = EmptyAppearance.SLASH,
     val handleScope: HandleToggleScope = HandleToggleScope.ALL,
     val brightnessReturn: BrightnessReturnSettings = BrightnessReturnSettings(),
     val toggleScope: HandleGroupScope = HandleGroupScope.ALL,
     val visibilityScope: HandleGroupScope = HandleGroupScope.ALL,
+    val background: ButtonBackground = ButtonBackground(),
 ) {
-    fun normalized() = copy(brightnessReturn = brightnessReturn.normalized())
+    fun normalized() = copy(brightnessReturn = brightnessReturn.normalized(), background = background.normalized())
 }
 data class PanelLayout(
     val mode: PanelMode = PanelMode.FIXED,
@@ -100,7 +101,7 @@ data class PanelConfig(
         portrait = portrait.copy(mode = PanelMode.WHEEL), landscape = landscape.copy(mode = PanelMode.WHEEL)) else copy(
         portrait = portrait.copy(mode = portrait.mode.takeUnless { it == PanelMode.WHEEL } ?: original.portrait.mode),
         landscape = landscape.copy(mode = landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: original.landscape.mode.takeUnless { it == PanelMode.WHEEL } ?: PanelMode.FIXED))
-    fun normalized() = copy(buttons = buttons.map(PanelButton::normalized), portrait = portrait.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
+    fun normalized() = copy(buttons = buttons.map { it.explicitAppearance(iconBackground).normalized() }, portrait = portrait.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else it },
         landscape = landscape.normalized().let { if (isWheel) it.copy(mode = PanelMode.WHEEL) else if (it.mode == PanelMode.WHEEL) it.copy(mode = portrait.mode) else it },
         opacity = opacity.valid(0.98f).coerceIn(0f, 1f), cornerDp = cornerDp.valid(24f).coerceIn(0f, 48f),
         iconCornerFraction = iconCornerFraction.valid(0.25f).coerceIn(0f, 0.5f), background = background or 0xFF000000,
@@ -150,7 +151,7 @@ data class AppConfiguration(
     fun normalized(): AppConfiguration {
         val ids = panels.map { it.id }.toSet()
         return copy(pausedHandleIds = pausedHandleIds.intersect(handles.map { it.id }.toSet()),
-            brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
+            brightnessPopup = brightnessPopup.normalized(), shortcuts = shortcuts.map { it.copy(name = it.name.take(80), button = it.button.explicitAppearance(false).normalized()) }, panels = panels.map(SavedPanel::normalized), handles = handles.map { h ->
             h.normalized().let { it.copy(bindings = it.bindings.mapValues { (_, target) ->
                 if (target.panelId != null && target.panelId !in ids) target.copy(panelId = null) else target
             }) }

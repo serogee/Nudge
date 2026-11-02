@@ -1,9 +1,12 @@
 package com.modukey.app.platform
 
 import android.graphics.Color
+import android.graphics.Canvas
 import android.content.pm.ShortcutManager
+import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Icon
-import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.BitmapDrawable
+import androidx.core.graphics.createBitmap
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -16,6 +19,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.Implements
+import org.robolectric.annotation.Implementation
+import org.robolectric.shadows.ShadowShortcutManager
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
@@ -30,18 +36,19 @@ class ShortcutIconTest {
         val shortcuts = PinnedShortcuts(app, app.icons)
         val original = HomeShortcut(button = PanelButton(iconContainer = IconContainer.CONTAINER))
         assertTrue(shortcuts.pin(original, "Original"))
-        val updated = original.copy(button = original.button.copy(iconContainer = IconContainer.STANDALONE))
+        val updated = original.copy(button = original.button.copy(iconContainer = IconContainer.STANDALONE,
+            background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT)))
         assertTrue(shortcuts.pin(updated, "Updated"))
         val pinned = manager.pinnedShortcuts.single()
         assertEquals(original.id, pinned.id)
         assertEquals("Updated", pinned.shortLabel)
         val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
-        assertEquals(Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
-        assertNull((icon.loadDrawable(app) as AdaptiveIconDrawable).background)
+        assertEquals(Icon.TYPE_BITMAP, icon.type)
+        assertTrue(icon.loadDrawable(app) is BitmapDrawable)
         val bitmap = shadowOf(icon).bitmap
         assertEquals(Color.TRANSPARENT, bitmap.getPixel(bitmap.width / 2, 10))
     }
-    @Test fun pinnedArtworkStaysInsideTheAdaptiveSafeAreaWithoutAnOpaqueWrapper() = runBlocking {
+    @Test fun finalAndroidDrawableRetainsTransparencyAndFullSizedArtwork() = runBlocking {
         val manager = app.getSystemService(ShortcutManager::class.java)
         shadowOf(manager).setIsRequestPinShortcutSupported(true)
         for (container in IconContainer.entries) {
@@ -49,24 +56,27 @@ class ShortcutIconTest {
             assertTrue(PinnedShortcuts(app, app.icons).pin(shortcut, "Favorite"))
             val pinned = manager.pinnedShortcuts.first { it.id == shortcut.id }
             val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
-            assertEquals(Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
-            assertNull((icon.loadDrawable(app) as AdaptiveIconDrawable).background)
-            val bitmap = shadowOf(icon).bitmap
-            val center = bitmap.width / 2f
-            val safeRadius = bitmap.width * 66f / 108f / 2f
-            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
-                if (Color.alpha(bitmap.getPixel(x, y)) > 0)
-                    assertTrue("$container $x,$y", kotlin.math.hypot(x + .5f - center, y + .5f - center) <= safeRadius)
-            }
+            assertEquals(Icon.TYPE_BITMAP, icon.type)
+            val drawable = icon.loadDrawable(app)!!
+            val bitmap = createBitmap(96, 96)
+            drawable.setBounds(0, 0, 96, 96)
+            drawable.draw(Canvas(bitmap))
+            assertEquals(Color.TRANSPARENT, bitmap.getPixel(48, 2))
+            assertEquals(Color.TRANSPARENT, bitmap.getPixel(2, 48))
+            val expected = ShortcutIconRenderer.render(app, app.icons, shortcut.button)
+            assertEquals(96, shadowOf(icon).bitmap.width)
+            assertTrue("Android must draw the original artwork without another inset", bitmap.sameAs(expected))
+            expected.recycle(); bitmap.recycle()
         }
     }
-    @Test fun defaultAndStandaloneArtworkHaveNoAddedBackgroundWhileExplicitContainersRemainVisible() = runBlocking {
+    @Test fun transparentArtworkHasNoAddedBackgroundWhileAutomaticContainersRemainVisible() = runBlocking {
         val buttons = listOf(PanelButton(action = ButtonAction.VOLUME_UP),
             PanelButton(icon = IconReference(builtIn = BuiltInIcon.NUDGE)),
             PanelButton(icon = IconReference(app.packageName, "ic_modukey")))
         for (button in buttons) {
-            val default = ShortcutIconRenderer.render(app, app.icons, button)
-            val standalone = ShortcutIconRenderer.render(app, app.icons, button.copy(iconContainer = IconContainer.STANDALONE))
+            val transparent = button.copy(iconContainer = IconContainer.STANDALONE, background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT))
+            val default = ShortcutIconRenderer.render(app, app.icons, transparent)
+            val standalone = ShortcutIconRenderer.render(app, app.icons, transparent.copy(iconContainer = IconContainer.DEFAULT))
             val container = ShortcutIconRenderer.render(app, app.icons, button.copy(iconContainer = IconContainer.CONTAINER))
             try {
                 assertTrue(default.sameAs(standalone))
@@ -87,7 +97,8 @@ class ShortcutIconTest {
         }
     }
     @Test fun externalArtworkHasSmoothTransparentCornersWithoutStrayEdgePixels() = runBlocking {
-        val bitmap = ShortcutIconRenderer.render(app, app.icons, PanelButton(icon = IconReference(app.packageName, "ic_modukey")))
+        val bitmap = ShortcutIconRenderer.render(app, app.icons, PanelButton(icon = IconReference(app.packageName, "ic_modukey"),
+            iconContainer = IconContainer.STANDALONE, background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT)))
         try {
             val inset = bitmap.width * .08f
             val radius = (bitmap.width - inset * 2) * .25f
@@ -130,5 +141,65 @@ class ShortcutIconTest {
                 finally { library.recycle() }
             }
         } finally { rendered.forEach { it.recycle() } }
+    }
+    @Test fun bothStylesSupportAutomaticTransparentAndCustomBackgroundsWithoutTintingAppArtwork() = runBlocking {
+        for (style in listOf(IconContainer.CONTAINER, IconContainer.STANDALONE)) {
+            for (mode in ButtonBackgroundMode.entries) {
+                val button = PanelButton(iconContainer = style, background = ButtonBackground(mode, 0xFFF0D060),
+                    icon = IconReference(builtIn = BuiltInIcon.NUDGE))
+                val bitmap = ShortcutIconRenderer.render(app, app.icons, button)
+                val expected = when (mode) {
+                    ButtonBackgroundMode.AUTOMATIC -> 0xFF3C3C3E.toInt()
+                    ButtonBackgroundMode.TRANSPARENT -> Color.TRANSPARENT
+                    ButtonBackgroundMode.CUSTOM -> 0xFFF0D060.toInt()
+                }
+                assertEquals("$style $mode", expected, bitmap.getPixel(48, 10))
+                val appBitmap = ShortcutIconRenderer.render(app, app.icons, button.copy(icon = IconReference(app.packageName, "ic_modukey")))
+                val pixels = IntArray(appBitmap.width * appBitmap.height)
+                appBitmap.getPixels(pixels, 0, appBitmap.width, 0, 0, appBitmap.width, appBitmap.height)
+                assertTrue("Keep the original app background", pixels.any { it == 0xFFDDF6A5.toInt() })
+                assertTrue("Keep the original app mark", pixels.any { it == 0xFF20251C.toInt() })
+                bitmap.recycle(); appBitmap.recycle()
+            }
+        }
+    }
+    @Test fun updatesRefreshTheExistingIdAndDoNotPinAnUnpinnedDefinition() = runBlocking {
+        val manager = app.getSystemService(ShortcutManager::class.java)
+        shadowOf(manager).setIsRequestPinShortcutSupported(true)
+        val shortcuts = PinnedShortcuts(app, app.icons)
+        val first = HomeShortcut(button = PanelButton(icon = IconReference(builtIn = BuiltInIcon.NUDGE)))
+        val second = HomeShortcut(button = PanelButton())
+        assertTrue(shortcuts.pin(first, "First"))
+        val changed = first.copy(button = first.button.copy(background = ButtonBackground(ButtonBackgroundMode.CUSTOM, 0xFF884422)))
+        assertTrue(shortcuts.update(changed, "Changed"))
+        assertTrue(shortcuts.update(second, "Still unpinned"))
+        val pinned = manager.pinnedShortcuts.single()
+        assertEquals(first.id, pinned.id); assertEquals("Changed", pinned.shortLabel)
+        val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
+        assertEquals(0xFF884422.toInt(), shadowOf(icon).bitmap.getPixel(48, 10))
+    }
+    @Test @Config(shadows = [LimitedShortcutManager::class])
+    fun failedUpdatesKeepThePinnedArtworkAndPinAgainCanRetryTheSameId() = runBlocking {
+        val manager = app.getSystemService(ShortcutManager::class.java)
+        shadowOf(manager).setIsRequestPinShortcutSupported(true)
+        val shortcuts = PinnedShortcuts(app, app.icons)
+        val original = HomeShortcut()
+        assertTrue(shortcuts.pin(original, "Original"))
+        val changed = original.copy(button = original.button.copy(background = ButtonBackground(ButtonBackgroundMode.CUSTOM, 0xFF884422)))
+        try {
+            LimitedShortcutManager.allowUpdates = false
+            assertFalse(shortcuts.update(changed, "Changed"))
+            assertFalse(shortcuts.pin(changed, "Changed"))
+            assertEquals("Original", manager.pinnedShortcuts.single().shortLabel)
+        } finally { LimitedShortcutManager.allowUpdates = true }
+        assertTrue(shortcuts.pin(changed, "Changed"))
+        assertEquals(original.id, manager.pinnedShortcuts.single().id)
+        assertEquals("Changed", manager.pinnedShortcuts.single().shortLabel)
+    }
+    @Implements(ShortcutManager::class)
+    class LimitedShortcutManager : ShadowShortcutManager() {
+        companion object { var allowUpdates = true }
+        @Implementation override fun updateShortcuts(shortcuts: MutableList<ShortcutInfo>): Boolean =
+            allowUpdates && super.updateShortcuts(shortcuts)
     }
 }
