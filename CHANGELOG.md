@@ -2,19 +2,27 @@
 
 ## Unreleased
 
+## 0.5.9 - 2026-11-03
+
 ### Added
 
-- Add per-button **Adaptive**, **Transparent**, and **Choose color** background modes to panels and Home shortcuts. Retain each chosen color when modes change. Keep app artwork and active colors independent.
-- Edit saved Home shortcuts and refresh their existing pinned IDs. Keep other shortcut settings unchanged and retain **Pin again** for failed refreshes.
+- Add per-button **Adaptive**, **Transparent**, and **Choose color** background modes to panels and Home shortcuts. Keep each saved color when modes change. Use the existing default button color for Adaptive and preserve original app artwork. (80d7c10)
+- Edit saved Home shortcuts and refresh their existing pinned IDs, labels, actions, and artwork. Keep other shortcuts unchanged. Reject stale edits and retain Pin again after failed refreshes. Editing unpinned definitions does not pin new icons. (80d7c10)
 
 ### Changed
 
-- Use **With Container** and **Standalone** as explicit editor choices. Preserve older inherited styles during import. Share exported artwork with all Home shortcut previews.
-- Save **schema 33** backups with per-button background modes and colors. Import older backups and preserve their existing appearance. Builds supporting only schema 32 or earlier cannot read the new format.
+- Use **With Container** and **Standalone** as explicit styles. Keep padding separate from background choices. Resolve older inherited styles without changing their saved appearance. Reuse exported artwork in all Home shortcut previews. (80d7c10)
+- Save **schema 33** backups with background modes and colors. Preserve older imports, actions, icon references, layouts, empty cells, and overflow buttons. Builds supporting only schema 32 or earlier cannot import schema-33 backups. (80d7c10)
 
 ### Fixed
 
-- Export Home shortcut artwork as ordinary bitmaps. Preserve transparency through Android drawable rendering and remove the extra canvas padding. Refresh existing artwork with **Pin again**. Launcher-added backgrounds still require a device check.
+- Export ordinary Home shortcut bitmaps that retain transparency through Android drawable rendering. Remove adaptive black fills and doubled canvas padding. Keep same-ID refresh and retry behavior. Launchers can still add backgrounds, shapes, scaling, or badges. (7a57dca, 80d7c10)
+
+### Compatibility and validation
+
+- Preserve original app colors and any background within that artwork. Transparent removes the normal Nudge background; active and hover colors retain their separate settings. Stock MIUI/HyperOS 1.0 transparency and the signed upgrade over 0.5.8 remain unverified.
+- Verify **107 unique regression cases across 12 classes**, with no failures, errors, or skipped cases. Pass feature-source lint with **0 errors and 29 warnings**, the prepared **0.5.9-debug / code 25** build, **29 changelog checks**, and **22 finalization checks**. See the reviewed 0.5.9 notes for pending device verification.
+- Use published **v0.5.8 / code 24** as the baseline for **0.5.9 / code 25**. Build and tag only from clean merged `main`. Publish the reviewed notes as the release description and attach the APK, checksum, and metadata.
 
 ## 0.5.8 - 2026-10-30
 
