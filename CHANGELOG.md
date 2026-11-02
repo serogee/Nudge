@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Export Home shortcut artwork as ordinary bitmaps. Preserve transparency through Android drawable rendering and remove the extra canvas padding. Refresh existing artwork with **Pin again**. Launcher-added backgrounds still require a device check.
+
 ## 0.5.8 - 2026-10-30
 
 ### Fixed

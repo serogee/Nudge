@@ -1,9 +1,11 @@
 package com.modukey.app.platform
 
 import android.graphics.Color
+import android.graphics.Canvas
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
-import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.BitmapDrawable
+import androidx.core.graphics.createBitmap
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
 import com.modukey.app.core.*
@@ -36,12 +38,12 @@ class ShortcutIconTest {
         assertEquals(original.id, pinned.id)
         assertEquals("Updated", pinned.shortLabel)
         val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
-        assertEquals(Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
-        assertNull((icon.loadDrawable(app) as AdaptiveIconDrawable).background)
+        assertEquals(Icon.TYPE_BITMAP, icon.type)
+        assertTrue(icon.loadDrawable(app) is BitmapDrawable)
         val bitmap = shadowOf(icon).bitmap
         assertEquals(Color.TRANSPARENT, bitmap.getPixel(bitmap.width / 2, 10))
     }
-    @Test fun pinnedArtworkStaysInsideTheAdaptiveSafeAreaWithoutAnOpaqueWrapper() = runBlocking {
+    @Test fun finalAndroidDrawableRetainsTransparencyAndFullSizedArtwork() = runBlocking {
         val manager = app.getSystemService(ShortcutManager::class.java)
         shadowOf(manager).setIsRequestPinShortcutSupported(true)
         for (container in IconContainer.entries) {
@@ -49,15 +51,17 @@ class ShortcutIconTest {
             assertTrue(PinnedShortcuts(app, app.icons).pin(shortcut, "Favorite"))
             val pinned = manager.pinnedShortcuts.first { it.id == shortcut.id }
             val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
-            assertEquals(Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
-            assertNull((icon.loadDrawable(app) as AdaptiveIconDrawable).background)
-            val bitmap = shadowOf(icon).bitmap
-            val center = bitmap.width / 2f
-            val safeRadius = bitmap.width * 66f / 108f / 2f
-            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
-                if (Color.alpha(bitmap.getPixel(x, y)) > 0)
-                    assertTrue("$container $x,$y", kotlin.math.hypot(x + .5f - center, y + .5f - center) <= safeRadius)
-            }
+            assertEquals(Icon.TYPE_BITMAP, icon.type)
+            val drawable = icon.loadDrawable(app)!!
+            val bitmap = createBitmap(96, 96)
+            drawable.setBounds(0, 0, 96, 96)
+            drawable.draw(Canvas(bitmap))
+            assertEquals(Color.TRANSPARENT, bitmap.getPixel(48, 2))
+            assertEquals(Color.TRANSPARENT, bitmap.getPixel(2, 48))
+            val expected = ShortcutIconRenderer.render(app, app.icons, shortcut.button)
+            assertEquals(96, shadowOf(icon).bitmap.width)
+            assertTrue("Android must draw the original artwork without another inset", bitmap.sameAs(expected))
+            expected.recycle(); bitmap.recycle()
         }
     }
     @Test fun defaultAndStandaloneArtworkHaveNoAddedBackgroundWhileExplicitContainersRemainVisible() = runBlocking {
