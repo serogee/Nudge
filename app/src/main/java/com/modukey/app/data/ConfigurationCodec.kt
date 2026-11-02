@@ -8,10 +8,10 @@ import java.util.UUID
 
 typealias MigratedPanelName = (String, Int, Int) -> String
 
-/** Schema 32 adds built-in artwork for the three handle actions. */
+/** Schema 33 adds per-button background modes and colors. */
 object ConfigurationCodec {
     const val MAX_BYTES = 1_048_576
-    const val SCHEMA = 32
+    const val SCHEMA = 33
     private val defaultName: MigratedPanelName = { name, handle, slot -> "${name.ifBlank { (handle + 1).toString() }} / ${slot + 1}" }
     fun encode(config: AppConfiguration): String = JSONObject().put("schema", SCHEMA).put("enabled", config.enabled)
         .put("handleAnimationsEnabled", config.handleAnimationsEnabled)
@@ -68,7 +68,7 @@ object ConfigurationCodec {
             require(handles.all { it.id.isNotBlank() } && handles.map { it.id }.distinct().size == handles.size)
             require(panels.all { it.id.isNotBlank() } && panels.map { it.id }.distinct().size == panels.size)
             val shortcuts = root.optJSONArray("shortcuts")?.objects()?.map {
-                HomeShortcut(it.getString("id"), it.optString("name"), button(it.getJSONObject("button")), it.optString("handleId").ifBlank { null })
+                HomeShortcut(it.getString("id"), it.optString("name"), button(it.getJSONObject("button"), false), it.optString("handleId").ifBlank { null })
             }.orEmpty()
             require(shortcuts.all { it.id.isNotBlank() && it.button.action != ButtonAction.EMPTY } && shortcuts.map { it.id }.distinct().size == shortcuts.size)
             val buttons = shortcuts.map { it.button } + panels.flatMap { it.settings.buttons } + handles.flatMap { h -> h.bindings.values.mapNotNull { it.action } }
@@ -185,14 +185,25 @@ object ConfigurationCodec {
         .put("timeoutMs", p.timeoutMs).put("cornerRadiusDp", p.cornerRadiusDp)
         .put("showBackground", p.showBackground).put("showAutomaticToggle", p.showAutomaticToggle).put("touchBehavior", p.touchBehavior.name)
         .put("animation", p.animation.name).put("closeAnimation", p.closeAnimation.name)
-    private fun button(b: JSONObject) = PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
+    private fun button(b: JSONObject, defaultContainer: Boolean = true): PanelButton {
+        val legacy = enumValueOf<IconContainer>(b.optString("iconContainer", "DEFAULT"))
+        val container = if (legacy == IconContainer.DEFAULT) {
+            if (defaultContainer) IconContainer.CONTAINER else IconContainer.STANDALONE
+        } else legacy
+        val background = b.optJSONObject("background")?.let {
+            ButtonBackground(enumValueOf(it.optString("mode", "AUTOMATIC")), it.optLong("color", 0xFF3C3C3E))
+        } ?: ButtonBackground(if (container == IconContainer.CONTAINER ||
+            (b.getString("action") == "EMPTY" && b.optString("emptyAppearance", "SLASH") == "NO_ICON"))
+            ButtonBackgroundMode.AUTOMATIC else ButtonBackgroundMode.TRANSPARENT)
+        return PanelButton(b.getString("id"), enumValueOf(b.getString("action")), b.optString("appPackage"), b.optString("appActivity"),
         b.optString("appLabel"), IconReference(b.optString("iconPackage"), b.optString("iconDrawable"),
             b.optString("builtInIcon").takeIf { it.isNotBlank() }?.let { enumValueOf<BuiltInIcon>(it) }),
-        b.optBoolean("showVolumePopup"), enumValueOf(b.optString("iconContainer", "DEFAULT")), enumValueOf(b.optString("emptyAppearance", "SLASH")),
+        b.optBoolean("showVolumePopup"), container, enumValueOf(b.optString("emptyAppearance", "SLASH")),
         enumValueOf(b.optString("handleScope", "ALL")),
         b.optJSONObject("brightnessReturn")?.let { BrightnessReturnSettings(it.optBoolean("usePrevious", true), it.float("fraction", .5f)) }
             ?: BrightnessReturnSettings(),
-        toggleScope = enumValueOf(b.optString("toggleScope", "ALL")), visibilityScope = enumValueOf(b.optString("visibilityScope", "ALL")))
+        toggleScope = enumValueOf(b.optString("toggleScope", "ALL")), visibilityScope = enumValueOf(b.optString("visibilityScope", "ALL")), background = background)
+    }
     private fun button(b: PanelButton) = JSONObject().put("id", b.id).put("action", b.action.name)
         .put("appPackage", b.appPackage).put("appActivity", b.appActivity).put("appLabel", b.appLabel)
         .put("iconPackage", b.icon.packageName).put("iconDrawable", b.icon.drawable).put("builtInIcon", b.icon.builtIn?.name.orEmpty())
@@ -200,8 +211,9 @@ object ConfigurationCodec {
         .put("handleScope", b.handleScope.name)
         .put("brightnessReturn", JSONObject().put("usePrevious", b.brightnessReturn.usePrevious).put("fraction", b.brightnessReturn.fraction))
         .put("toggleScope", b.toggleScope.name).put("visibilityScope", b.visibilityScope.name)
+        .put("background", JSONObject().put("mode", b.background.mode.name).put("color", b.background.color))
     private fun panel(p: JSONObject, schema: Int) = PanelConfig(
-        buttons = p.getJSONArray("buttons").objects().map(::button), portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
+        buttons = p.getJSONArray("buttons").objects().map { button(it, p.optBoolean("iconBackground", true)) }, portrait = layout(p.getJSONObject("portrait"), schema), landscape = layout(p.getJSONObject("landscape"), schema),
         landscapeOverride = p.optBoolean("landscapeOverride"), outsideTouch = enumValueOf(p.optString("outside", "BLOCK")),
         background = p.optLong("background", 0xFF252A21), opacity = p.float("opacity", .98f), cornerDp = p.float("corner", 24f),
         iconCornerFraction = if (schema < 26 && p.optString("shape") == "CIRCLE") .5f else p.float("iconCorner", .25f), iconPack = p.optString("iconPack"),

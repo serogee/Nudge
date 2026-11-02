@@ -19,17 +19,24 @@ class PinnedShortcuts(private val context: Context, private val icons: IconRepos
     suspend fun pinned(): Set<String> = withContext(Dispatchers.IO) { runCatching { manager.pinnedShortcuts.filter { it.isEnabled }.mapTo(mutableSetOf()) { it.id } }.getOrDefault(emptySet()) }
     suspend fun pin(shortcut: HomeShortcut, label: String): Boolean = withContext(Dispatchers.IO) {
         if (!manager.isRequestPinShortcutSupported) return@withContext false
+        val info = info(shortcut, label)
+        manager.enableShortcuts(listOf(shortcut.id))
+        if (manager.pinnedShortcuts.any { it.id == shortcut.id } && !manager.updateShortcuts(listOf(info))) return@withContext false
+        manager.requestPinShortcut(info, null)
+    }
+    suspend fun update(shortcut: HomeShortcut, label: String): Boolean = withContext(Dispatchers.IO) {
+        if (manager.pinnedShortcuts.none { it.id == shortcut.id }) return@withContext true
+        manager.updateShortcuts(listOf(info(shortcut, label)))
+    }
+    private suspend fun info(shortcut: HomeShortcut, label: String): ShortcutInfo {
         val image = ShortcutIconRenderer.render(context, icons, shortcut.button)
-        val info = ShortcutInfo.Builder(context, shortcut.id).setShortLabel(label.take(80)).setLongLabel(label.take(80))
+        return ShortcutInfo.Builder(context, shortcut.id).setShortLabel(label.take(80)).setLongLabel(label.take(80))
             .setActivity(ComponentName(context, MainActivity::class.java))
             // AdaptiveIconDrawable fills transparent pixels with black when it draws its layers.
             .setIcon(Icon.createWithBitmap(image))
             .setIntent(Intent(context, ShortcutActionActivity::class.java).setAction(Intent.ACTION_VIEW)
                 .putExtra(ShortcutActionActivity.EXTRA_ID, shortcut.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
             .build()
-        manager.enableShortcuts(listOf(shortcut.id))
-        if (manager.pinnedShortcuts.any { it.id == shortcut.id } && !manager.updateShortcuts(listOf(info))) return@withContext false
-        manager.requestPinShortcut(info, null)
     }
     suspend fun disable(id: String) = withContext(Dispatchers.IO) { manager.disableShortcuts(listOf(id), context.getString(R.string.shortcut_missing)) }
 }

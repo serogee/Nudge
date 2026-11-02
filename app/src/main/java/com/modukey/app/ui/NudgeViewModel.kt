@@ -134,7 +134,9 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
         shortcutRefresh?.cancel()
         shortcutRefresh = viewModelScope.launch { shortcutSupported.value = launcherShortcuts.supported(); pinnedShortcuts.value = launcherShortcuts.pinned() }
     }
-    fun pinShortcut(shortcut: HomeShortcut) {
+    fun pinShortcut(shortcut: HomeShortcut) = saveShortcut(shortcut)
+    fun updateShortcut(original: HomeShortcut, shortcut: HomeShortcut) = saveShortcut(shortcut, original)
+    private fun saveShortcut(shortcut: HomeShortcut, original: HomeShortcut? = null) {
         if (shortcutBusy.value) return
         shortcutBusy.value = true
         viewModelScope.launch {
@@ -143,12 +145,20 @@ class NudgeViewModel(application: Application) : AndroidViewModel(application) {
                 val config = app.configuration.state.value ?: return@launch
                 if (!shortcut.available(config)) { tell(R.string.shortcut_missing); return@launch }
                 val stored = config.shortcuts.firstOrNull { it.id == shortcut.id }
-                if (stored != null && stored != shortcut) { tell(R.string.shortcut_missing); return@launch }
-                if (stored == null) edit { it.copy(shortcuts = it.shortcuts + shortcut) }
+                if (original != null) {
+                    if (stored != original || original.id != shortcut.id || original.button.id != shortcut.button.id) {
+                        tell(R.string.shortcut_missing); return@launch
+                    }
+                    edit { current -> current.copy(shortcuts = current.shortcuts.map { if (it == original) shortcut else it }) }
+                } else {
+                    if (stored != null && stored != shortcut) { tell(R.string.shortcut_missing); return@launch }
+                    if (stored == null) edit { it.copy(shortcuts = it.shortcuts + shortcut) }
+                }
                 if (!app.configuration.flushNow()) { tell(R.string.save_failed); return@launch }
                 if (app.configuration.state.value?.shortcuts?.firstOrNull { it.id == shortcut.id } != shortcut) { tell(R.string.shortcut_missing); return@launch }
                 val label = shortcut.name.ifBlank { app.buttonLabel(shortcut.button) }
-                tell(if (launcherShortcuts.pin(shortcut, label)) R.string.shortcut_requested else R.string.shortcut_failed)
+                if (original == null) tell(if (launcherShortcuts.pin(shortcut, label)) R.string.shortcut_requested else R.string.shortcut_failed)
+                else tell(if (launcherShortcuts.update(shortcut, label)) R.string.shortcut_saved else R.string.shortcut_refresh_failed)
                 refreshShortcuts()
             } catch (e: CancellationException) { throw e }
             catch (_: RuntimeException) { tell(R.string.shortcut_failed) }

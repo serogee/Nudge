@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+- Add per-button **Adaptive**, **Transparent**, and **Choose color** background modes to panels and Home shortcuts. Retain each chosen color when modes change. Keep app artwork and active colors independent.
+- Edit saved Home shortcuts and refresh their existing pinned IDs. Keep other shortcut settings unchanged and retain **Pin again** for failed refreshes.
+
+### Changed
+
+- Use **With Container** and **Standalone** as explicit editor choices. Preserve older inherited styles during import. Share exported artwork with all Home shortcut previews.
+- Save **schema 33** backups with per-button background modes and colors. Import older backups and preserve their existing appearance. Builds supporting only schema 32 or earlier cannot read the new format.
+
 ### Fixed
 
 - Export Home shortcut artwork as ordinary bitmaps. Preserve transparency through Android drawable rendering and remove the extra canvas padding. Refresh existing artwork with **Pin again**. Launcher-added backgrounds still require a device check.

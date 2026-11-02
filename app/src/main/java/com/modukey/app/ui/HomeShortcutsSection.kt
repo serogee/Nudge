@@ -11,16 +11,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.modukey.app.R
 import com.modukey.app.core.*
+import com.modukey.app.platform.ShortcutIconRenderer
 
 @Composable fun HomeShortcutsSection(config: AppConfiguration, vm: NudgeViewModel) {
     val context = LocalContext.current
-    val shortcutPanel = remember { PanelConfig(background = 0xFF202122, iconBackground = false) }
+    val shortcutPanel = ShortcutIconRenderer.panel
     val supported by vm.shortcutSupported.collectAsStateWithLifecycle()
     val pinned by vm.pinnedShortcuts.collectAsStateWithLifecycle()
     val busy by vm.shortcutBusy.collectAsStateWithLifecycle()
     var choosing by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<PanelButton?>(null) }
-    var naming by remember { mutableStateOf<PanelButton?>(null) }
+    var editing by remember { mutableStateOf<HomeShortcut?>(null) }
+    var naming by remember { mutableStateOf<HomeShortcut?>(null) }
+    var original by remember { mutableStateOf<HomeShortcut?>(null) }
     var removing by remember { mutableStateOf<HomeShortcut?>(null) }
     Section(R.string.home_shortcuts) {
         OptionInfo(R.string.shortcut_help)
@@ -31,8 +33,9 @@ import com.modukey.app.core.*
             val name = shortcut.name.ifBlank { context.buttonLabel(shortcut.button) }
             ListItem(headlineContent = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { Text(t(if (shortcut.id in pinned) R.string.shortcut_pinned else R.string.shortcut_not_pinned)) },
-                leadingContent = { PanelButtonFace(shortcut.button, shortcutPanel, 32.dp) },
+                leadingContent = { ShortcutGraphic(shortcut.button, 32.dp) },
                 trailingContent = { Row {
+                    EditIcon(AppIcons.Edit, R.string.edit_shortcut, enabled = !busy) { original = shortcut; editing = shortcut }
                     EditIcon(AppIcons.Add, R.string.pin_again, enabled = !busy && supported == true) { vm.pinShortcut(shortcut) }
                     EditIcon(AppIcons.Delete, R.string.delete, enabled = !busy) { removing = shortcut }
                 } })
@@ -43,23 +46,24 @@ import com.modukey.app.core.*
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
     }
     if (choosing) ActionPicker({ choosing = false }, includeEmpty = false) { action ->
-        choosing = false; editing = PanelButton(action = action)
+        choosing = false; original = null; editing = HomeShortcut(button = PanelButton(action = action))
     }
-    editing?.let { button ->
-        ButtonEditor(button, shortcutPanel, vm, { editing = null }, includeEmpty = false) {
-            editing = null; naming = it
+    editing?.let { shortcut ->
+        ButtonEditor(shortcut.button, shortcutPanel, vm, { editing = null; original = null }, includeEmpty = false, homeShortcut = true) {
+            editing = null; naming = shortcut.copy(button = it)
         }
     }
-    naming?.let { button ->
-        var name by remember(button.id) { mutableStateOf(context.buttonLabel(button)) }
-        var owner by remember(button.id) { mutableStateOf(config.handles.firstOrNull()?.id) }
+    naming?.let { shortcut ->
+        val button = shortcut.button
+        var name by remember(shortcut.id) { mutableStateOf(shortcut.name.ifBlank { context.buttonLabel(button) }) }
+        var owner by remember(shortcut.id) { mutableStateOf(shortcut.handleId ?: config.handles.firstOrNull()?.id) }
         var expanded by remember { mutableStateOf(false) }
         val needsOwner = button.needsHandleOwner
-        AlertDialog(onDismissRequest = { naming = null }, title = { Text(t(R.string.add_shortcut)) }, text = {
+        AlertDialog(onDismissRequest = { naming = null; original = null }, title = { Text(t(if (original == null) R.string.add_shortcut else R.string.edit_shortcut)) }, text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { PanelButtonFace(button, shortcutPanel, 64.dp) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { ShortcutGraphic(button, 64.dp) }
                 OutlinedTextField(name, { name = it.take(80) }, label = { Text(t(R.string.shortcut_name)) }, singleLine = true)
-                OutlinedButton(onClick = { naming = null; editing = button }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { naming = null; editing = shortcut.copy(name = name, handleId = owner) }, modifier = Modifier.fillMaxWidth()) {
                     Icon(AppIcons.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(R.string.shortcut_configure))
                 }
                 if (needsOwner) {
@@ -77,9 +81,12 @@ import com.modukey.app.core.*
                 }
             }
         }, confirmButton = { Button(onClick = {
-            vm.pinShortcut(HomeShortcut(name = name.trim(), button = button, handleId = if (needsOwner) owner else null)); naming = null
-        }, enabled = name.isNotBlank() && (!needsOwner || config.handle(owner) != null) && !busy) { Text(t(R.string.pin_shortcut)) } },
-            dismissButton = { TextButton(onClick = { naming = null }) { Text(t(R.string.cancel)) } })
+            val updated = shortcut.copy(name = name.trim(), button = button, handleId = if (needsOwner) owner else null)
+            val baseline = original
+            if (baseline == null) vm.pinShortcut(updated) else vm.updateShortcut(baseline, updated)
+            naming = null; original = null
+        }, enabled = name.isNotBlank() && (!needsOwner || config.handle(owner) != null) && !busy) { Text(t(if (original == null) R.string.pin_shortcut else R.string.save)) } },
+            dismissButton = { TextButton(onClick = { naming = null; original = null }) { Text(t(R.string.cancel)) } })
     }
     removing?.let { shortcut ->
         AlertDialog(onDismissRequest = { removing = null }, title = { Text(t(R.string.delete)) }, text = { Text(t(R.string.shortcut_remove_help)) },

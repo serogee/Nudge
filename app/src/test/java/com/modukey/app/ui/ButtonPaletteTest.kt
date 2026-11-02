@@ -29,4 +29,22 @@ class ButtonPaletteTest {
         assertEquals(Color(0xFF44EE66), selected.icon)
         assertNull(buttonPalette(panel, false, false, Color.White).outline)
     }
+    @Test fun bothStylesUseTheExistingDefaultOrAnIndependentCustomBackground() {
+        for (container in listOf(false, true)) {
+            assertEquals(Color(0xFF112233), buttonPalette(panel, false, container, Color.White, ButtonBackground()).background)
+            val custom = ButtonBackground(ButtonBackgroundMode.CUSTOM, 0xFF336699)
+            assertEquals(Color(0xFF336699), buttonPalette(panel, false, container, Color.White, custom).background)
+            assertEquals(Color(0xFFCCDDEE), buttonPalette(panel, false, container, Color.White, custom).icon)
+            assertEquals(0f, buttonPalette(panel.copy(buttonOpacity = .4f), false, container, Color.White,
+                custom.copy(mode = ButtonBackgroundMode.TRANSPARENT)).background.alpha)
+        }
+    }
+    @Test fun automaticBackgroundFollowsPanelLightnessAndStandaloneActiveColorsRemainAnOutline() {
+        assertEquals(Color(0xFFE1E3E5), buttonPalette(PanelConfig(background = 0xFFFFFFFF), false, false, Color.White).background)
+        val custom = ButtonBackground(ButtonBackgroundMode.CUSTOM, 0xFF336699)
+        val standalone = buttonPalette(panel, true, false, Color.White, custom)
+        assertEquals(Color(0xFF336699), standalone.background)
+        assertEquals(Color(0xFFBB3322), standalone.outline)
+        assertEquals(Color(0xFFBB3322), buttonPalette(panel, true, true, Color.White, custom).background)
+    }
 }

@@ -125,7 +125,8 @@ internal data class ButtonPresentation(val title: String, val description: Strin
         IconContainer.CONTAINER -> true
         IconContainer.STANDALONE -> false
     }
-    val palette = buttonPalette(panel, selected, container, MaterialTheme.colorScheme.surface)
+    val appearance = button.explicitAppearance(panel.iconBackground)
+    val palette = buttonPalette(panel, selected, container, MaterialTheme.colorScheme.surface, appearance.background)
     return ButtonPresentation(title, description, selected, isToggle, container, palette)
 }
 
@@ -140,7 +141,7 @@ fun PanelButtonFace(button: PanelButton, panel: PanelConfig, cell: androidx.comp
     val container = presentation.container; val palette = presentation.palette
     val shape = iconShape(panel)
     val tint = palette.icon
-    Box(Modifier.size(cell).clip(shape).then(if (container) Modifier.background(palette.background) else Modifier)
+    Box(Modifier.size(cell).clip(shape).background(palette.background)
         .then(if (palette.outline != null) Modifier.border(2.dp, palette.outline, shape) else Modifier)
         .then(if (interactive && button.action != ButtonAction.EMPTY) Modifier.rejectDraggedClick().clickable(role = Role.Button, onClickLabel = title, onClick = action) else Modifier)
         .then(if (button.action != ButtonAction.EMPTY) Modifier.semantics { contentDescription = description; if (isToggle) this.selected = selected } else Modifier), contentAlignment = androidx.compose.ui.Alignment.Center) {

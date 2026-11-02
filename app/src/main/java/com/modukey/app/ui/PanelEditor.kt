@@ -197,7 +197,6 @@ import kotlin.math.roundToInt
         SettingSlider(R.string.icon_corners, p.iconCornerFraction, 0f.. .5f,
             t(R.string.percent, (p.iconCornerFraction * 200).roundToInt()), default = .25f, valueScale = 200f) { value -> vm.editPanel(entry.id) { it.copy(iconCornerFraction = value) } }
         OptionInfo(R.string.icon_corners_help)
-        Toggle(R.string.icon_background, R.string.icon_background_help, p.iconBackground, default = true) { value -> vm.editPanel(entry.id) { it.copy(iconBackground = value) } }
         Toggle(R.string.automatic_button_color, R.string.auto_button_help, p.automaticButtonColor, default = true, optionsExpanded = !p.automaticButtonColor) { value -> vm.editPanel(entry.id) { it.copy(automaticButtonColor = value) } }
         if (!p.automaticButtonColor) DependentSettings(R.string.automatic_button_color) {
             ColorPicker(p.buttonColor, title = R.string.button_color, default = panelDefaults.buttonColor) { value -> vm.editPanel(entry.id) { it.copy(buttonColor = value) } }
