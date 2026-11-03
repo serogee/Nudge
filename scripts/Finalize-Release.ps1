@@ -40,4 +40,5 @@ Read-Git @('switch', '--quiet', 'main') | Out-Null
 Read-Git @('merge', '--ff-only', 'origin/main') | Out-Null
 & (Join-Path $repoRoot 'scripts/Release.ps1') -CreateTag
 Write-Output "Next: git push origin v$name"
-Write-Output "Create the GitHub release for v$name and attach the four files from releases/$name/."
+Write-Output "Create the GitHub release for v$name with releases/$name/Nudge-$name-notes.md as its description."
+Write-Output "Attach Nudge-$name.apk, Nudge-$name.apk.sha256, and Nudge-$name.json from releases/$name/."
