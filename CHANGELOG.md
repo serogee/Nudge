@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Fill opaque Home shortcut backgrounds to the launcher's icon shape. Remove the nested rounded-container edge for Adaptive and solid chosen colors. Retain artwork size, transparent bitmap export, and same-ID updates. Device launcher appearance still requires verification.
+
 ## 0.5.9 - 2026-11-03
 
 ### Added
