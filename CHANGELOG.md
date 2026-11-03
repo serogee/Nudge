@@ -2,10 +2,22 @@
 
 ## Unreleased
 
+## 0.5.10 - 2026-11-03
+
 ### Fixed
 
-- Fill opaque Home shortcut backgrounds to the launcher's icon shape. Remove the nested rounded-container edge for Adaptive and solid chosen colors. Retain artwork size, transparent bitmap export, and same-ID updates. Device launcher appearance still requires verification.
-- Explain launcher background limits beside the Home shortcut background controls. Transparent removes Nudge's background; it cannot remove a background added by the launcher. Keep panel guidance separate.
+- Fill opaque Home shortcut backgrounds to the launcher's icon shape. Remove the nested rounded-container edge for **Adaptive** and solid **Choose color** backgrounds. Retain artwork size, original colors, transparent bitmap export, and same-ID updates. Match Home previews to Android's final drawable. (2de4ae6)
+- Explain launcher background limits beside the Home shortcut controls. **Transparent** removes Nudge's background; it cannot remove a background added by the launcher. Keep panel guidance separate. (8caeb29)
+
+### Maintenance
+
+- Correct finalizer publication guidance. Use the exported notes as the GitHub release description and attach only the APK, checksum, and JSON build metadata. (17887a5)
+
+### Compatibility and validation
+
+- Retain **schema 33** and saved configuration. Nudge **0.5.9 and 0.5.10** support these backups; builds supporting only schema 32 or earlier cannot import them. Older supported backups remain importable.
+- Pass **45 focused cases** with **0 failures, errors, or skipped cases**, including native graphics on **API 31 and 36**, pin/update behavior, and editor checks. Pass feature-source **lintDebug** with **0 errors and 29 warnings** and **assembleDebug**. Verify prepared **0.5.10-debug / code 26** packaging. Pass **29 changelog checks** and **22 isolated finalization checks**.
+- Keep the final signed build and complete release checks after the GitHub merge. Use **Pin again** after updating to refresh existing Home icons. Stock **MIUI/HyperOS 1.0** appearance, actual transparency, and the signed upgrade over **0.5.9** still require device verification.
 
 ## 0.5.9 - 2026-11-03
 
