@@ -70,6 +70,7 @@ import com.modukey.app.core.*
                     }
                 }
                 OptionInfo(R.string.button_background_help)
+                if (homeShortcut) OptionInfo(R.string.shortcut_background_help)
                 }
             }
         }, confirmButton = { Button(onClick = { save(draft) }, enabled = (includeEmpty || draft.action != ButtonAction.EMPTY) &&

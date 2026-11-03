@@ -323,6 +323,7 @@
     <string name="background_transparent">Transparent</string>
     <string name="background_choose_color">Choose color</string>
     <string name="button_background_help">Adaptive uses the default button color. Transparent removes the added background. App artwork keeps its original colors and background.</string>
+    <string name="shortcut_background_help">Solid backgrounds fill your launcher\'s icon shape. Transparent removes only Nudge\'s background. Your launcher can still add a background.</string>
     <string name="edit_shortcut">Edit shortcut</string>
     <string name="shortcut_saved">Shortcut saved.</string>
     <string name="shortcut_refresh_failed">Shortcut saved. The launcher could not refresh its icon. Try Pin again.</string>

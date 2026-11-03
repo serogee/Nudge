@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.modukey.app.MainActivity
 import com.modukey.app.NudgeApplication
+import com.modukey.app.R
 import com.modukey.app.core.*
 import com.modukey.app.platform.PinnedShortcuts
 import kotlinx.coroutines.launch
@@ -76,6 +77,7 @@ class ButtonBackgroundInterfaceTest {
             var saved: PanelButton? = null
             var cancelled = false
             rule.activity.setContent { NudgeTheme { ButtonEditor(original, PanelConfig(), vm, { cancelled = true }) { saved = it } } }
+            rule.onNodeWithText(rule.activity.getString(R.string.shortcut_background_help)).assertDoesNotExist()
             backgroundMode("Adaptive", "Transparent")
             rule.onNodeWithText("Cancel").performClick()
             rule.runOnIdle { assertTrue(cancelled); assertNull(saved); assertEquals(ButtonBackground(), original.background) }
@@ -88,7 +90,9 @@ class ButtonBackgroundInterfaceTest {
         var saved: PanelButton? = null
         rule.activity.setContent { NudgeTheme { ButtonEditor(original, com.modukey.app.platform.ShortcutIconRenderer.panel,
             vm, {}, includeEmpty = false, homeShortcut = true) { saved = it } } }
+        rule.onNodeWithText(rule.activity.getString(R.string.shortcut_background_help)).performScrollTo().assertIsDisplayed()
         backgroundMode("Adaptive", "Transparent")
+        rule.onNodeWithText(rule.activity.getString(R.string.shortcut_background_help)).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Save").performClick()
         rule.runOnIdle { assertEquals(original.copy(background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT)), saved) }
     }
