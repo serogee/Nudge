@@ -91,7 +91,7 @@ TODO: Replace these descriptions with real screenshots or short recordings.
 - Preview placement with non-interactive guides. Save or cancel handle and panel edits.
 - Drag slider thumbs to adjust settings. Track taps do not seek. Tap percentage and dp readouts to enter exact values.
 - Pin configured actions to the Home screen through your launcher.
-- Choose Adaptive, Transparent, or a custom background color for each panel button and Home shortcut. Edit saved shortcuts without replacing their IDs.
+- Choose Adaptive, Transparent, or a custom background color for each panel button and Home shortcut. Home launchers can still add backgrounds to transparent shortcuts. Edit saved shortcuts without replacing their IDs.
 - Use the Home accessibility switch or a Toggle accessibility shortcut to open setup or disable Nudge handles.
 - Export and import JSON backups, including handles, panels, gesture bindings, and shortcut definitions.
 - Check for updates when requested. Download an APK and review Android's installation prompt.

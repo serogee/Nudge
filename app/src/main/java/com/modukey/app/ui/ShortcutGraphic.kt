@@ -15,7 +15,7 @@ import com.modukey.app.platform.ShortcutIconRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Show exactly the bitmap passed to Android, including its padding and original app colors. */
+/** Preview Android's final icon drawable. The launcher can apply further styling. */
 @Composable internal fun ShortcutGraphic(button: PanelButton, size: Dp) {
     val context = LocalContext.current
     val app = context.applicationContext as NudgeApplication

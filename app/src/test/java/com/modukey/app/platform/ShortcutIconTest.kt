@@ -6,6 +6,8 @@ import android.content.pm.ShortcutManager
 import android.content.pm.ShortcutInfo
 import android.graphics.drawable.Icon
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.ColorDrawable
 import androidx.core.graphics.createBitmap
 import androidx.test.core.app.ApplicationProvider
 import com.modukey.app.NudgeApplication
@@ -30,6 +32,28 @@ import org.robolectric.util.ReflectionHelpers
 class ShortcutIconTest {
     private val app get() = ApplicationProvider.getApplicationContext<NudgeApplication>()
     @After fun cleanup() { app.onTerminate() }
+    @Test fun opaqueBackgroundsFillAdaptiveEdgesInsteadOfNestingARoundedContainer() = runBlocking {
+        val manager = app.getSystemService(ShortcutManager::class.java)
+        shadowOf(manager).setIsRequestPinShortcutSupported(true)
+        for (style in listOf(IconContainer.CONTAINER, IconContainer.STANDALONE)) {
+            for (background in listOf(ButtonBackground(), ButtonBackground(ButtonBackgroundMode.CUSTOM, 0xFF884422))) {
+                val shortcut = HomeShortcut(button = PanelButton(iconContainer = style, background = background,
+                    icon = IconReference(builtIn = BuiltInIcon.NUDGE)))
+                assertTrue(PinnedShortcuts(app, app.icons).pin(shortcut, "Filled"))
+                val pinned = manager.pinnedShortcuts.first { it.id == shortcut.id }
+                val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
+                assertEquals("Opaque backgrounds must use the launcher's shape", Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
+                val bitmap = shadowOf(icon).bitmap
+                val expected = if (background.mode == ButtonBackgroundMode.AUTOMATIC) 0xFF3C3C3E.toInt() else 0xFF884422.toInt()
+                for (i in 0 until bitmap.width) {
+                    assertEquals(expected, bitmap.getPixel(i, 0))
+                    assertEquals(expected, bitmap.getPixel(i, bitmap.height - 1))
+                    assertEquals(expected, bitmap.getPixel(0, i))
+                    assertEquals(expected, bitmap.getPixel(bitmap.width - 1, i))
+                }
+            }
+        }
+    }
     @Test fun pinAgainRefreshesExistingArtworkAndKeepsTheSavedId() = runBlocking {
         val manager = app.getSystemService(ShortcutManager::class.java)
         shadowOf(manager).setIsRequestPinShortcutSupported(true)
@@ -52,7 +76,8 @@ class ShortcutIconTest {
         val manager = app.getSystemService(ShortcutManager::class.java)
         shadowOf(manager).setIsRequestPinShortcutSupported(true)
         for (container in IconContainer.entries) {
-            val shortcut = HomeShortcut(button = PanelButton(icon = IconReference(builtIn = BuiltInIcon.FAVORITE), iconContainer = container))
+            val shortcut = HomeShortcut(button = PanelButton(icon = IconReference(builtIn = BuiltInIcon.FAVORITE), iconContainer = container,
+                background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT)))
             assertTrue(PinnedShortcuts(app, app.icons).pin(shortcut, "Favorite"))
             val pinned = manager.pinnedShortcuts.first { it.id == shortcut.id }
             val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
@@ -85,7 +110,7 @@ class ShortcutIconTest {
                 default.getPixels(pixels, 0, default.width, 0, 0, default.width, default.height)
                 assertFalse(pixels.any { it == 0xFF3C3C3E.toInt() })
                 assertEquals(0xFF3C3C3E.toInt(), container.getPixel(container.width / 2, 10))
-                for (bitmap in listOf(default, standalone, container)) {
+                for (bitmap in listOf(default, standalone)) {
                     for (i in 0 until bitmap.width) {
                         assertEquals(Color.TRANSPARENT, bitmap.getPixel(i, 0))
                         assertEquals(Color.TRANSPARENT, bitmap.getPixel(i, bitmap.height - 1))
@@ -94,6 +119,80 @@ class ShortcutIconTest {
                     }
                 }
             } finally { default.recycle(); standalone.recycle(); container.recycle() }
+        }
+    }
+    @Test fun coloredDrawableFillsTheSystemMaskWithoutAContrastingRimAndMatchesItsPreview() = runBlocking {
+        for (style in listOf(IconContainer.CONTAINER, IconContainer.STANDALONE)) {
+            for (color in listOf(0xFF3C3C3E, 0xFF884422, 0xFFF0D060)) {
+                val button = PanelButton(iconContainer = style, background = ButtonBackground(ButtonBackgroundMode.CUSTOM, color),
+                    icon = IconReference(builtIn = BuiltInIcon.NUDGE))
+                val drawable = ShortcutIconRenderer.icon(app, app.icons, button).loadDrawable(app)!!
+                assertTrue(drawable is AdaptiveIconDrawable)
+                val actual = createBitmap(96, 96)
+                drawable.setBounds(0, 0, 96, 96); drawable.draw(Canvas(actual))
+                val expected = createBitmap(96, 96)
+                AdaptiveIconDrawable(ColorDrawable(color.toInt()), null).apply {
+                    setBounds(0, 0, 96, 96); draw(Canvas(expected))
+                }
+                val preview = ShortcutIconRenderer.render(app, app.icons, button)
+                try {
+                    assertTrue("Preview must include Android's mask", actual.sameAs(preview))
+                    val inset = if (style == IconContainer.CONTAINER) 24 else 7
+                    var filled = 0
+                    for (y in 0 until 96) for (x in 0 until 96) {
+                        if (x < inset || x >= 96 - inset || y < inset || y >= 96 - inset) {
+                            assertEquals("$style $color at $x,$y", expected.getPixel(x, y), actual.getPixel(x, y))
+                            if (Color.alpha(actual.getPixel(x, y)) == 255) filled++
+                        }
+                    }
+                    assertTrue("The chosen background must reach the mask edge", filled > 0)
+                } finally { actual.recycle(); expected.recycle(); preview.recycle() }
+            }
+        }
+    }
+    @Test fun adaptiveLayerInsetsKeepBothStylesAtTheirExistingArtworkSize() = runBlocking {
+        fun markBounds(bitmap: android.graphics.Bitmap): android.graphics.Rect {
+            val bounds = android.graphics.Rect(bitmap.width, bitmap.height, 0, 0)
+            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
+                val color = bitmap.getPixel(x, y)
+                if (Color.alpha(color) > 220 && Color.red(color) > 220 && Color.green(color) > 220 && Color.blue(color) > 220) {
+                    bounds.left = minOf(bounds.left, x); bounds.top = minOf(bounds.top, y)
+                    bounds.right = maxOf(bounds.right, x + 1); bounds.bottom = maxOf(bounds.bottom, y + 1)
+                }
+            }
+            return bounds
+        }
+        val widths = mutableListOf<Int>()
+        for (style in listOf(IconContainer.CONTAINER, IconContainer.STANDALONE)) {
+            val button = PanelButton(iconContainer = style, icon = IconReference(builtIn = BuiltInIcon.NUDGE))
+            val opaque = ShortcutIconRenderer.render(app, app.icons, button)
+            val transparent = ShortcutIconRenderer.render(app, app.icons, button.copy(background = ButtonBackground(ButtonBackgroundMode.TRANSPARENT)))
+            try {
+                val filledBounds = markBounds(opaque); val clearBounds = markBounds(transparent)
+                assertFalse(filledBounds.isEmpty); assertFalse(clearBounds.isEmpty)
+                assertTrue("Retain $style artwork width", kotlin.math.abs(filledBounds.width() - clearBounds.width()) <= 2)
+                assertTrue("Retain $style artwork height", kotlin.math.abs(filledBounds.height() - clearBounds.height()) <= 2)
+                widths += filledBounds.width()
+            } finally { opaque.recycle(); transparent.recycle() }
+        }
+        assertTrue("Standalone keeps larger artwork", widths[1] > widths[0])
+    }
+    @Test fun changingBackgroundModesReplacesTheIconFormatOnTheSamePinnedId() = runBlocking {
+        val manager = app.getSystemService(ShortcutManager::class.java)
+        shadowOf(manager).setIsRequestPinShortcutSupported(true)
+        val shortcuts = PinnedShortcuts(app, app.icons)
+        val original = HomeShortcut(button = PanelButton(icon = IconReference(builtIn = BuiltInIcon.NUDGE)))
+        assertTrue(shortcuts.pin(original, "Original"))
+        for (mode in listOf(ButtonBackgroundMode.TRANSPARENT, ButtonBackgroundMode.CUSTOM, ButtonBackgroundMode.AUTOMATIC)) {
+            val changed = original.copy(button = original.button.copy(background = ButtonBackground(mode, 0xFF884422)))
+            assertTrue(shortcuts.update(changed, "Updated"))
+            val pinned = manager.pinnedShortcuts.single()
+            assertEquals(original.id, pinned.id)
+            val icon = ReflectionHelpers.callInstanceMethod<Icon>(pinned, "getIcon")
+            if (mode == ButtonBackgroundMode.TRANSPARENT) {
+                assertEquals(Icon.TYPE_BITMAP, icon.type)
+                assertEquals(Color.TRANSPARENT, shadowOf(icon).bitmap.getPixel(48, 10))
+            } else assertEquals(Icon.TYPE_ADAPTIVE_BITMAP, icon.type)
         }
     }
     @Test fun externalArtworkHasSmoothTransparentCornersWithoutStrayEdgePixels() = runBlocking {

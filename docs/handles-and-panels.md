@@ -254,9 +254,9 @@ On Redmi Note 12 / HyperOS 1.0 with Android 14, an old-style five-point automati
 
 In **Home → Home screen shortcuts**, select **Add shortcut**, configure an action, app, icon, and name, then confirm your launcher's pin request.
 
-Each shortcut has its own **With Container** or **Standalone** style and **Background** setting. **Adaptive** uses Nudge's default neutral button color. It does not select Android's adaptive icon format or recolor the app artwork. **Transparent** removes Nudge's added background. **Choose color** uses a separate saved color. Original artwork can contain its own background; Transparent does not erase it.
+Each shortcut has its own **With Container** or **Standalone** style and **Background** setting. **Adaptive** uses Nudge's default neutral button color. **Choose color** uses a separate saved color. Solid backgrounds fill the launcher's icon shape instead of drawing a smaller rounded container inside it. Both styles retain their artwork size and original app colors. **Transparent** removes Nudge's added background. Original artwork can contain its own background; Transparent does not erase it.
 
-The editor, naming preview, and shortcut list show the same bitmap exported to Android. The export preserves alpha and does not add another adaptive wrapper or doubled padding. A launcher can still add its own background, shape, or app badge. Actual transparent Home display on stock MIUI/HyperOS 1.0 remains unverified.
+The editor, naming preview, and shortcut list render the exported icon with Android's mask. Solid backgrounds use adaptive icons with filled edges. Transparent artwork remains a bitmap to preserve alpha. The launcher can still change the final shape or add a background or app badge. Transparent cannot remove a background added by your launcher. Actual Home appearance on stock MIUI/HyperOS 1.0 still requires device verification.
 
 Select **Edit shortcut** to change a saved shortcut. Save updates its existing pinned ID, label, action, and artwork. Other shortcuts retain their settings. If the launcher cannot refresh an icon, its settings remain saved; use **Pin again** to retry. Editing an unpinned definition does not pin a new icon.
 
